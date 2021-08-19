@@ -1,115 +1,141 @@
 Modules list:
 -------------
 map.o:
-    CODE              Offs=000000  Size=000B42  Align=00001  Fill=0000
+    CODE              Offs=000000  Size=001946  Align=00001  Fill=0000
+    BSS               Offs=000000  Size=00000F  Align=00001  Fill=0000
+    DATA              Offs=000000  Size=000166  Align=00001  Fill=0000
 main.o:
-    CODE              Offs=000B42  Size=000308  Align=00001  Fill=0000
-    BSS               Offs=000000  Size=000003  Align=00001  Fill=0000
-    DATA              Offs=000000  Size=000020  Align=00001  Fill=0000
+    CODE              Offs=001946  Size=000900  Align=00001  Fill=0000
+    BSS               Offs=00000F  Size=000021  Align=00001  Fill=0000
+    DATA              Offs=000166  Size=000141  Align=00001  Fill=0000
 unitgraphics.o:
-    DATA              Offs=000020  Size=004000  Align=00001  Fill=0000
+    DATA              Offs=0002A7  Size=004000  Align=00001  Fill=0000
 tilegraphics.o:
-    DATA              Offs=004020  Size=000400  Align=00001  Fill=0000
+    DATA              Offs=0042A7  Size=001700  Align=00001  Fill=0000
+spritegraphics.o:
+    DATA              Offs=0059A7  Size=000200  Align=00001  Fill=0000
 palette.o:
-    DATA              Offs=004420  Size=000100  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(_heap.o):
-    DATA              Offs=004520  Size=00000A  Align=00001  Fill=0000
+    DATA              Offs=005BA7  Size=0001A0  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(_heap.o):
+    DATA              Offs=005D47  Size=00000A  Align=00001  Fill=0000
     ONCE              Offs=000000  Size=000010  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(add.o):
-    CODE              Offs=000E4A  Size=000018  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(addeqsp.o):
-    CODE              Offs=000E62  Size=000011  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(addysp.o):
-    CODE              Offs=000E73  Size=00000E  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(aslax2.o):
-    CODE              Offs=000E81  Size=00000B  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(aslax3.o):
-    CODE              Offs=000E8C  Size=00000E  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(aslax4.o):
-    CODE              Offs=000E9A  Size=000011  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(callmain.o):
-    CODE              Offs=000EAB  Size=000017  Align=00001  Fill=0000
-    DATA              Offs=00452A  Size=000004  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(condes.o):
-    CODE              Offs=000EC2  Size=00000C  Align=00001  Fill=0000
-    DATA              Offs=00452E  Size=000025  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(add.o):
+    CODE              Offs=002246  Size=000018  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(addeqsp.o):
+    CODE              Offs=00225E  Size=000011  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(addysp.o):
+    CODE              Offs=00226F  Size=00000E  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(aslax2.o):
+    CODE              Offs=00227D  Size=00000B  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(aslax3.o):
+    CODE              Offs=002288  Size=00000E  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(aslax4.o):
+    CODE              Offs=002296  Size=000011  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(callmain.o):
+    CODE              Offs=0022A7  Size=000017  Align=00001  Fill=0000
+    DATA              Offs=005D51  Size=000004  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(condes.o):
+    CODE              Offs=0022BE  Size=00000C  Align=00001  Fill=0000
+    DATA              Offs=005D55  Size=000025  Align=00001  Fill=0000
     ONCE              Offs=000010  Size=00000C  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(crt0.o):
+/home/cameron/cc65/lib/cx16.lib(crt0.o):
     STARTUP           Offs=000000  Size=000028  Align=00001  Fill=0000
     ONCE              Offs=00001C  Size=000023  Align=00001  Fill=0000
     INIT              Offs=000000  Size=000002  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(decax8.o):
-    CODE              Offs=000ECE  Size=000007  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(decsp1.o):
-    CODE              Offs=000ED5  Size=000009  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(decsp2.o):
-    CODE              Offs=000EDE  Size=00000D  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(decsp5.o):
-    CODE              Offs=000EEB  Size=00000D  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(decsp6.o):
-    CODE              Offs=000EF8  Size=00000D  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(div.o):
-    CODE              Offs=000F05  Size=000015  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(exehdr.o):
+/home/cameron/cc65/lib/cx16.lib(decax1.o):
+    CODE              Offs=0022CA  Size=000007  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(decax3.o):
+    CODE              Offs=0022D1  Size=000007  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(decax4.o):
+    CODE              Offs=0022D8  Size=000007  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(decaxy.o):
+    CODE              Offs=0022DF  Size=000009  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(decsp1.o):
+    CODE              Offs=0022E8  Size=000009  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(decsp2.o):
+    CODE              Offs=0022F1  Size=00000D  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(decsp4.o):
+    CODE              Offs=0022FE  Size=00000D  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(decsp6.o):
+    CODE              Offs=00230B  Size=00000D  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(div.o):
+    CODE              Offs=002318  Size=000015  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(exehdr.o):
     EXEHDR            Offs=000000  Size=00000C  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(free.o):
-    CODE              Offs=000F1A  Size=0001D3  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(incax2.o):
-    CODE              Offs=0010ED  Size=000007  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(incaxy.o):
-    CODE              Offs=0010F4  Size=00000B  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(incsp1.o):
-    CODE              Offs=0010FF  Size=000007  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(incsp2.o):
-    CODE              Offs=001106  Size=000015  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(incsp3.o):
-    CODE              Offs=00111B  Size=000005  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(incsp6.o):
-    CODE              Offs=001120  Size=000005  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(incsp7.o):
-    CODE              Offs=001125  Size=000005  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(kernal.o):
-C:\Program Files (x86)\cc65\lib/cx16.lib(ldaxi.o):
-    CODE              Offs=00112A  Size=00000D  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(ldaxsp.o):
-    CODE              Offs=001137  Size=000009  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(loadaddr.o):
+/home/cameron/cc65/lib/cx16.lib(free.o):
+    CODE              Offs=00232D  Size=0001D3  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(icmp.o):
+    CODE              Offs=002500  Size=00002E  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(incax2.o):
+    CODE              Offs=00252E  Size=000007  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(incax3.o):
+    CODE              Offs=002535  Size=000005  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(incax8.o):
+    CODE              Offs=00253A  Size=000005  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(incaxy.o):
+    CODE              Offs=00253F  Size=00000B  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(incsp1.o):
+    CODE              Offs=00254A  Size=000007  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(incsp2.o):
+    CODE              Offs=002551  Size=000015  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(incsp3.o):
+    CODE              Offs=002566  Size=000005  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(incsp4.o):
+    CODE              Offs=00256B  Size=000005  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(incsp5.o):
+    CODE              Offs=002570  Size=000005  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(incsp6.o):
+    CODE              Offs=002575  Size=000005  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(incsp7.o):
+    CODE              Offs=00257A  Size=000005  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(incsp8.o):
+    CODE              Offs=00257F  Size=000005  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(kernal.o):
+/home/cameron/cc65/lib/cx16.lib(ldaxi.o):
+    CODE              Offs=002584  Size=00000D  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(ldaxsp.o):
+    CODE              Offs=002591  Size=000009  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(loadaddr.o):
     LOADADDR          Offs=000000  Size=000002  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(makebool.o):
-    CODE              Offs=001140  Size=00002C  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(malloc.o):
-    CODE              Offs=00116C  Size=00010E  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(mod.o):
-    CODE              Offs=00127A  Size=000011  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(mul8.o):
-    CODE              Offs=00128B  Size=00003A  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(mulax7.o):
-    CODE              Offs=0012C5  Size=000019  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(negabs.o):
-    CODE              Offs=0012DE  Size=000012  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(popptr1.o):
-    CODE              Offs=0012F0  Size=00000E  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(pusha.o):
-    CODE              Offs=0012FE  Size=000016  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(pushax.o):
-    CODE              Offs=001314  Size=00001A  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(pushw.o):
-    CODE              Offs=00132E  Size=00000F  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(pushwsp.o):
-    CODE              Offs=00133D  Size=00001C  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(shelp.o):
-    CODE              Offs=001359  Size=000020  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(staxsp.o):
-    CODE              Offs=001379  Size=00000B  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(staxspi.o):
-    CODE              Offs=001384  Size=00001A  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(udiv.o):
-    CODE              Offs=00139E  Size=00004F  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(waitvsync.o):
-    CODE              Offs=0013ED  Size=000012  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(zerobss.o):
-    CODE              Offs=0013FF  Size=000023  Align=00001  Fill=0000
-C:\Program Files (x86)\cc65\lib/cx16.lib(zeropage.o):
+/home/cameron/cc65/lib/cx16.lib(makebool.o):
+    CODE              Offs=00259A  Size=00002C  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(malloc.o):
+    CODE              Offs=0025C6  Size=00010E  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(memcpy.o):
+    CODE              Offs=0026D4  Size=00003C  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(mod.o):
+    CODE              Offs=002710  Size=000011  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(mul8.o):
+    CODE              Offs=002721  Size=00003A  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(negabs.o):
+    CODE              Offs=00275B  Size=000012  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(popptr1.o):
+    CODE              Offs=00276D  Size=00000E  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(pusha.o):
+    CODE              Offs=00277B  Size=000016  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(pushax.o):
+    CODE              Offs=002791  Size=00001A  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(pushw.o):
+    CODE              Offs=0027AB  Size=00000F  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(pushwsp.o):
+    CODE              Offs=0027BA  Size=00001C  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(shelp.o):
+    CODE              Offs=0027D6  Size=000020  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(staspidx.o):
+    CODE              Offs=0027F6  Size=000016  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(staxsp.o):
+    CODE              Offs=00280C  Size=00000B  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(staxspi.o):
+    CODE              Offs=002817  Size=00001A  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(sub.o):
+    CODE              Offs=002831  Size=000014  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(udiv.o):
+    CODE              Offs=002845  Size=00004F  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(waitvsync.o):
+    CODE              Offs=002894  Size=000012  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(zerobss.o):
+    CODE              Offs=0028A6  Size=000023  Align=00001  Fill=0000
+/home/cameron/cc65/lib/cx16.lib(zeropage.o):
     ZEROPAGE          Offs=000000  Size=00001A  Align=00001  Fill=0000
 
 
@@ -121,109 +147,139 @@ ZEROPAGE              000022  00003B  00001A  00001
 LOADADDR              0007FF  000800  000002  00001
 EXEHDR                000801  00080C  00000C  00001
 STARTUP               00080D  000834  000028  00001
-CODE                  000835  001C56  001422  00001
-DATA                  001C57  0061A9  004553  00001
-INIT                  0061AA  0061AB  000002  00001
-BSS                   0061AC  0061AE  000003  00001
-ONCE                  0061AC  0061EC  000041  00001
+CODE                  000835  0030FD  0028C9  00001
+DATA                  0030FE  008E77  005D7A  00001
+INIT                  008E78  008E79  000002  00001
+BSS                   008E7A  008EA9  000030  00001
+ONCE                  008E7A  008EBA  000041  00001
 
 
 Exports list by name:
 ---------------------
-CHROUT                    00FFD2 RLA    __BSS_RUN__               0061AC RLA    
-__BSS_SIZE__              000003 REA    __CONSTRUCTOR_COUNT__     000001 REA    
-__CONSTRUCTOR_TABLE__     0061EB RLA    __DESTRUCTOR_COUNT__      000000 REA    
-__DESTRUCTOR_TABLE__      001C57 RLA    __EXEHDR__                000001 REA    
+CHROUT                    00FFD2 RLA    __BSS_RUN__               008E7A RLA    
+__BSS_SIZE__              000030 REA    __CONSTRUCTOR_COUNT__     000001 REA    
+__CONSTRUCTOR_TABLE__     008EB9 RLA    __DESTRUCTOR_COUNT__      000000 REA    
+__DESTRUCTOR_TABLE__      0030FE RLA    __EXEHDR__                000001 REA    
 __HEADER_LAST__           00080D RLA    __HIMEM__                 009F00 REA    
 __LOADADDR__              000001 REA    __MAIN_SIZE__             0096F3 REA    
-__MAIN_START__            00080D RLA    __ONCE_RUN__              0061AC RLA    
+__MAIN_START__            00080D RLA    __ONCE_RUN__              008E7A RLA    
 __STACKSIZE__             000800 REA    __STARTUP__               000001 REA    
-__heapend                 00617B RLA    __heapfirst               00617D RLA    
-__heaplast                00617F RLA    __heapptr                 006179 RLA    
-_bluegraphics             003C77 RLA    _customPalette            006077 RLA    
-_free                     00174F RLA    _greengraphics            002C77 RLA    
-_initMapData              000915 RLA    _m                        0061AD RLA    
-_main                     001377 RLA    _malloc                   0019A1 RLA    
-_redgraphics              001C77 RLA    _renderMap                000CF3 RLA    
-_tilegraphics             005C77 RLA    _waitvsync                001C22 RLA    
-_yellowgraphics           004C77 RLA    addeq0sp                  001697 RLA    
-addeqysp                  001699 RLA    addysp                    0016A9 RLA    
-aslax2                    0016B6 RLA    aslax4                    0016CF RLA    
-boolne                    001975 RLA    callmain                  0016E0 RLA    
-decax8                    001703 RLA    decsp1                    00170A RLA    
-decsp2                    001713 RLA    decsp5                    001720 RLA    
-decsp6                    00172D RLA    donelib                   0016F7 RLA    
-incax2                    001922 RLA    incaxy                    00192B RLA    
-incsp1                    001934 RLA    incsp2                    001942 RLA    
-incsp3                    001950 RLA    incsp6                    001955 RLA    
-incsp7                    00195A RLA    initheap                  0061AC  LAI   
-initlib                   0061BC RLA    ldax0sp                   00196C RLA    
-ldaxidx                   001961 RLA    ldaxysp                   00196E RLA    
-mulax7                    001AFA RLA    negax                     001B17 RLA    
-popax                     00193B RLA    popptr1                   001B25 RLA    
-popsargsudiv16            001B8E RLA    ptr1                      00002A RLZ    
+__heapend                 008E49 RLA    __heapfirst               008E4B RLA    
+__heaplast                008E4D RLA    __heapptr                 008E47 RLA    
+_attack                   001EE2 RLA    _attackCursor             008E9B RLA    
+_bluegraphics             0053A5 RLA    _c                        008E94 RLA    
+_customPalette            008CA5 RLA    _free                     002B62 RLA    
+_getPossibleAttacks       001F43 RLA    _greengraphics            0043A5 RLA    
+_initCursor               000E82 RLA    _initMapData              000888 RLA    
+_lettergraphics           007825 RLA    _m                        008E8A RLA    
+_main                     00217B RLA    _malloc                   002DFB RLA    
+_memcpy                   002F09 RLA    _menuOptions              008EA4 RLA    
+_move                     001A41 RLA    _nextTurn                 00180F RLA    
+_pA                       00328A RLA    _redgraphics              0033A5 RLA    
+_renderMap                000BB6 RLA    _spritegraphics           008AA5 RLA    
+_tilegraphics             0073A5 RLA    _undoMove                 001BD9 RLA    
+_unitIndexes              00328C RLA    _unitLastX                00311E RLA    
+_unitLastY                00311F RLA    _waitvsync                0030C9 RLA    
+_yellowgraphics           0063A5 RLA    addeq0sp                  002A93 RLA    
+addeqysp                  002A95 RLA    addysp                    002AA5 RLA    
+addysp1                   002AA4 RLA    aslax2                    002AB2 RLA    
+aslax3                    002ABD RLA    aslax4                    002ACB RLA    
+boolne                    002DCF RLA    callmain                  002ADC RLA    
+decax1                    002AFF RLA    decax3                    002B06 RLA    
+decax4                    002B0D RLA    decaxy                    002B14 RLA    
+decsp1                    002B1D RLA    decsp2                    002B26 RLA    
+decsp4                    002B33 RLA    decsp6                    002B40 RLA    
+donelib                   002AF3 RLA    incax2                    002D63 RLA    
+incax3                    002D6A RLA    incax8                    002D6F RLA    
+incaxy                    002D76 RLA    incsp1                    002D7F RLA    
+incsp2                    002D8D RLA    incsp3                    002D9B RLA    
+incsp4                    002DA0 RLA    incsp5                    002DA5 RLA    
+incsp6                    002DAA RLA    incsp7                    002DAF RLA    
+incsp8                    002DB4 RLA    initheap                  008E7A  LAI   
+initlib                   008E8A RLA    ldax0sp                   002DC6 RLA    
+ldaxi                     002DB9 RLA    ldaxidx                   002DBB RLA    
+ldaxysp                   002DC8 RLA    negax                     002F94 RLA    
+popax                     002D86 RLA    popptr1                   002FA2 RLA    
+popsargsudiv16            00300B RLA    ptr1                      00002A RLZ    
 ptr2                      00002C RLZ    ptr3                      00002E RLZ    
-ptr4                      000030 RLZ    pusha                     001B37 RLA    
-pusha0                    001B4B RLA    pushax                    001B4D RLA    
-pushw0sp                  001B72 RLA    pushwidx                  001B65 RLA    
-pushwysp                  001B74 RLA    shlax3                    0016C1 RLA    
-shlax4                    0016CF RLA    sp                        000022 RLZ    
-sreg                      000024 RLZ    stax0sp                   001BAE RLA    
-staxspidx                 001BB9 RLA    staxysp                   001BB0 RLA    
+ptr4                      000030 RLZ    push0                     002FC6 RLA    
+pusha                     002FB4 RLA    pusha0                    002FC8 RLA    
+pushax                    002FCA RLA    pushwidx                  002FE2 RLA    
+pushwysp                  002FF1 RLA    shlax3                    002ABD RLA    
+sp                        000022 RLZ    sreg                      000024 RLZ    
+staspidx                  00302B RLA    stax0sp                   003041 RLA    
+staxspidx                 00304C RLA    staxysp                   003043 RLA    
 tmp1                      000032 RLZ    tmp2                      000033 RLZ    
-tosaddax                  001681 RLA    tosdivax                  00173C RLA    
-tosmodax                  001AB1 RLA    tosumula0                 001AC0 RLA    
-udiv16                    001BE4 RLA    zerobss                   001C34 RLA    
-
+tosadda0                  002A7B RLA    tosaddax                  002A7D RLA    
+tosdiva0                  002B4D RLA    tosicmp                   002D37 RLA    
+tosicmp0                  002D35 RLA    tosmoda0                  002F45 RLA    
+tosmula0                  002F56 RLA    tossuba0                  003066 RLA    
+tossubax                  003068 RLA    udiv16                    00308B RLA    
+zerobss                   0030DB RLA    
 
 
 Exports list by value:
 ----------------------
-__DESTRUCTOR_COUNT__      000000 REA    __LOADADDR__              000001 REA    
-__CONSTRUCTOR_COUNT__     000001 REA    __EXEHDR__                000001 REA    
-__STARTUP__               000001 REA    __BSS_SIZE__              000003 REA    
-sp                        000022 RLZ    sreg                      000024 RLZ    
-ptr1                      00002A RLZ    ptr2                      00002C RLZ    
-ptr3                      00002E RLZ    ptr4                      000030 RLZ    
+__DESTRUCTOR_COUNT__      000000 REA    __CONSTRUCTOR_COUNT__     000001 REA    
+__EXEHDR__                000001 REA    __LOADADDR__              000001 REA    
+__STARTUP__               000001 REA    sp                        000022 RLZ    
+sreg                      000024 RLZ    ptr1                      00002A RLZ    
+ptr2                      00002C RLZ    ptr3                      00002E RLZ    
+__BSS_SIZE__              000030 REA    ptr4                      000030 RLZ    
 tmp1                      000032 RLZ    tmp2                      000033 RLZ    
 __STACKSIZE__             000800 REA    __HEADER_LAST__           00080D RLA    
-__MAIN_START__            00080D RLA    _initMapData              000915 RLA    
-_renderMap                000CF3 RLA    _main                     001377 RLA    
-tosaddax                  001681 RLA    addeq0sp                  001697 RLA    
-addeqysp                  001699 RLA    addysp                    0016A9 RLA    
-aslax2                    0016B6 RLA    shlax3                    0016C1 RLA    
-aslax4                    0016CF RLA    shlax4                    0016CF RLA    
-callmain                  0016E0 RLA    donelib                   0016F7 RLA    
-decax8                    001703 RLA    decsp1                    00170A RLA    
-decsp2                    001713 RLA    decsp5                    001720 RLA    
-decsp6                    00172D RLA    tosdivax                  00173C RLA    
-_free                     00174F RLA    incax2                    001922 RLA    
-incaxy                    00192B RLA    incsp1                    001934 RLA    
-popax                     00193B RLA    incsp2                    001942 RLA    
-incsp3                    001950 RLA    incsp6                    001955 RLA    
-incsp7                    00195A RLA    ldaxidx                   001961 RLA    
-ldax0sp                   00196C RLA    ldaxysp                   00196E RLA    
-boolne                    001975 RLA    _malloc                   0019A1 RLA    
-tosmodax                  001AB1 RLA    tosumula0                 001AC0 RLA    
-mulax7                    001AFA RLA    negax                     001B17 RLA    
-popptr1                   001B25 RLA    pusha                     001B37 RLA    
-pusha0                    001B4B RLA    pushax                    001B4D RLA    
-pushwidx                  001B65 RLA    pushw0sp                  001B72 RLA    
-pushwysp                  001B74 RLA    popsargsudiv16            001B8E RLA    
-stax0sp                   001BAE RLA    staxysp                   001BB0 RLA    
-staxspidx                 001BB9 RLA    udiv16                    001BE4 RLA    
-_waitvsync                001C22 RLA    zerobss                   001C34 RLA    
-__DESTRUCTOR_TABLE__      001C57 RLA    _redgraphics              001C77 RLA    
-_greengraphics            002C77 RLA    _bluegraphics             003C77 RLA    
-_yellowgraphics           004C77 RLA    _tilegraphics             005C77 RLA    
-_customPalette            006077 RLA    __heapptr                 006179 RLA    
-__heapend                 00617B RLA    __heapfirst               00617D RLA    
-__heaplast                00617F RLA    __ONCE_RUN__              0061AC RLA    
-initheap                  0061AC  LAI   __BSS_RUN__               0061AC RLA    
-_m                        0061AD RLA    initlib                   0061BC RLA    
-__CONSTRUCTOR_TABLE__     0061EB RLA    __MAIN_SIZE__             0096F3 REA    
-__HIMEM__                 009F00 REA    CHROUT                    00FFD2 RLA    
-
+__MAIN_START__            00080D RLA    _initMapData              000888 RLA    
+_renderMap                000BB6 RLA    _initCursor               000E82 RLA    
+_nextTurn                 00180F RLA    _move                     001A41 RLA    
+_undoMove                 001BD9 RLA    _attack                   001EE2 RLA    
+_getPossibleAttacks       001F43 RLA    _main                     00217B RLA    
+tosadda0                  002A7B RLA    tosaddax                  002A7D RLA    
+addeq0sp                  002A93 RLA    addeqysp                  002A95 RLA    
+addysp1                   002AA4 RLA    addysp                    002AA5 RLA    
+aslax2                    002AB2 RLA    aslax3                    002ABD RLA    
+shlax3                    002ABD RLA    aslax4                    002ACB RLA    
+callmain                  002ADC RLA    donelib                   002AF3 RLA    
+decax1                    002AFF RLA    decax3                    002B06 RLA    
+decax4                    002B0D RLA    decaxy                    002B14 RLA    
+decsp1                    002B1D RLA    decsp2                    002B26 RLA    
+decsp4                    002B33 RLA    decsp6                    002B40 RLA    
+tosdiva0                  002B4D RLA    _free                     002B62 RLA    
+tosicmp0                  002D35 RLA    tosicmp                   002D37 RLA    
+incax2                    002D63 RLA    incax3                    002D6A RLA    
+incax8                    002D6F RLA    incaxy                    002D76 RLA    
+incsp1                    002D7F RLA    popax                     002D86 RLA    
+incsp2                    002D8D RLA    incsp3                    002D9B RLA    
+incsp4                    002DA0 RLA    incsp5                    002DA5 RLA    
+incsp6                    002DAA RLA    incsp7                    002DAF RLA    
+incsp8                    002DB4 RLA    ldaxi                     002DB9 RLA    
+ldaxidx                   002DBB RLA    ldax0sp                   002DC6 RLA    
+ldaxysp                   002DC8 RLA    boolne                    002DCF RLA    
+_malloc                   002DFB RLA    _memcpy                   002F09 RLA    
+tosmoda0                  002F45 RLA    tosmula0                  002F56 RLA    
+negax                     002F94 RLA    popptr1                   002FA2 RLA    
+pusha                     002FB4 RLA    push0                     002FC6 RLA    
+pusha0                    002FC8 RLA    pushax                    002FCA RLA    
+pushwidx                  002FE2 RLA    pushwysp                  002FF1 RLA    
+popsargsudiv16            00300B RLA    staspidx                  00302B RLA    
+stax0sp                   003041 RLA    staxysp                   003043 RLA    
+staxspidx                 00304C RLA    tossuba0                  003066 RLA    
+tossubax                  003068 RLA    udiv16                    00308B RLA    
+_waitvsync                0030C9 RLA    zerobss                   0030DB RLA    
+__DESTRUCTOR_TABLE__      0030FE RLA    _unitLastX                00311E RLA    
+_unitLastY                00311F RLA    _pA                       00328A RLA    
+_unitIndexes              00328C RLA    _redgraphics              0033A5 RLA    
+_greengraphics            0043A5 RLA    _bluegraphics             0053A5 RLA    
+_yellowgraphics           0063A5 RLA    _tilegraphics             0073A5 RLA    
+_lettergraphics           007825 RLA    _spritegraphics           008AA5 RLA    
+_customPalette            008CA5 RLA    __heapptr                 008E47 RLA    
+__heapend                 008E49 RLA    __heapfirst               008E4B RLA    
+__heaplast                008E4D RLA    __BSS_RUN__               008E7A RLA    
+__ONCE_RUN__              008E7A RLA    initheap                  008E7A  LAI   
+_m                        008E8A RLA    initlib                   008E8A RLA    
+_c                        008E94 RLA    _attackCursor             008E9B RLA    
+_menuOptions              008EA4 RLA    __CONSTRUCTOR_TABLE__     008EB9 RLA    
+__MAIN_SIZE__             0096F3 REA    __HIMEM__                 009F00 REA    
+CHROUT                    00FFD2 RLA    
 
 
 Imports list:
@@ -245,154 +301,255 @@ __DESTRUCTOR_COUNT__ ([linker generated]):
 __DESTRUCTOR_TABLE__ ([linker generated]):
     condes.o                  runtime/condes.s(19)
 __EXEHDR__ (exehdr.o):
-    [linker generated]        C:\Program Files (x86)\cc65\cfg/cx16.cfg(6)
+    [linker generated]        /home/cameron/cc65/cfg/cx16.cfg(6)
 __HEADER_LAST__ ([linker generated]):
-    [linker generated]        C:\Program Files (x86)\cc65\cfg/cx16.cfg(14)
-    [linker generated]        C:\Program Files (x86)\cc65\cfg/cx16.cfg(14)
+    [linker generated]        /home/cameron/cc65/cfg/cx16.cfg(14)
+    [linker generated]        /home/cameron/cc65/cfg/cx16.cfg(14)
 __HIMEM__ ([linker generated]):
-    [linker generated]        C:\Program Files (x86)\cc65\cfg/cx16.cfg(15)
-    [linker generated]        C:\Program Files (x86)\cc65\cfg/cx16.cfg(14)
+    [linker generated]        /home/cameron/cc65/cfg/cx16.cfg(15)
+    [linker generated]        /home/cameron/cc65/cfg/cx16.cfg(14)
 __LOADADDR__ (loadaddr.o):
-    [linker generated]        C:\Program Files (x86)\cc65\cfg/cx16.cfg(5)
+    [linker generated]        /home/cameron/cc65/cfg/cx16.cfg(5)
 __MAIN_SIZE__ ([linker generated]):
     crt0.o                    cx16/crt0.s(11)
 __MAIN_START__ ([linker generated]):
     crt0.o                    cx16/crt0.s(11)
 __ONCE_RUN__ ([linker generated]):
-    [linker generated]        C:\Program Files (x86)\cc65\cfg/cx16.cfg(15)
-    [linker generated]        C:\Program Files (x86)\cc65\cfg/cx16.cfg(15)
+    [linker generated]        /home/cameron/cc65/cfg/cx16.cfg(15)
+    [linker generated]        /home/cameron/cc65/cfg/cx16.cfg(15)
 __STACKSIZE__ ([linker generated]):
     _heap.o                   common/_heap.s(8)
-    [linker generated]        C:\Program Files (x86)\cc65\cfg/cx16.cfg(15)
+    [linker generated]        /home/cameron/cc65/cfg/cx16.cfg(15)
 __STARTUP__ (crt0.o):
     main.o                    main.s(13)
 __heapend (_heap.o):
-    malloc.o                  /home/travis/build/cc65/cc65/asminc/_heap.inc(33)
+    malloc.o                  /home/cameron/cc65/asminc/_heap.inc(33)
 __heapfirst (_heap.o):
-    malloc.o                  /home/travis/build/cc65/cc65/asminc/_heap.inc(34)
-    free.o                    /home/travis/build/cc65/cc65/asminc/_heap.inc(34)
+    malloc.o                  /home/cameron/cc65/asminc/_heap.inc(34)
+    free.o                    /home/cameron/cc65/asminc/_heap.inc(34)
 __heaplast (_heap.o):
-    malloc.o                  /home/travis/build/cc65/cc65/asminc/_heap.inc(35)
-    free.o                    /home/travis/build/cc65/cc65/asminc/_heap.inc(35)
+    malloc.o                  /home/cameron/cc65/asminc/_heap.inc(35)
+    free.o                    /home/cameron/cc65/asminc/_heap.inc(35)
 __heapptr (_heap.o):
-    malloc.o                  /home/travis/build/cc65/cc65/asminc/_heap.inc(32)
-    free.o                    /home/travis/build/cc65/cc65/asminc/_heap.inc(32)
-_bluegraphics (unitgraphics.o):
-    main.o                    main.s(26)
-_customPalette (palette.o):
+    malloc.o                  /home/cameron/cc65/asminc/_heap.inc(32)
+    free.o                    /home/cameron/cc65/asminc/_heap.inc(32)
+_attack (map.o):
     main.o                    main.s(29)
+_attackCursor (main.o):
+    map.o                     map.s(28)
+_bluegraphics (unitgraphics.o):
+    main.o                    main.s(36)
+_c (main.o):
+    map.o                     map.s(27)
+_customPalette (palette.o):
+    main.o                    main.s(41)
 _free (free.o):
+    main.o                    main.s(15)
     map.o                     map.s(14)
+_getPossibleAttacks (map.o):
+    main.o                    main.s(28)
 _greengraphics (unitgraphics.o):
-    main.o                    main.s(25)
+    main.o                    main.s(35)
+_initCursor (map.o):
+    main.o                    main.s(24)
 _initMapData (map.o):
-    main.o                    main.s(19)
+    main.o                    main.s(23)
+_lettergraphics (tilegraphics.o):
+    main.o                    main.s(39)
 _m (main.o):
-    map.o                     map.s(25)
+    map.o                     map.s(26)
 _main (main.o):
     callmain.o                runtime/callmain.s(11)
 _malloc (malloc.o):
-    map.o                     map.s(13)
-_redgraphics (unitgraphics.o):
-    main.o                    main.s(24)
-_renderMap (map.o):
-    main.o                    main.s(20)
-_tilegraphics (tilegraphics.o):
-    main.o                    main.s(28)
-_waitvsync (waitvsync.o):
     main.o                    main.s(14)
-_yellowgraphics (unitgraphics.o):
+    map.o                     map.s(13)
+_memcpy (memcpy.o):
+    map.o                     map.s(3614)
+_menuOptions (main.o):
+    map.o                     map.s(33)
+_move (map.o):
+    main.o                    main.s(26)
+_nextTurn (map.o):
+    main.o                    main.s(32)
+_pA (main.o):
+    map.o                     map.s(29)
+_redgraphics (unitgraphics.o):
+    main.o                    main.s(34)
+_renderMap (map.o):
+    main.o                    main.s(25)
+_spritegraphics (spritegraphics.o):
+    main.o                    main.s(40)
+_tilegraphics (tilegraphics.o):
+    main.o                    main.s(38)
+_undoMove (map.o):
     main.o                    main.s(27)
+_unitIndexes (main.o):
+    map.o                     map.s(44)
+_unitLastX (map.o):
+    main.o                    main.s(58)
+_unitLastY (map.o):
+    main.o                    main.s(59)
+_waitvsync (waitvsync.o):
+    main.o                    main.s(16)
+_yellowgraphics (unitgraphics.o):
+    main.o                    main.s(37)
 addeq0sp (addeqsp.o):
-    main.o                    main.s(497)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
 addeqysp (addeqsp.o):
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 addysp (addysp.o):
+    incsp8.o                  runtime/incsp8.s(8)
     incsp7.o                  runtime/incsp7.s(8)
     incsp6.o                  runtime/incsp6.s(8)
+    incsp5.o                  runtime/incsp5.s(8)
+    incsp4.o                  runtime/incsp4.s(8)
     incsp3.o                  runtime/incsp3.s(8)
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+addysp1 (addysp.o):
+    sub.o                     runtime/sub.s(8)
 aslax2 (aslax2.o):
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
+aslax3 (aslax3.o):
+    main.o                    main.s(1476)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 aslax4 (aslax4.o):
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 boolne (makebool.o):
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
 callmain (callmain.o):
     crt0.o                    cx16/crt0.s(9)
-decax8 (decax8.o):
-    map.o                     map.s(1464)
+decax1 (decax1.o):
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+decax3 (decax3.o):
+    map.o                     map.s(3614)
+decax4 (decax4.o):
+    map.o                     map.s(3614)
+decaxy (decaxy.o):
+    main.o                    main.s(1476)
 decsp1 (decsp1.o):
-    main.o                    main.s(497)
+    main.o                    main.s(1476)
 decsp2 (decsp2.o):
-    main.o                    main.s(497)
-decsp5 (decsp5.o):
-    map.o                     map.s(1464)
+    main.o                    main.s(1476)
+decsp4 (decsp4.o):
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
 decsp6 (decsp6.o):
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 donelib (condes.o):
     crt0.o                    cx16/crt0.s(8)
 incax2 (incax2.o):
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
+incax3 (incax3.o):
+    map.o                     map.s(3614)
+incax8 (incax8.o):
+    map.o                     map.s(3614)
 incaxy (incaxy.o):
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    incax8.o                  runtime/incax8.s(8)
+    incax3.o                  runtime/incax3.s(8)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 incsp1 (incsp1.o):
-    main.o                    main.s(497)
-    main.o                    main.s(497)
+    main.o                    main.s(1476)
+    main.o                    main.s(1476)
 incsp2 (incsp2.o):
     staxspi.o                 runtime/staxspi.s(9)
+    staspidx.o                runtime/staspidx.s(8)
     popptr1.o                 runtime/popptr1.s(8)
-    main.o                    main.s(497)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 incsp3 (incsp3.o):
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+incsp4 (incsp4.o):
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+incsp5 (incsp5.o):
+    map.o                     map.s(3614)
 incsp6 (incsp6.o):
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 incsp7 (incsp7.o):
-    map.o                     map.s(1464)
+    main.o                    main.s(1476)
+incsp8 (incsp8.o):
+    map.o                     map.s(3614)
 initlib (condes.o):
     crt0.o                    cx16/crt0.s(8)
 ldax0sp (ldaxsp.o):
-    main.o                    main.s(497)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+ldaxi (ldaxi.o):
+    main.o                    main.s(1476)
 ldaxidx (ldaxi.o):
-    main.o                    main.s(497)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    main.o                    main.s(1476)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 ldaxysp (ldaxsp.o):
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-mulax7 (mulax7.o):
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    main.o                    main.s(1476)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 negax (negabs.o):
     shelp.o                   runtime/shelp.s(11)
     mod.o                     runtime/mod.s(11)
     div.o                     runtime/div.s(11)
 popax (incsp2.o):
     shelp.o                   runtime/shelp.s(11)
+    memcpy.o                  common/memcpy.s(14)
 popptr1 (popptr1.o):
     udiv.o                    runtime/udiv.s(9)
     mul8.o                    runtime/mul8.s(9)
+    memcpy.o                  common/memcpy.s(14)
 popsargsudiv16 (shelp.o):
     mod.o                     runtime/mod.s(11)
     div.o                     runtime/div.s(11)
@@ -400,11 +557,12 @@ ptr1 (zeropage.o):
     zerobss.o                 common/zerobss.s(9)
     udiv.o                    runtime/udiv.s(10)
     staxspi.o                 runtime/staxspi.s(10)
+    staspidx.o                runtime/staspidx.s(9)
     shelp.o                   runtime/shelp.s(12)
     pushw.o                   runtime/pushw.s(9)
     popptr1.o                 runtime/popptr1.s(9)
-    mulax7.o                  runtime/mulax7.s(10)
     mul8.o                    runtime/mul8.s(10)
+    memcpy.o                  common/memcpy.s(15)
     malloc.o                  common/malloc.s(108)
     ldaxi.o                   runtime/ldaxi.s(8)
     free.o                    common/free.s(62)
@@ -412,9 +570,11 @@ ptr1 (zeropage.o):
     main.o                    main.s(11)
     map.o                     map.s(11)
 ptr2 (zeropage.o):
+    memcpy.o                  common/memcpy.s(15)
     malloc.o                  common/malloc.s(108)
     free.o                    common/free.s(62)
 ptr3 (zeropage.o):
+    memcpy.o                  common/memcpy.s(15)
     malloc.o                  common/malloc.s(108)
     free.o                    common/free.s(62)
 ptr4 (zeropage.o):
@@ -422,58 +582,86 @@ ptr4 (zeropage.o):
     shelp.o                   runtime/shelp.s(12)
     mul8.o                    runtime/mul8.s(10)
     free.o                    common/free.s(62)
+push0 (pushax.o):
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 pusha (pusha.o):
-    main.o                    main.s(497)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    main.o                    main.s(1476)
+    main.o                    main.s(1476)
+    main.o                    main.s(1476)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 pusha0 (pushax.o):
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    main.o                    main.s(1476)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 pushax (pushax.o):
     callmain.o                runtime/callmain.s(11)
     pushw.o                   runtime/pushw.s(8)
-    main.o                    main.s(497)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-pushw0sp (pushwsp.o):
-    map.o                     map.s(1464)
+    main.o                    main.s(1476)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 pushwidx (pushw.o):
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 pushwysp (pushwsp.o):
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 shlax3 (aslax3.o):
-    map.o                     map.s(1464)
-shlax4 (aslax4.o):
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 sp (zeropage.o):
     _heap.o                   common/_heap.s(9)
+    sub.o                     runtime/sub.s(9)
     staxspi.o                 runtime/staxspi.s(10)
     staxsp.o                  runtime/staxsp.s(8)
+    staspidx.o                runtime/staspidx.s(9)
     pushwsp.o                 runtime/pushwsp.s(8)
     pushax.o                  runtime/pushax.s(8)
     pusha.o                   runtime/pusha.s(8)
     popptr1.o                 runtime/popptr1.s(9)
+    memcpy.o                  common/memcpy.s(15)
     ldaxsp.o                  runtime/ldaxsp.s(8)
     incsp2.o                  runtime/incsp2.s(8)
     incsp1.o                  runtime/incsp1.s(8)
+    icmp.o                    runtime/icmp.s(9)
     decsp6.o                  runtime/decsp6.s(8)
-    decsp5.o                  runtime/decsp5.s(8)
+    decsp4.o                  runtime/decsp4.s(8)
     decsp2.o                  runtime/decsp2.s(8)
     decsp1.o                  runtime/decsp1.s(8)
-    crt0.o                    /home/travis/build/cc65/cc65/asminc/zeropage.inc(11)
+    crt0.o                    /home/cameron/cc65/asminc/zeropage.inc(11)
     addysp.o                  runtime/addysp.s(8)
     addeqsp.o                 runtime/addeqsp.s(8)
     add.o                     runtime/add.s(12)
@@ -482,44 +670,82 @@ sp (zeropage.o):
 sreg (zeropage.o):
     udiv.o                    runtime/udiv.s(10)
     mod.o                     runtime/mod.s(12)
-    main.o                    main.s(10)
+    icmp.o                    runtime/icmp.s(9)
     map.o                     map.s(10)
+staspidx (staspidx.o):
+    map.o                     map.s(3614)
 stax0sp (staxsp.o):
-    main.o                    main.s(497)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 staxspidx (staxspi.o):
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 staxysp (staxsp.o):
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
 tmp1 (zeropage.o):
     staxspi.o                 runtime/staxspi.s(10)
+    staspidx.o                runtime/staspidx.s(9)
     shelp.o                   runtime/shelp.s(12)
     mod.o                     runtime/mod.s(12)
     incaxy.o                  runtime/incaxy.s(8)
     div.o                     runtime/div.s(12)
+    decaxy.o                  runtime/decaxy.s(8)
     aslax4.o                  runtime/aslax4.s(8)
     aslax3.o                  runtime/aslax3.s(8)
     aslax2.o                  runtime/aslax2.s(8)
 tmp2 (zeropage.o):
     shelp.o                   runtime/shelp.s(12)
     div.o                     runtime/div.s(12)
+tosadda0 (add.o):
+    map.o                     map.s(3614)
 tosaddax (add.o):
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-tosdivax (div.o):
-    map.o                     map.s(1464)
-tosmodax (mod.o):
-    map.o                     map.s(1464)
-tosumula0 (mul8.o):
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
-    map.o                     map.s(1464)
+    main.o                    main.s(1476)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+tosdiva0 (div.o):
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+tosicmp (icmp.o):
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+tosicmp0 (icmp.o):
+    map.o                     map.s(3614)
+tosmoda0 (mod.o):
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+tosmula0 (mul8.o):
+    main.o                    main.s(1476)
+    main.o                    main.s(1476)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+tossuba0 (sub.o):
+    map.o                     map.s(3614)
+    map.o                     map.s(3614)
+tossubax (sub.o):
+    map.o                     map.s(3614)
 udiv16 (udiv.o):
     shelp.o                   runtime/shelp.s(11)
 zerobss (zerobss.o):

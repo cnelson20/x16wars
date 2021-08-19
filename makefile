@@ -1,4 +1,4 @@
-SOURCES = map.c main.c unitgraphics.c tilegraphics.c palette.c
+SOURCES = map.c main.c unitgraphics.c tilegraphics.c spritegraphics.c palette.c
 PROGRAM = wars.prg
 
 CC65_TARGET = cx16
