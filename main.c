@@ -24,12 +24,13 @@ void loadPalette();
 void nextTurn();
 
 // global variables //
-char testMap[] = {5,5,0,0,2,255,0,3,3,1,2,3,255,
-	3,3,3,3,3,
-	2,4,4,5,2,
-	2,5,5,6,2,
-	2,5,6,6,2,
-	3,3,3,3,3,
+char testMap[] = {19,6,0,0,2,255,0,3,3,1,2,3,255,
+	7,7,1,1,1,1,6,5,6,1,6,5,6,1,1,1,1,7,7,
+	7,5,6,1,1,1,5,5,5,1,5,5,5,1,1,1,6,5,7,
+	7,5,6,1,1,1,6,5,7,1,7,5,6,1,1,1,6,5,7,
+	4,5,5,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,4,
+	5,4,7,1,1,1,1,1,1,1,1,1,1,1,1,1,7,4,5,
+	5,5,6,5,5,5,5,6,5,5,5,6,5,5,5,5,6,5,5,
 };
 extern unsigned char redgraphics[];
 extern unsigned char greengraphics[];
@@ -229,8 +230,6 @@ void drawUI() {
 		POKE(0x9F23,28);
 		POKE(0x9F23,184);
 		POKE(0x9F23,186 + unitPointer->y);
-		POKE(0x9F23,28);
-		POKE(0x9F23,186 + m.whoseTurn);
 		if (unitPointer->health <= 99) {
 			POKE(0x9F23,28);
 			POKE(0x9F23,167);
@@ -333,14 +332,14 @@ void keyPressed() {
 					--c.x;
 				}
 			}	/* S */ else if (keyCode == 0x53) {
-				if (c.y == m.boardHeight - 1) {
-					if (m.top_view < m.boardHeight - screenMapHeight) {++m.top_view;}
+				if (c.y >= 9 && c.y || c.y >= m.boardHeight - 1) {
+					if (m.top_view < m.boardHeight - 10) {++m.top_view;}
 				} else {
 					++c.y;
 				}
 			}	/* D */ else if (keyCode == 0x44) {
-				if (c.x == m.boardWidth - 1) {
-					if (m.left_view < m.boardWidth - screenMapWidth) {++m.left_view;}
+				if (c.x >= 14 || c.x >= m.boardWidth) {
+					if (m.left_view < m.boardWidth - 15) {++m.left_view;}
 				} else {
 					++c.x;
 				}

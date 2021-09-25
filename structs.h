@@ -1,5 +1,3 @@
-#define screenMapWidth 15
-#define screenMapHeight 10
 #define NULL 0
 #define false 0
 #define true 1

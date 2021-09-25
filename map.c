@@ -108,7 +108,8 @@ void renderMap() {
       POKE(0x9F21,y);
       POKE(0x9F22,0x10);
     }
-    if (++x >= maxX) {
+    ++x;
+    if (x >= maxX || x >= 15) {
       y++;
       x = m.left_view;
       j += m.boardWidth;
@@ -484,8 +485,17 @@ unsigned char calcPower(struct Unit *a, struct Unit *b) {
 }
 void attack(struct Unit *attacker, struct Unit *defender) {
   defender->health -= calcPower(attacker,defender);
+  if (defender->health >= 128) {defender->health = 0;}
   if (defender->health > 0) {
     attacker->health -= calcPower(defender,attacker);
+    if (attacker->health >= 128) {attacker->health = 0;}
+    if (attacker->health == 0) {
+      m.board[m.boardWidth*attacker->y+attacker->x].occupying = NULL;
+      free(attacker);
+    }
+  } else {
+    m.board[m.boardWidth*defender->y+defender->x].occupying = NULL;
+    free(defender);
   }
 }
 void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned char cy) {
