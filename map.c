@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <peekpoke.h>
 #include "structs.h"
-#define sabs(a,b) ((a > b) ? (a - b) : (b - a))
+#define SABS(a,b) ((a > b) ? (a - b) : (b - a))
 
 // Method list //
 void initMap();
@@ -472,7 +472,7 @@ unsigned char damageChart[] = {
 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x37, 0x28, 0x00, 0x19, 0x4b, 0x00, 0x00, 0x37, 0x00, 0x32};
 
 unsigned char canAttack(struct Unit *a, struct Unit *b) {
-  if (sabs(b->x,a->x) + sabs(b->y,a->y) >= a->attackRangeMin && sabs(b->x,a->x) + sabs(b->y,a->y) <= a->attackRangeMax) {
+  if (SABS(b->x,a->x) + SABS(b->y,a->y) >= a->attackRangeMin && SABS(b->x,a->x) + SABS(b->y,a->y) <= a->attackRangeMax) {
     return damageChart[unitIndexes[b->index] * 18 + unitIndexes[a->index]];
   }
   return 0;
