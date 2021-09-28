@@ -72,6 +72,10 @@ void main() {
 	}
 }
 
+unsigned char text_red[] = "red.chr";
+unsigned char text_green[] = "green.chr";
+unsigned char text_blue[] = "blue.chr";
+unsigned char text_yellow[] = "yellow.chr";
 void setup() {
 	unsigned short i;
 
@@ -99,24 +103,42 @@ void setup() {
 	POKE(0x9F20,0x00);
 	POKE(0x9F21,0x80);
 	POKE(0x9F22,0x10);
+	__asm__ ("lda #$FF"); // file #
+	__asm__ ("ldx #$08"); // device no #8 (sd card / disk drive)
+	__asm__ ("ldy #$FF"); // needs to be here 
+	__asm__ ("jsr $FFBA");
+	
+	__asm__ ("lda #$05"); // filename length 7 "red.chr"
+	__asm__ ("ldx #<%v",text_red);
+	__asm__ ("ldy #>%v",text_red);
+	__asm__ ("jsr $FFBD"); // SETNAM
+	
+	__asm__ ("lda #$00"); // load 
+	__asm__ ("ldx #<%v",redgraphics);
+	__asm__ ("ldy #>%v",redgraphics);
+	__asm__ ("jsr $FFD5"); // load
 	for (i = 0; i < 4096; ++i) {
 		POKE(0x9F23,redgraphics[i]);
-	}
+	}			
+	
 	POKE(0x9F20,0x00);
 	POKE(0x9F21,0x90); // 0x80 + 0x20/2
 	for (i = 0; i < 4096; ++i) {
-		POKE(0x9F23,greengraphics[i]);
-	}
+		POKE(0x9F23,redgraphics[i]);
+	}		
+
 	POKE(0x9F20,0x00);
 	POKE(0x9F21,0xA0);
 	for (i = 0; i < 4096; ++i) {
-		POKE(0x9F23,bluegraphics[i]);
+		POKE(0x9F23,redgraphics[i]);
 	}
+	
 	POKE(0x9F20,0x00);
 	POKE(0x9F21,0xB0);
 	for (i = 0; i < 4096; ++i) {
-		POKE(0x9F23,yellowgraphics[i]);
+		POKE(0x9F23,redgraphics[i]);
 	}
+	
 	POKE(0x9F20,0x00);
 	POKE(0x9F21,0xC0);
 	for (i = 0; i < 4096; ++i) {
@@ -197,10 +219,10 @@ void drawText(unsigned char *string, unsigned char size, unsigned char x, unsign
 
 unsigned char optionStrings[][8] = {
 {0xad, 0xb4, 0xab, 0xab, 0x00},
-{0xa4, 0xad, 0xa3, 0x00},
-{0xa2, 0xae, 0xad, 0xa2, 0xa4, 0xa3, 0xa4, 0x00}};
+{0xa4, 0xad, 0xa3, 0x00}/*,
+{0xa2, 0xae, 0xad, 0xa2, 0xa4, 0xa3, 0xa4, 0x00}*/};
 unsigned char healthText[] = {0xa7, 0xa4, 0xa0, 0xab, 0xb3, 0xa7, 0x1c};
-unsigned char movedText[] = {0xac, 0xae, 0xb5, 0xa4, 0xa3, 28};
+
 
 void drawUI() {
 	struct Unit *unitPointer;
