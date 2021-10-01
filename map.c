@@ -25,7 +25,7 @@ extern struct possibleAttacks *pA;
 unsigned char player1team;
 unsigned char player2team;
 unsigned short turncounter;
-
+unsigned char unitsdeadthisturn = 0;
 
 // Map methods
 void initMap() {
@@ -491,22 +491,24 @@ void attack(struct Unit *attacker, struct Unit *defender) {
     if (attacker->health >= 128) {attacker->health = 0;}
     if (attacker->health == 0) {
       m.board[m.boardWidth*attacker->y+attacker->x].occupying = NULL;
-	  POKE(0x9F20,(attacker->x /*- m.left_view*/) * 2);
-	  POKE(0x9F21,attacker->y /*- m.top_view*/ + 0x40);
-	  __asm__ ("lda #0");
-	  __asm__ ("sta $9F22");
-	  __asm__ ("lda #28");
-	  __asm__ ("sta $9F23");
+      POKE(0x9F20,(attacker->x /*- m.left_view*/) * 2);
+      POKE(0x9F21,attacker->y /*- m.top_view*/ + 0x40);
+      __asm__ ("lda #0");
+      __asm__ ("sta $9F22");
+      __asm__ ("lda #28");
+      __asm__ ("sta $9F23");
       free(attacker);
+      ++unitsdeadthisturn;
     }
   } else {
     m.board[m.boardWidth*defender->y+defender->x].occupying = NULL;
-	POKE(0x9F20,(defender->x /*- m.left_view*/) * 2);
-	POKE(0x9F21,defender->y /*- m.top_view*/ + 0x40);
-	__asm__ ("lda #0");
-	__asm__ ("sta $9F22");
-	__asm__ ("lda #28");
-	__asm__ ("sta $9F23");
+    POKE(0x9F20,(defender->x /*- m.left_view*/) * 2);
+    POKE(0x9F21,defender->y /*- m.top_view*/ + 0x40);
+    __asm__ ("lda #0");
+    __asm__ ("sta $9F22");
+    __asm__ ("lda #28");
+    __asm__ ("sta $9F23");
+    ++unitsdeadthisturn;
     free(defender);
   }
 }
