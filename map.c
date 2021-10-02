@@ -135,6 +135,13 @@ void renderMap() {
       POKE(0x9F23,0x08);
     }
   }
+  // Clear sprites for dead units 
+  POKEW(0x9F20,PEEKW(0x9F20)+6);
+  POKE(0x9F22,0x41); //set autoincrement to 8 bytes
+  for (i = 0; i < unitsdeadthisturn; ++i) {
+	POKE(0x9F23,0);	
+  }
+  
   renderCursor(1);
   if (menuOptions.length != 0) {
     POKE(0x9F20,0x06);

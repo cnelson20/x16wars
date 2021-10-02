@@ -103,20 +103,6 @@ void setup() {
 	POKE(0x9F20,0x00);
 	POKE(0x9F21,0x80);
 	POKE(0x9F22,0x10);
-	__asm__ ("lda #$FF"); // file #
-	__asm__ ("ldx #$08"); // device no #8 (sd card / disk drive)
-	__asm__ ("ldy #$FF"); // needs to be here 
-	__asm__ ("jsr $FFBA");
-	
-	__asm__ ("lda #$05"); // filename length 7 "red.chr"
-	__asm__ ("ldx #<%v",text_red);
-	__asm__ ("ldy #>%v",text_red);
-	__asm__ ("jsr $FFBD"); // SETNAM
-	
-	__asm__ ("lda #$00"); // load 
-	__asm__ ("ldx #<%v",redgraphics);
-	__asm__ ("ldy #>%v",redgraphics);
-	__asm__ ("jsr $FFD5"); // load
 	for (i = 0; i < 4096; ++i) {
 		POKE(0x9F23,redgraphics[i]);
 	}			
