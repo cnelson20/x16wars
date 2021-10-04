@@ -337,25 +337,25 @@ void keyPressed() {
 			//Move cursor around
 			/* W */ if (keyCode == 0x57) {
 				if (c.y == 0) {
-					if (m.top_view > 0) {--m.top_view;}
+					if (m.top_view > 0 && m.top_view == c.y) {--m.top_view;}
 				} else {
 					--c.y;
 				}
 			}	/* A */ else if (keyCode == 0x41) {
 				if (c.x == 0) {
-					if (m.left_view > 0) {--m.left_view;}
+					if (m.left_view > 0 && m.left_view == c.x) {--m.left_view;}
 				} else {
 					--c.x;
 				}
 			}	/* S */ else if (keyCode == 0x53) {
 				if (c.y >= 9 && c.y || c.y >= m.boardHeight - 1) {
-					if (m.top_view < m.boardHeight - 10) {++m.top_view;}
+					if (m.top_view < m.boardHeight - 10) {if(c.y >= m.top_view + 9){++m.top_view;}}
 				} else {
 					++c.y;
 				}
 			}	/* D */ else if (keyCode == 0x44) {
 				if (c.x >= 14 || c.x >= m.boardWidth) {
-					if (m.left_view < m.boardWidth - 15) {++m.left_view;}
+					if (m.left_view < m.boardWidth - 15) {if (c.x >= m.left_view + 14){++m.left_view;}}
 				} else {
 					++c.x;
 				}
