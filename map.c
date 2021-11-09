@@ -478,20 +478,18 @@ unsigned char damageChart[] = {
 0x00, 0x00, 0x00, 0x00, 0x00, 0x37, 0x05, 0x00, 0x55, 0x41, 0x00, 0x37, 0x55, 0x00, 0x00, 0x19, 0x00, 0x5f,
 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x37, 0x28, 0x00, 0x19, 0x4b, 0x00, 0x00, 0x37, 0x00, 0x32};
 
-//unsigned char canAttack(struct Unit *a, struct Unit *b) {
-//  if (SABS(b->x,a->x) + SABS(b->y,a->y) >= a->attackRangeMin && SABS(b->x,a->x) + SABS(b->y,a->y) <= a->attackRangeMax) {
-//    return damageChart[unitIndexes[b->index] * 18 + unitIndexes[a->index]];
-//  }
-//  return 0;
-//}
+/*unsigned char canAttack(struct Unit *a, struct Unit *b) {
+  if (SABS(b->x,a->x) + SABS(b->y,a->y) >= a->attackRangeMin && SABS(b->x,a->x) + SABS(b->y,a->y) <= a->attackRangeMax) {
+    return damageChart[unitIndexes[b->index] * 18 + unitIndexes[a->index]];
+  }
+  return 0;
+}*/
 #define CANATTACK(a,b) ((SABS(b->x,a->x) + SABS(b->y,a->y) >= a->attackRangeMin && SABS(b->x,a->x) + SABS(b->y,a->y) <= a->attackRangeMax) ? (damageChart[unitIndexes[b->index] * 18 + unitIndexes[a->index]]) : 0)
 
 unsigned char calcPower(struct Unit *a, struct Unit *b) {
-  unsigned char t = canAttack(a,b) * a->health / 100;
-  if (t == 0) {return 0;}
-  if (b->airborne) {return t;}
-  return t ;//- (m.board[c.x+m.boardWidth*c.y].t->defense * t / 10);
+  return CANATTACK(a,b) * a->health / 100;
 }
+
 void attack(struct Unit *attacker, struct Unit *defender) {
   defender->health -= calcPower(attacker,defender);
   if (defender->health >= 128) {defender->health = 0;}

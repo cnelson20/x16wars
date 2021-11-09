@@ -44,8 +44,6 @@ extern unsigned char redgraphics[];
 extern unsigned char greengraphics[];
 extern unsigned char bluegraphics[];
 extern unsigned char yellowgraphics[];
-extern unsigned char tilegraphics[];
-extern unsigned char lettergraphics[];
 extern unsigned char spritegraphics[];
 extern unsigned char customPalette[];
 unsigned char keyCode;
@@ -74,6 +72,7 @@ void main() {
 
 void setup() {
   unsigned short i;
+  unsigned char *load_address = 0x8000;
 
   POKE(0x9F29,0x71);
   __asm__ ("lda #$40");
@@ -126,15 +125,23 @@ void setup() {
     POKE(0x9F23,redgraphics[i]);
   }
 	
-  POKE(0x9F20,0x00);
+  load_address = malloc(8192);
+  cbm_k_setnam("tile.chr");
+  cbm_k_setlfs(0xFF,0x08,0x00);
+  cbm_k_load(0,load_address);
+  POKE(0x9F20,0x02);
   POKE(0x9F21,0xC0);
-  for (i = 0; i < 4096; ++i) {
-    POKE(0x9F23,tilegraphics[i]);
+  for (i = 0; i < 1200; ++i) {
+    POKE(0x9F23,load_address[i]);
   }
-  POKE(0x9F20,0x00);
+  
+  cbm_k_setnam("letter.chr");
+  cbm_k_setlfs(0xFF,0x08,0x00);
+  cbm_k_load(0,load_address);
+  POKE(0x9F20,0x02); // x16 chops off first two bytes (takes it as load address)
   POKE(0x9F21,0xD0);
   for (i = 0; i < 8192; ++i) {
-    POKE(0x9F23,lettergraphics[i]);
+    POKE(0x9F23,load_address[i]);
   }
   POKE(0x9F20,0x00);
   POKE(0x9F21,0x00);
@@ -142,7 +149,8 @@ void setup() {
   for (i = 0; i < 1024; ++i) {
     POKE(0x9F23,spritegraphics[i]);
   }
-
+  
+  free(load_address);
   menuOptions.length = 0;
 
   loadPalette();
