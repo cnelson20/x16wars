@@ -125,11 +125,11 @@ void setup() {
     POKE(0x9F23,redgraphics[i]);
   }
 	
-  load_address = malloc(8192);
+  load_address = malloc(4864); // 128 more than 4,736 (size of letter.c, biggest one)
   cbm_k_setnam("tile.chr");
   cbm_k_setlfs(0xFF,0x08,0x00);
   cbm_k_load(0,load_address);
-  POKE(0x9F20,0x02);
+  POKE(0x9F20,0x00);
   POKE(0x9F21,0xC0);
   for (i = 0; i < 1200; ++i) {
     POKE(0x9F23,load_address[i]);
@@ -138,16 +138,20 @@ void setup() {
   cbm_k_setnam("letter.chr");
   cbm_k_setlfs(0xFF,0x08,0x00);
   cbm_k_load(0,load_address);
-  POKE(0x9F20,0x02); // x16 chops off first two bytes (takes it as load address)
+  POKE(0x9F20,0x00); // x16 chops off first two bytes (takes it as load address), so two padding bytes in file
   POKE(0x9F21,0xD0);
-  for (i = 0; i < 8192; ++i) {
+  for (i = 0; i < 4864; ++i) {
     POKE(0x9F23,load_address[i]);
   }
+  
+  cbm_k_setnam("sprites.chr");
+  cbm_k_setlfs(0xFF,0x08,0x00);
+  cbm_k_load(0,load_address);
   POKE(0x9F20,0x00);
   POKE(0x9F21,0x00);
   POKE(0x9F22,0x11);
-  for (i = 0; i < 1024; ++i) {
-    POKE(0x9F23,spritegraphics[i]);
+  for (i = 0; i < 514; ++i) {
+    POKE(0x9F23,load_address[i]);
   }
   
   free(load_address);
@@ -220,11 +224,32 @@ unsigned char optionStrings[][8] =
 
 unsigned char healthText[] = {0xa7, 0xa4, 0xa0, 0xab, 0xb3, 0xa7, 0x1c};
 
+#define SCREENBYTE(a) (a >= 10 ? 150 + a : 186 + a)
+
 void drawUI() {
   struct Unit *unitPointer;
+  void *test = NULL;
   unsigned char dummy, i;
 
   clearUI();
+  
+  POKE(0x9F21,0x40+13);
+  POKE(0x9F20,0);
+  POKE(0x9F22,0x20);
+  POKE(0x9F23,'m' - 'a' + 160);
+  POKE(0x9F23,28);
+  test = malloc(1);
+  i = ((unsigned short)test >> 12) % 16;
+  POKE(0x9F23,SCREENBYTE(i));
+  i = ((unsigned short)test >> 8) % 16;
+  POKE(0x9F23,SCREENBYTE(i));
+  i = ((unsigned short)test >> 4) % 16;
+  POKE(0x9F23,SCREENBYTE(i));
+  i = (unsigned short)test % 16;
+  POKE(0x9F23,SCREENBYTE(i));
+  
+  free(test);  
+  
   unitPointer = m.board[c.y*m.boardWidth+c.x].occupying;
   if (unitPointer == NULL) {
     unitPointer = c.selected;
