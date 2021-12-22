@@ -72,7 +72,7 @@ void main() {
 
 void setup() {
   unsigned short i;
-  unsigned char *load_address = 0x8000;
+  unsigned char *load_address;
 
   POKE(0x9F29,0x71);
   __asm__ ("lda #$40");
@@ -128,7 +128,7 @@ void setup() {
   load_address = malloc(4864); // 128 more than 4,736 (size of letter.c, biggest one)
   cbm_k_setnam("tile.chr");
   cbm_k_setlfs(0xFF,0x08,0x00);
-  cbm_k_load(0,load_address);
+  cbm_k_load(0,(unsigned short)load_address);
   POKE(0x9F20,0x00);
   POKE(0x9F21,0xC0);
   for (i = 0; i < 1200; ++i) {
@@ -137,7 +137,7 @@ void setup() {
   
   cbm_k_setnam("letter.chr");
   cbm_k_setlfs(0xFF,0x08,0x00);
-  cbm_k_load(0,load_address);
+  cbm_k_load(0,(unsigned short)load_address);
   POKE(0x9F20,0x00); // x16 chops off first two bytes (takes it as load address), so two padding bytes in file
   POKE(0x9F21,0xD0);
   for (i = 0; i < 4864; ++i) {
@@ -146,7 +146,7 @@ void setup() {
   
   cbm_k_setnam("sprites.chr");
   cbm_k_setlfs(0xFF,0x08,0x00);
-  cbm_k_load(0,load_address);
+  cbm_k_load(0,(unsigned short)load_address);
   POKE(0x9F20,0x00);
   POKE(0x9F21,0x00);
   POKE(0x9F22,0x11);
@@ -320,129 +320,133 @@ extern unsigned char unitLastY;
 
 void keyPressed() {
   if (menuOptions.length != 0) {
-    /* W */ if (keyCode == 0x57) {
+    if (keyCode == 0x57) /* W */ {
       if (menuOptions.selected != 0) {menuOptions.selected--;}
-    }	/* S */ else if (keyCode == 0x53) {
+    } else if (keyCode == 0x53)	/* S */ {
       if (menuOptions.selected < menuOptions.length - 1) {menuOptions.selected++;}
-    }	/* U */ else if (keyCode == 0x55) {
+    } else if (keyCode == 0x55) /* U */ {
       menuOptions.length = 0;
-    }	/* I */ else if (keyCode == 0x49) {
+    } else if (keyCode == 0x49) /* I */ {
       switch (menuOptions.options[menuOptions.selected]) {
       case OPTION_END:
-	menuOptions.length = 0;
-	nextTurn();
-	break;
+		menuOptions.length = 0;
+		nextTurn();
+		break;
       default:
-	break;
+		break;
       }
     }
   } else {
     if (pA != NULL) {
       //Switch between attack targets.
       if (keyCode == 0x41) /* A */ {
-	selIndex = (selIndex == 0) ? pA->length - 1 : selIndex - 1;
-	attackCursor.selected = pA->attacks[selIndex];
-	attackCursor.x = attackCursor.selected->x;
-	attackCursor.y = attackCursor.selected->y;
-      } else if (keyCode == 0x44) /* D */ {
-	++selIndex;
-	if (selIndex >= pA->length) {selIndex = 0;}
-	attackCursor.selected = pA->attacks[selIndex];
-	attackCursor.x = attackCursor.selected->x;
-	attackCursor.y = attackCursor.selected->y;
-      } else if (keyCode == 0x55) /* U */ {
-	undoMove(c.selected);
-	c.selected->takenAction = 0;
-	free(pA);
-	pA = NULL;
-      } else if (keyCode = 0x49) /* I */ {
-	switch (actionNo) {
-	case 0:
-	  attack(c.selected,attackCursor.selected);
-	  unitLastX = 255;
-	  unitLastY = 255;
-	  c.selected->takenAction = 1;
-	  c.selected = NULL;
-	  free(pA);
-	  pA = NULL;
-	  break;
-	}
-      }
-    } else {
-      //Move cursor around
-      /* W */ if (keyCode == 0x57) {
-	if (c.y == 0) {
-	  if (m.top_view > 0 && m.top_view == c.y) {--m.top_view;}
-	} else {
-	  --c.y;
-	}
-      }	/* A */ else if (keyCode == 0x41) {
-	if (c.x == 0) {
-	  if (m.left_view > 0 && m.left_view == c.x) {--m.left_view;}
-	} else {
-	  --c.x;
-	}
-      }	/* S */ else if (keyCode == 0x53) {
-	if (c.y >= 9 && c.y || c.y >= m.boardHeight - 1) {
-	  if (m.top_view < m.boardHeight - 10) {if(c.y >= m.top_view + 9){++m.top_view;}}
-	} else {
-	  ++c.y;
-	}
-      }	/* D */ else if (keyCode == 0x44) {
-	if (c.x >= 14 || c.x >= m.boardWidth) {
-	  if (m.left_view < m.boardWidth - 15) {if (c.x >= m.left_view + 14){++m.left_view;}}
-	} else {
-	  ++c.x;
-	}
-      }	/* U */ else if (keyCode == 0x55) {
-	if (c.selected != 0) {
-	  if (unitLastX == 255) {
-	    c.selected = 0;
-	    c.x = c.storex;
-	    c.storex = -1;
-	    c.y = c.storey;
-	    c.storey = -1;
-	  } else {
-	    undoMove(c.selected);
-	  }
-	}
-      }	/* I */ else if (keyCode == 0x49) {
-	if (c.selected == 0) {
-	  c.selected = m.board[c.x+m.boardWidth*c.y].occupying;
-	  if (c.selected == 0) {
-	    menuOptions.length = 1;
-	    menuOptions.options[0] = OPTION_END;
-	  } else {
-	    c.storex = c.x;
-	    c.storey = c.y;
-	  }
-	} else {
-	  if (unitLastX == 255) {
-	    if (c.selected->team == m.whoseTurn && !c.selected->takenAction && move(c.selected,c.x,c.y)) {
-	      pA = malloc(sizeof(struct possibleAttacks));
-	      getPossibleAttacks(pA,c.x,c.y);
-	      if (pA->length == 0) {
-		unitLastX = 255;
-		unitLastY = 255;
-		c.selected->takenAction = 1;
-		c.selected = NULL;
-		free(pA);
-		pA = NULL;
-	      } else {
-		actionNo = 0; // ATTACK
-		selIndex = 0;
+		selIndex = (selIndex == 0) ? pA->length - 1 : selIndex - 1;
 		attackCursor.selected = pA->attacks[selIndex];
 		attackCursor.x = attackCursor.selected->x;
 		attackCursor.y = attackCursor.selected->y;
-	      }
-	    }
-	  } else {
-	    // Do attack action
-	  }
-	}
+      } else if (keyCode == 0x44) /* D */ {
+		++selIndex;
+		if (selIndex >= pA->length) {selIndex = 0;}
+		attackCursor.selected = pA->attacks[selIndex];
+		attackCursor.x = attackCursor.selected->x;
+		attackCursor.y = attackCursor.selected->y;
+      } else if (keyCode == 0x55) /* U */ {
+		undoMove(c.selected);
+		c.selected->takenAction = 0;
+		free(pA);
+		pA = NULL;
+      } else if (keyCode = 0x49) /* I */ {
+		switch (actionNo) {
+		case 0:
+			attack(c.selected,attackCursor.selected); // x > 1 attack breaks before here
+			unitLastX = 255;
+			unitLastY = 255;
+			c.selected->takenAction = 1;
+			c.selected = NULL;
+			free(pA);
+			pA = NULL;
+			break;
+		}
+      }
+    } else {
+      //Move cursor around
+      if (keyCode == 0x57) /* W */ {
+		if (c.y == 0) {
+		  if (m.top_view > 0 && m.top_view == c.y) {--m.top_view;}
+		  } else {
+			--c.y;
+		  }
+		} /* A */ else if (keyCode == 0x41) {
+		  if (c.x == 0) {
+			if (m.left_view > 0 && m.left_view == c.x) {--m.left_view;}
+		  } else {
+			--c.x;
+		  }
+		} /* S */ else if (keyCode == 0x53) {
+		  if (c.y >= 9 && c.y || c.y >= m.boardHeight - 1) {
+			if (m.top_view < m.boardHeight - 10) {if(c.y >= m.top_view + 9){++m.top_view;}}
+		  } else {
+			++c.y;
+		  }
+		} /* D */ else if (keyCode == 0x44) {
+		  if (c.x >= 14 || c.x >= m.boardWidth) {
+			if (m.left_view < m.boardWidth - 15) {if (c.x >= m.left_view + 14){++m.left_view;}}
+		  } else {
+			++c.x;
+		  }
+		} /* U */ else if (keyCode == 0x55) {
+		  if (c.selected != 0) {
+			if (unitLastX == 255) {
+			  c.selected = 0;
+			  c.x = c.storex;
+			  c.storex = -1;
+			  c.y = c.storey;
+			  c.storey = -1;
+			} else {
+			  undoMove(c.selected);
+			}
+		  }
+		} /* I */ else if (keyCode == 0x49) {
+		  if (c.selected == 0) {
+			c.selected = m.board[c.x+m.boardWidth*c.y].occupying;
+			if (c.selected == 0) {
+			  menuOptions.length = 1;
+			  menuOptions.options[0] = OPTION_END;
+			} else {
+			  c.storex = c.x;
+			  c.storey = c.y;
+			}
+		  } else { // crash in this section
+			if (unitLastX == 255) {
+			  if (c.selected->team == m.whoseTurn && !c.selected->takenAction && /* i think move is broken */ move(c.selected,c.x,c.y)) {
+				/* crash is before here */
+				POKE(0x9FB6,0xFF); // makes emu give invalid addr warning
+				// test if code reaches here 
+				
+				pA = malloc(sizeof(struct possibleAttacks));
+				getPossibleAttacks(pA,c.x,c.y);
+				if (pA->length == 0) {
+				  unitLastX = 255;
+				  unitLastY = 255;
+				  c.selected->takenAction = 1;
+				  c.selected = NULL;
+				  free(pA);
+				  pA = NULL;
+				} else {
+				  actionNo = 0; // ATTACK
+				  selIndex = 0;
+				  attackCursor.selected = pA->attacks[selIndex];
+				  attackCursor.x = attackCursor.selected->x;
+				  attackCursor.y = attackCursor.selected->y;
+				}
+			  }
+			} else {
+			  // Do attack action
+			}
+		  } 
+        }
       }
     }
-  }
   return;
 }
 
