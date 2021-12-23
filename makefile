@@ -4,7 +4,7 @@ REPO_LOCATION = /cygdrive/c/Users/cjnel/Desktop/x16wars/
 
 all: wars.prg
 
-wars.prg: map.c main.c unitgraphics.c tilegraphics.c spritegraphics.c palette.c
+wars.prg: main.c main.h map.c map.h spritegraphics.c palette.c
 	$(CC) -o wars.prg -t cx16 map.c main.c unitgraphics.c spritegraphics.c palette.c
 
 copy:
