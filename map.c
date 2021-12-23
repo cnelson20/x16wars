@@ -1,21 +1,10 @@
 #include <stdlib.h>
 #include <peekpoke.h>
-#include "structs.h"
+
 #define SABS(a,b) ((a > b) ? (a - b) : (b - a))
 
-// Method list //
-void initMap();
-void initMapData(char data[]);
-void renderMap();
-void initCursor();
-void renderCursor(unsigned char incFrame);
-void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsigned char index, unsigned char team);
-void newTurnUnit(struct Unit *u, unsigned short i);
-void renderUnit(struct Unit *u);
-void initTile(struct Tile *t, unsigned char index);
-void initTerrain(struct Terrain *t, unsigned char index);
-void nextTurn();
-
+#include "structs.h"
+#include "map.h"
 
 // Variables
 extern struct Map m;
@@ -403,27 +392,29 @@ void renderUnit(struct Unit *u) {
 unsigned char maxSteps;
 struct Unit *checkU;
 struct Tile tempT;
+// this crashes program if x != 0 or (x == 0 && y == 0)
 unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned char steps) {
-  if (tx > m.boardWidth || ty > m.boardHeight) {return false;}
+  //POKE(0x9FB6+steps,0xFF); // test address 
+  if (tx >= m.boardWidth || ty >= m.boardHeight) {return false;}
   if (tx == checkU->x && ty == checkU->y) {return true;}
   tempT = m.board[ty*m.boardWidth+tx];
-  if (!checkU->airborne) {
+  if (checkU->airborne) {
+	++steps;
+  } else {
     if (tempT.occupying != NULL && tempT.t->mvmtCosts[checkU->mvmtType] == 0) {return false;}
     steps += tempT.t->mvmtCosts[checkU->mvmtType];
-    if (tempT.t->mvmtCosts[checkU->mvmtType] > 1 && steps >= maxSteps) {steps--;}
-  } else {
-    steps++;
   }
   if (steps > maxSteps) {return false;}
   /* recursive calls */
-  return checkSpaceInMvmtRange(tx+1,ty,steps) || checkSpaceInMvmtRange(tx-1,ty,steps) || checkSpaceInMvmtRange(tx,ty-1,steps) || checkSpaceInMvmtRange(tx,ty+1,steps);
+  return checkSpaceInMvmtRange(tx+1,ty,steps) || (tx > 0 && checkSpaceInMvmtRange(tx-1,ty,steps)) || (ty > 0 && checkSpaceInMvmtRange(tx,ty-1,steps)) || checkSpaceInMvmtRange(tx,ty+1,steps);
 }
 
 unsigned char unitLastX = 255;
 unsigned char unitLastY = 255;
+
 unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
   if ((u->x != x || u->y != y) && !u->takenAction && m.board[y*m.boardWidth+x].occupying == NULL && x < m.boardWidth && y < m.boardHeight) {
-    maxSteps = u->mvmtRange;
+	maxSteps = u->mvmtRange;
     checkU = u;
     if (checkSpaceInMvmtRange(x,y,0)) {
       checkU = NULL;
@@ -498,8 +489,8 @@ void attack(struct Unit *attacker, struct Unit *defender) {
     if (attacker->health >= 128) {attacker->health = 0;}
     if (attacker->health == 0) {
       m.board[m.boardWidth*attacker->y+attacker->x].occupying = NULL;
-      POKE(0x9F20,(attacker->x /*- m.left_view*/) * 2);
-      POKE(0x9F21,attacker->y /*- m.top_view*/ + 0x40);
+      POKE(0x9F20,(attacker->x - m.left_view) * 2);
+      POKE(0x9F21, attacker->y - m.top_view + 0x40);
       __asm__ ("lda #0");
       __asm__ ("sta $9F22");
       __asm__ ("lda #28");

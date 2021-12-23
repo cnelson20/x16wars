@@ -1,29 +1,13 @@
 #include <stdlib.h>
 #include <cbm.h>
 #include <peekpoke.h>
+
 #include "structs.h"
+#include "main.h"
+#include "map.h"
 
-// functions //
-void main();
-void setup();
-void loadGraphics();
-void draw();
-void drawUI();
-void clearUI();
-void keyPressed();
-void initMapData(char data[]);
-void initCursor();
-void renderCursor();
-void renderMap();
-unsigned char move(struct Unit *u, unsigned char x, unsigned char y);
-void undoMove(struct Unit *u);
-void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned char cy);
-void attack(struct Unit *attacker, struct Unit *defender);
-void clearScreen();
-void loadPalette();
-void nextTurn();
 
-// global variables //
+/* global variables */
 char testMap[] = {19,6,0,0,2,255,0,3,3,1,2,3,255,
 		  7,7,1,1,1,1,6,5,6,1,6,5,6,1,1,1,1,7,7,
 		  7,5,6,1,1,1,5,5,5,1,5,5,5,1,1,1,6,5,7,
@@ -32,13 +16,6 @@ char testMap[] = {19,6,0,0,2,255,0,3,3,1,2,3,255,
 		  5,4,7,1,1,1,1,1,1,1,1,1,1,1,1,1,7,4,5,
 		  5,5,6,5,5,5,5,6,5,5,5,6,5,5,5,5,6,5,5,
 };
-/*char testMap[] = {5,5,0,1,2,255,0,3,3,1,2,3,255,
-  3,3,3,3,3,
-  2,4,4,5,2,
-  2,5,5,6,2,
-  2,5,6,6,2,
-  3,3,3,3,3,
-  };*/
 
 extern unsigned char redgraphics[];
 extern unsigned char greengraphics[];
@@ -236,7 +213,7 @@ void drawUI() {
   POKE(0x9F21,0x40+13);
   POKE(0x9F20,0);
   POKE(0x9F22,0x20);
-  POKE(0x9F23,'m' - 'a' + 160);
+  POKE(0x9F23,172/* 'M' - 'A' + 160 */);
   POKE(0x9F23,28);
   test = malloc(1);
   i = ((unsigned short)test >> 12) % 16;
@@ -249,6 +226,15 @@ void drawUI() {
   POKE(0x9F23,SCREENBYTE(i));
   
   free(test);  
+  
+  POKE(0x9F20,16*2);
+  POKE(0x9F21,0x41);
+  POKE(0x9F22,0x10);
+	
+  POKE(0x9F23,179 /* 'T' - 'A' + 160 */);
+  POKE(0x9F23,0x80);
+  POKE(0x9F23,0x03+(m.whoseTurn << 5));
+  POKE(0x9F23,m.whoseTurn << 4);
   
   unitPointer = m.board[c.y*m.boardWidth+c.x].occupying;
   if (unitPointer == NULL) {
@@ -266,7 +252,7 @@ void drawUI() {
       POKE(0x9F20,2);
       POKE(0x9F23,menuOptions.selected == dummy ? 196 : 28);
       for (i = 0; optionStrings[menuOptions.options[dummy]][i] != 0; i++) {
-	POKE(0x9F23,optionStrings[menuOptions.options[dummy]][i]);
+		POKE(0x9F23,optionStrings[menuOptions.options[dummy]][i]);
       }
       __asm__ ("inc $9F21");
     }
@@ -407,22 +393,19 @@ void keyPressed() {
 			}
 		  }
 		} /* I */ else if (keyCode == 0x49) {
-		  if (c.selected == 0) {
+		  if (c.selected == NULL) {
 			c.selected = m.board[c.x+m.boardWidth*c.y].occupying;
-			if (c.selected == 0) {
+			if (c.selected == NULL) {
 			  menuOptions.length = 1;
 			  menuOptions.options[0] = OPTION_END;
 			} else {
 			  c.storex = c.x;
 			  c.storey = c.y;
 			}
-		  } else { // crash in this section
+		  } else {
 			if (unitLastX == 255) {
-			  if (c.selected->team == m.whoseTurn && !c.selected->takenAction && /* i think move is broken */ move(c.selected,c.x,c.y)) {
-				/* crash is before here */
-				POKE(0x9FB6,0xFF); // makes emu give invalid addr warning
-				// test if code reaches here 
-				
+			  // move is broken (working on it)
+			  if (c.selected->team == m.whoseTurn && !c.selected->takenAction && move(c.selected,c.x,c.y)) {
 				pA = malloc(sizeof(struct possibleAttacks));
 				getPossibleAttacks(pA,c.x,c.y);
 				if (pA->length == 0) {
