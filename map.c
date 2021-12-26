@@ -74,8 +74,8 @@ void renderMap() {
   unsigned char x,y;
   unsigned short i, temp;
   unsigned char units_exist[4];
-  units_exist[0] = 0; units_exist[1] = 0; 
-  units_exist[2] = 0; units_exist[3] = 0;
+  units_exist[player1team] = 0; 
+  units_exist[player2team] = 0;
   
   remove_old = 1;
   for (i = 0; i < m.boardArea; ++i) {
