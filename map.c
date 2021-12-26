@@ -1,7 +1,10 @@
 #include <stdlib.h>
+#include <cbm.h>
 #include <peekpoke.h>
 
 #define SABS(a,b) ((a > b) ? (a - b) : (b - a))
+#define SHRTCIRCUIT_AND(a,b) ((a) ? (b) : 0)
+#define SHRTCIRCUIT_OR(a,b) ((a) ? 1 : (b))
 
 #include "structs.h"
 #include "map.h"
@@ -23,7 +26,6 @@ void initMap() {
   m.whoseTurn = player1team;
   turncounter = 0;
 
-  //m = malloc(sizeof(struct Map));
   m.top_view = 0;
   m.left_view = 0;
   m.whoseTurn = player1team;
@@ -72,7 +74,13 @@ void renderMap() {
   unsigned short i;
   unsigned char x,y;
   unsigned short temp;
-
+  unsigned char units_exist[4]; 
+  
+  units_exist[0] = 0;
+  units_exist[1] = 0;
+  units_exist[2] = 0;
+  units_exist[3] = 0;
+  
   POKE(0x9F30,m.left_view << 4);
   POKE(0x9F37,PEEK(0x9F30));
   POKE(0x9F31,m.left_view >> 4);
@@ -92,6 +100,7 @@ void renderMap() {
     POKE(0x9F23,m.board[i].t->tileIndex);
     POKE(0x9F23,m.board[i].t->paletteOffset);
     if (m.board[i].occupying != NULL) {
+	  units_exist[m.board[i].occupying->team] = 1;
       renderUnit(m.board[i].occupying);
       POKE(0x9F20,(x+1)*2);
       POKE(0x9F21,y);
@@ -107,6 +116,16 @@ void renderMap() {
       POKE(0x9F20,0);
     }
   }
+  if (units_exist[player2team] == 0) {
+	//player 1 wins
+	//POKE(0x9FB6,0xFF);
+	win(player1team);
+  } else if (units_exist[player1team] == 0) {
+	//player 2 wins 
+	//POKE(0x9FB6,0xFF);
+	win(player2team);
+  }
+ 
   POKE(0x9F20,0x04*8);
   POKE(0x9F21,0xFC);
   POKE(0x9F22,0x11);
@@ -141,6 +160,37 @@ void renderMap() {
     POKE(0x9F23,0);
     POKE(0x9F23,0);
   }
+}
+unsigned char colorstrings[4][7] = 
+  {{0xb1, 0xa4, 0xa3, 0, 0, 0, 0},
+   {0xa6, 0xb1, 0xa4, 0xa4, 0xad, 0, 0},
+   {0xa1, 0xab, 0xb4, 0xa4, 0, 0, 0},
+   {0xb8, 0xa4, 0xab, 0xab, 0xae, 0xb6, 0}};
+unsigned char colorstringlengths[4] = {3,5,4,6};
+void win(unsigned char team) {
+	unsigned char i;
+	
+	POKE(0x9F20,(7 -  (colorstringlengths[team] >> 1)) << 1);
+	POKE(0x9F21,0x44);
+	POKE(0x9F22,0x10);
+	for (i = 0; i < colorstringlengths[team]; ++i) {
+		POKE(0x9F23,colorstrings[team][i]);
+		POKE(0x9F23,0x80);
+	}
+	POKE(0x9F20,10);
+	POKE(0x9F21,0x45);
+
+	POKE(0x9F23,0xb6); // w
+	POKE(0x9F23,0x80);
+	POKE(0x9F23,0xa8); // i
+	POKE(0x9F23,0x80);
+	POKE(0x9F23,0xad); // n 
+	POKE(0x9F23,0x80);
+	POKE(0x9F23,0xb2); // s
+	POKE(0x9F23,0x80);
+	while(1) {
+		waitvsync();
+	}
 }
 
 void nextTurn() {
@@ -354,7 +404,7 @@ void renderCursor(unsigned char incFrame) {
     POKE(0x9F23,12);
     POKE(0x9F23,0x58);
   }
-  if (incFrame) {c.frame = (c.frame+1)%32;}
+  if (incFrame) {c.frame = (c.frame+1)&0x1F;}
 }
 
 //Unit methods
@@ -392,21 +442,27 @@ void renderUnit(struct Unit *u) {
 unsigned char maxSteps;
 struct Unit *checkU;
 struct Tile tempT;
-// this crashes program if x != 0 or (x == 0 && y == 0)
+
+// Units are jesus
 unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned char steps) {
-  //POKE(0x9FB6+steps,0xFF); // test address 
   if (tx >= m.boardWidth || ty >= m.boardHeight) {return false;}
   if (tx == checkU->x && ty == checkU->y) {return true;}
   tempT = m.board[ty*m.boardWidth+tx];
   if (checkU->airborne) {
 	++steps;
   } else {
-    if (tempT.occupying != NULL && tempT.t->mvmtCosts[checkU->mvmtType] == 0) {return false;}
+    if (/* i dont think this did anything tempT.occupying != NULL && */tempT.t->mvmtCosts[checkU->mvmtType] == 0) {return false;}
     steps += tempT.t->mvmtCosts[checkU->mvmtType];
+	if (tempT.t->mvmtCosts[checkU->mvmtType] >= 2 && steps > maxSteps) {
+		--steps;
+	}
   }
   if (steps > maxSteps) {return false;}
+  
   /* recursive calls */
-  return checkSpaceInMvmtRange(tx+1,ty,steps) || (tx > 0 && checkSpaceInMvmtRange(tx-1,ty,steps)) || (ty > 0 && checkSpaceInMvmtRange(tx,ty-1,steps)) || checkSpaceInMvmtRange(tx,ty+1,steps);
+  if (SHRTCIRCUIT_AND(tx != 0,checkSpaceInMvmtRange(tx-1,ty,steps))) {return true;}
+  if (SHRTCIRCUIT_AND(ty != 0,checkSpaceInMvmtRange(tx,ty-1,steps))) {return true;}
+  return checkSpaceInMvmtRange(tx+1,ty,steps) || checkSpaceInMvmtRange(tx,ty+1,steps);
 }
 
 unsigned char unitLastX = 255;

@@ -18,10 +18,11 @@ char testMap[] = {19,6,0,0,2,255,0,3,3,1,2,3,255,
 };
 
 extern unsigned char redgraphics[];
+/* Using copies of red to save space 
 extern unsigned char greengraphics[];
 extern unsigned char bluegraphics[];
 extern unsigned char yellowgraphics[];
-extern unsigned char spritegraphics[];
+*/
 extern unsigned char customPalette[];
 unsigned char keyCode;
 struct Map m;
@@ -81,25 +82,25 @@ void setup() {
   POKE(0x9F21,0x80);
   POKE(0x9F22,0x10);
   for (i = 0; i < 4096; ++i) {
-    POKE(0x9F23,redgraphics[i]);
+    POKE(0x9F23,redgraphics[i]); // Red units 
   }			
 	
   POKE(0x9F20,0x00);
-  POKE(0x9F21,0x90); // 0x80 + 0x20/2
+  POKE(0x9F21,0x90);
   for (i = 0; i < 4096; ++i) {
-    POKE(0x9F23,redgraphics[i]);
+    POKE(0x9F23,redgraphics[i]); // Green units
   }		
 
   POKE(0x9F20,0x00);
   POKE(0x9F21,0xA0);
   for (i = 0; i < 4096; ++i) {
-    POKE(0x9F23,redgraphics[i]);
+    POKE(0x9F23,redgraphics[i]); // Blue Units 
   }
 	
   POKE(0x9F20,0x00);
   POKE(0x9F21,0xB0);
   for (i = 0; i < 4096; ++i) {
-    POKE(0x9F23,redgraphics[i]);
+    POKE(0x9F23,redgraphics[i]); // Yellow units
   }
 	
   load_address = malloc(4864); // 128 more than 4,736 (size of letter.c, biggest one)
