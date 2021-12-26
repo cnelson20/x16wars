@@ -18,6 +18,7 @@ unsigned char player1team;
 unsigned char player2team;
 unsigned short turncounter;
 unsigned char unitsdeadthisturn = 0;
+unsigned char remove_old = 0;
 
 // Map methods
 void initMap() {
@@ -27,7 +28,9 @@ void initMap() {
   turncounter = 0;
 
   m.top_view = 0;
+  m.oldtop_view = 0;
   m.left_view = 0;
+  m.oldleft_view = 0;
   m.whoseTurn = player1team;
   m.boardWidth = 3;
   m.boardHeight = 3;
@@ -68,64 +71,54 @@ void initMapData(char data[]) {
 
 extern struct Menu menuOptions;
 void renderMap() {
-  unsigned char j = m.left_view + m.top_view * m.boardWidth;
-  unsigned char maxX = m.boardWidth + m.left_view;
-  unsigned char maxY = m.boardHeight + m.top_view;
-  unsigned short i;
   unsigned char x,y;
-  unsigned short temp;
-  unsigned char units_exist[4]; 
+  unsigned short i, temp;
+  unsigned char units_exist[4];
+  units_exist[0] = 0; units_exist[1] = 0; 
+  units_exist[2] = 0; units_exist[3] = 0;
   
-  units_exist[0] = 0;
-  units_exist[1] = 0;
-  units_exist[2] = 0;
-  units_exist[3] = 0;
+  remove_old = 1;
+  for (i = 0; i < m.boardArea; ++i) {
+    if (m.board[i].occupying != NULL) {
+      renderUnit(m.board[i].occupying);
+	  units_exist[m.board[i].occupying->team] = 1;
+    }
+  }
   
-  POKE(0x9F30,m.left_view << 4);
-  POKE(0x9F37,PEEK(0x9F30));
-  POKE(0x9F31,m.left_view >> 4);
-  POKE(0x9F38,PEEK(0x9F31));
-  POKE(0x9F30,m.top_view << 4);
-  POKE(0x9F37,PEEK(0x9F32));
-  POKE(0x9F33,m.top_view >> 4);
-  POKE(0x9F3A,PEEK(0x9F33));
-  x = m.left_view;
-  y = m.top_view;
-  __asm__ ("lda #0");
-  __asm__ ("sta $9F20");
-  __asm__ ("sta $9F21");
-  __asm__ ("lda #$10");
-  __asm__ ("sta $9F22");
-  for (i = j--; y < maxY; ++i) {
+  if (units_exist[player2team] == 0) {
+	//player 1 wins
+	win(player1team);
+  } else if (units_exist[player1team] == 0) {
+	//player 2 wins 
+	win(player2team);
+  }
+  
+  x = 0;
+  y = 0;
+  POKE(0x9F20,0x00);
+  POKE(0x9F21,0x00);
+  POKE(0x9F22,0x10);
+  remove_old = 0;
+  for (i = m.top_view * m.boardWidth + m.left_view; y < 10; ++i) {
     POKE(0x9F23,m.board[i].t->tileIndex);
     POKE(0x9F23,m.board[i].t->paletteOffset);
     if (m.board[i].occupying != NULL) {
-	  units_exist[m.board[i].occupying->team] = 1;
       renderUnit(m.board[i].occupying);
       POKE(0x9F20,(x+1)*2);
       POKE(0x9F21,y);
       POKE(0x9F22,0x10);
     }
     ++x;
-    if (x >= maxX || x >= 15) {
-      y++;
-      x = m.left_view;
-      j += m.boardWidth;
-      i = j;
+    if (x >= 15) {
+	  i += m.boardWidth - 15;	
+		
+      ++y;
       __asm__ ("inc $9F21");
-      POKE(0x9F20,0);
+	  x = 0;
+	  POKE(0x9F20,0);
     }
   }
-  if (units_exist[player2team] == 0) {
-	//player 1 wins
-	//POKE(0x9FB6,0xFF);
-	win(player1team);
-  } else if (units_exist[player1team] == 0) {
-	//player 2 wins 
-	//POKE(0x9FB6,0xFF);
-	win(player2team);
-  }
- 
+  
   POKE(0x9F20,0x04*8);
   POKE(0x9F21,0xFC);
   POKE(0x9F22,0x11);
@@ -433,11 +426,19 @@ void newTurnUnit(struct Unit *u, unsigned short i) {
 }
 
 void renderUnit(struct Unit *u) {
-  POKE(0x9F20,u->x*2);
-  POKE(0x9F21,u->y+0x40);
   POKE(0x9F22,0x10);
-  POKE(0x9F23,(u->team << 5)+u->index);
-  POKE(0x9F23,(u->takenAction ? 0x90 : 0x00) + (u->team << 4)+ ((u->team != player1team) << 2));
+  if (remove_old) {
+	if (m.oldleft_view != m.left_view || m.oldtop_view != m.top_view) {
+	POKE(0x9F20,(u->x - m.oldleft_view) << 1);
+	POKE(0x9F21,u->y - m.oldtop_view +0x40);
+	POKE(0x9F23,28);
+	}
+  } else {
+	POKE(0x9F20,(u->x - m.left_view) << 1);
+	POKE(0x9F21,u->y - m.top_view +0x40);
+	POKE(0x9F23,(u->team << 5)+u->index);
+	POKE(0x9F23,(u->takenAction ? 0x90 : 0x00) + (u->team << 4)+ ((u->team != player1team) << 2));
+  }
 }
 unsigned char maxSteps;
 struct Unit *checkU;

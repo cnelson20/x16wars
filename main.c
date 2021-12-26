@@ -8,13 +8,19 @@
 
 
 /* global variables */
-char testMap[] = {19,6,0,0,2,255,0,3,3,1,2,3,255,
-		  7,7,1,1,1,1,6,5,6,1,6,5,6,1,1,1,1,7,7,
-		  7,5,6,1,1,1,5,5,5,1,5,5,5,1,1,1,6,5,7,
-		  7,5,6,1,1,1,6,5,7,1,7,5,6,1,1,1,6,5,7,
-		  4,5,5,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,4,
-		  5,4,7,1,1,1,1,1,1,1,1,1,1,1,1,1,7,4,5,
-		  5,5,6,5,5,5,5,6,5,5,5,6,5,5,5,5,6,5,5,
+char testMap[] = {19,12,0,0,2,255,0,3,3,1,2,3,255,
+  7,7,1,1,1,1,6,5,6,1,6,5,6,1,1,1,1,7,7,
+  7,5,6,1,1,1,5,5,5,1,5,5,5,1,1,1,6,5,7,
+  7,5,6,1,1,1,6,5,7,1,7,5,6,1,1,1,6,5,7,
+  4,5,5,1,1,1,1,1,1,1,1,1,1,1,1,1,5,5,4,
+  5,4,7,1,1,1,1,1,1,1,1,1,1,1,1,1,7,4,5,
+  5,5,6,5,5,5,5,6,5,5,5,6,5,5,5,5,6,5,5,
+  3,3,3,3,3,3,6,4,6,3,6,4,6,3,3,3,3,3,3,
+  5,2,5,5,1,1,1,1,1,1,1,1,1,1,1,5,5,2,5,
+  7,2,6,5,5,1,1,1,1,1,1,1,1,1,5,5,6,2,7,
+  5,2,5,5,5,6,7,5,6,1,6,5,7,6,5,5,5,2,5,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+  5,6,5,5,6,5,5,4,5,1,5,4,5,5,5,6,5,5,6,
 };
 
 extern unsigned char redgraphics[];
@@ -77,6 +83,13 @@ void setup() {
   POKE(0x9F34,0x62); // default map height & width, 4 bpp tiles
   POKE(0x9F35,0x20); // map based at vram addr 0x8000 (0x40 * 512)
   POKE(0x9F36,0x43); // tile base addr 0x8000
+
+  POKE(0x9F30,0); // Scroll
+  POKE(0x9F37,0);
+  POKE(0x9F31,0);
+  POKE(0x9F38,0);
+  POKE(0x9F33,0);
+  POKE(0x9F3A,0);
 
   POKE(0x9F20,0x00);
   POKE(0x9F21,0x80);
@@ -142,8 +155,6 @@ void setup() {
 }
 
 void draw() {
-  m.top_view = 0;
-  m.left_view = 0;
   renderMap();
   drawUI();
 }
@@ -305,7 +316,10 @@ void clearUI() {
 extern unsigned char unitLastX;
 extern unsigned char unitLastY;
 
-void keyPressed() {
+void keyPressed() {  
+  m.oldtop_view = m.top_view;
+  m.oldleft_view = m.left_view;	
+	
   if (menuOptions.length != 0) {
     if (keyCode == 0x57) /* W */ {
       if (menuOptions.selected != 0) {menuOptions.selected--;}
@@ -356,28 +370,28 @@ void keyPressed() {
 		}
       }
     } else {
-      //Move cursor around
+	  //Move cursor around
       if (keyCode == 0x57) /* W */ {
 		if (c.y == 0) {
-		  if (m.top_view > 0 && m.top_view == c.y) {--m.top_view;}
+			if (m.top_view != 0) { --m.top_view; }
 		  } else {
 			--c.y;
 		  }
 		} /* A */ else if (keyCode == 0x41) {
 		  if (c.x == 0) {
-			if (m.left_view > 0 && m.left_view == c.x) {--m.left_view;}
+			if (m.left_view != 0) { --m.left_view; }				
 		  } else {
 			--c.x;
 		  }
 		} /* S */ else if (keyCode == 0x53) {
-		  if (c.y >= 9 && c.y || c.y >= m.boardHeight - 1) {
-			if (m.top_view < m.boardHeight - 10) {if(c.y >= m.top_view + 9){++m.top_view;}}
+		  if (c.y >= 9) {
+			if (m.boardHeight - m.top_view >= 11 /*10 + 1*/) { ++m.top_view; }
 		  } else {
 			++c.y;
 		  }
 		} /* D */ else if (keyCode == 0x44) {
-		  if (c.x >= 14 || c.x >= m.boardWidth) {
-			if (m.left_view < m.boardWidth - 15) {if (c.x >= m.left_view + 14){++m.left_view;}}
+		  if (c.x >= 14) {
+			if (m.boardWidth - m.left_view >= 16 /*15 + 1*/) { ++m.left_view; }
 		  } else {
 			++c.x;
 		  }
@@ -405,7 +419,6 @@ void keyPressed() {
 			}
 		  } else {
 			if (unitLastX == 255) {
-			  // move is broken (working on it)
 			  if (c.selected->team == m.whoseTurn && !c.selected->takenAction && move(c.selected,c.x,c.y)) {
 				pA = malloc(sizeof(struct possibleAttacks));
 				getPossibleAttacks(pA,c.x,c.y);

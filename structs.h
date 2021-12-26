@@ -56,7 +56,7 @@ typedef struct Cursor {
 };
 
 typedef struct Map {
-  unsigned char top_view, left_view;
+  unsigned char top_view, left_view, oldtop_view, oldleft_view;
   unsigned char whoseTurn;
   unsigned char boardWidth, boardHeight;
   unsigned short boardArea;
