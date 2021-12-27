@@ -395,6 +395,7 @@ void keyPressed() {
 		win(m.whoseTurn == player1team ? player2team : player1team);
 	  case OPTION_QUIT:
 		menuOptions.length = 0;
+		POKE(0x9F25,0x80);
 		__asm__ ("jmp ($FFFC)");
       default:
 		break;
@@ -474,10 +475,9 @@ void keyPressed() {
 		  if (c.selected == NULL) {
 			c.selected = m.board[c.x+m.boardWidth*c.y].occupying;
 			if (c.selected == NULL) {
-			  menuOptions.length = 3;
+			  menuOptions.length = 2;
 			  menuOptions.options[0] = OPTION_END;
-			  menuOptions.options[1] = OPTION_CONCEDE;
-			  menuOptions.options[2] = OPTION_QUIT;
+			  menuOptions.options[1] = OPTION_QUIT;
 			} else {
 			  c.storex = c.x;
 			  c.storey = c.y;
