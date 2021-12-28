@@ -119,17 +119,30 @@ void renderMap() {
     }
   }
   
-  POKE(0x9F20,0x04*8);
+  POKE(0x9F20,38 /* 4x8+6 */);
+  POKE(0x9F21,0xFC);
+  POKE(0x9F22,0x01);
+  
+  resetDamageSprites:
+	__asm__ ("lda $9F23");
+	__asm__ ("and %b",0x0C);
+	__asm__ ("beq %g",exit_resetDamageSprites);
+	POKE(0x9F23,0);
+	POKEW(0x9F20,PEEKW(0x9F20) + 8);
+	__asm__ ("jmp %g",resetDamageSprites);
+  exit_resetDamageSprites:
+  
+  POKE(0x9F20,32);
   POKE(0x9F21,0xFC);
   POKE(0x9F22,0x11);
   for (i = 0; i < m.boardArea; ++i) {
-    if (m.board[i].occupying != NULL && m.board[i].occupying->health <= 90) {
+    if (m.board[i].occupying != NULL && m.board[i].occupying->health <= 90 && m.board[i].occupying->x >= m.left_view && m.board[i].occupying->x < m.left_view + 15 && m.board[i].occupying->y >= m.top_view && m.board[i].occupying->y < m.top_view + 10) {
       POKE(0x9F23,6 + ((m.board[i].occupying->health + 9) / 10));
       POKE(0x9F23,8);
-      temp = ((m.board[i].occupying->x) << 4) + 8;
+      temp = ((m.board[i].occupying->x - m.left_view) << 4) + 8;
       POKE(0x9F23,temp);
       POKE(0x9F23,temp>>8);
-      temp = ((m.board[i].occupying->y) << 4) + 8;
+      temp = ((m.board[i].occupying->y - m.top_view) << 4) + 8;
       POKE(0x9F23,temp);
       POKE(0x9F23,temp >> 8);
       POKE(0x9F23,0x0C);
@@ -138,10 +151,7 @@ void renderMap() {
   }
   // Clear sprites for dead units 
   POKEW(0x9F20,PEEKW(0x9F20)+6);
-  POKE(0x9F22,0x41); //set autoincrement to 8 bytes
-  for (i = 0; i < unitsdeadthisturn; ++i) {
-	POKE(0x9F23,0);	
-  }
+  POKE(0x9F23,0);
   
   renderCursor(1);
   if (menuOptions.length != 0) {
@@ -478,11 +488,13 @@ unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
       maxSteps = 0;
       unitLastX = u->x;
       unitLastY = u->y;
-      POKE(0x9F20,unitLastX*2);
-      POKE(0x9F21,0x40+unitLastY);
-      POKE(0x9F22,0x00);
-      POKE(0x9F23,28);
-      m.board[unitLastY*m.boardWidth+unitLastX].occupying = NULL; // this line does not work
+	  if (u->x >= m.left_view && u->x < m.left_view + 15 && u->y >= m.top_view && u->y < m.top_view + 10) {
+		POKE(0x9F20,(unitLastX - m.left_view) << 1);
+		POKE(0x9F21,0x40+unitLastY-m.top_view);
+        POKE(0x9F22,0x00);
+        POKE(0x9F23,28);
+	  }
+      m.board[unitLastY*m.boardWidth+unitLastX].occupying = NULL; 
       u->x = x;
       u->y = y;
       m.board[y*m.boardWidth+x].occupying = u;
@@ -532,7 +544,7 @@ unsigned char damageChart[] = {
   }
   return 0;
 }*/
-#define CANATTACK(a,b) ((SABS(b->x,a->x) + SABS(b->y,a->y) >= a->attackRangeMin && SABS(b->x,a->x) + SABS(b->y,a->y) <= a->attackRangeMax) ? (damageChart[unitIndexes[b->index] * 18 + unitIndexes[a->index]]) : 0)
+#define CANATTACK(a,b) ((a->team != b->team && SABS(b->x,a->x) + SABS(b->y,a->y) >= a->attackRangeMin && SABS(b->x,a->x) + SABS(b->y,a->y) <= a->attackRangeMax) ? (damageChart[unitIndexes[b->index] * 18 + unitIndexes[a->index]]) : 0)
 
 unsigned char calcPower(struct Unit *a, struct Unit *b) {
   return CANATTACK(a,b) * a->health / 100;

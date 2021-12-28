@@ -226,7 +226,7 @@ unsigned char optionStrings[][8] =
 
 unsigned char healthText[] = {0xa7, 0xa4, 0xa0, 0xab, 0xb3, 0xa7, 0x1c};
 
-#define SCREENBYTE(a) (a >= 10 ? 150 + a : 186 + a)
+#define SCREENBYTE(a) ((a) >= 10 ? 150 + (a) : 186 + (a))
 
 void drawUI() {
   struct Unit *unitPointer;
@@ -263,7 +263,7 @@ void drawUI() {
   POKE(0x9F23,0x03+(m.whoseTurn << 5));
   POKE(0x9F23,m.whoseTurn << 4);
   
-  unitPointer = m.board[c.y*m.boardWidth+c.x].occupying;
+  unitPointer = m.board[(c.y+m.top_view)*m.boardWidth+c.x+m.left_view].occupying;
   if (unitPointer == NULL) {
     unitPointer = c.selected;
   }
@@ -289,11 +289,19 @@ void drawUI() {
     POKE(0x9F20,2);
     POKE(0x9F21,0x40+12);
     POKE(0x9F22,0x20);
-    POKE(0x9F23,183);
-    POKE(0x9F23,186 + unitPointer->x);;
+    POKE(0x9F23,183); // X
+	if (unitPointer->x >= 16) {
+		POKE(0x9F23,SCREENBYTE(unitPointer->x >> 4));
+	}
+    POKE(0x9F23,SCREENBYTE(unitPointer->x & 15));
+	
     POKE(0x9F23,28);
-    POKE(0x9F23,184);
-    POKE(0x9F23,186 + unitPointer->y);
+    POKE(0x9F23,184); // Y
+	if (unitPointer->y >= 16) {
+		POKE(0x9F23,SCREENBYTE(unitPointer->y >> 4));
+	}
+    POKE(0x9F23,SCREENBYTE(unitPointer->y & 15));
+	
     if (unitPointer->health <= 99) {
       POKE(0x9F23,28);
       POKE(0x9F23,167);
@@ -430,7 +438,7 @@ void keyPressed() {
       } else if (keyCode = 0x49) /* I */ {
 		switch (actionNo) {
 		case 0:
-			attack(c.selected,attackCursor.selected); // x > 1 attack breaks before here
+			attack(c.selected,attackCursor.selected);
 			unitLastX = 255;
 			unitLastY = 255;
 			c.selected->takenAction = 1;
@@ -480,7 +488,7 @@ void keyPressed() {
 		  }
 		} /* I */ else if (keyCode == 0x49) {
 		  if (c.selected == NULL) {
-			c.selected = m.board[c.x+m.boardWidth*c.y].occupying;
+			c.selected = m.board[c.x+m.left_view+m.boardWidth*(c.y+m.top_view)].occupying;
 			if (c.selected == NULL) {
 			  menuOptions.length = 2;
 			  menuOptions.options[0] = OPTION_END;
@@ -491,7 +499,7 @@ void keyPressed() {
 			}
 		  } else {
 			if (unitLastX == 255) {
-			  if (c.selected->team == m.whoseTurn && !c.selected->takenAction && move(c.selected,c.x,c.y)) {
+			  if (c.selected->team == m.whoseTurn && !c.selected->takenAction && move(c.selected,c.x+m.left_view,c.y+m.top_view)) {
 				pA = malloc(sizeof(struct possibleAttacks));
 				getPossibleAttacks(pA,c.x,c.y);
 				if (pA->length == 0) {
