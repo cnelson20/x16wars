@@ -3,7 +3,7 @@ EMU_LOCATION = /mnt/d/X16emu/
 
 all: wars.prg
 
-wars.prg: main.c main.h map.c map.h palette.c
+wars.prg: main.c main.h map.c map.h palette.c structs.h
 	$(CC) -o wars.prg -t cx16 -Oi map.c main.c unitgraphics.c palette.c
 
 copy:

@@ -8,7 +8,7 @@
 
 
 /* global variables */
-char testMap[] = {19,12,/* height and width */
+char testMap[] = {19,12,/* height and width */ //0,4,2,255,1,5,3,255,
 0x00, 0x04, 0x0D, 0x00, 0x05, 0x0E, 0x01, 0x06, 0x01, 0x00, 0x07, 0x0C, 0x01, 0x07, 0x13, 0x03, 0x07, 0x0B, 
 0x01, 0x08, 0x12, 0x03, 0x08, 0x0B, 0x04, 0x08, 0x0A, 0x00, 0x09, 0x09, 0x02, 0x09, 0x10, 0x03, 0x09, 0x03, 
 0x01, 0x0A, 0x11, 0x03, 0x0A, 0x03, 0x04, 0x0A, 0x02, 0x02, 0x0B, 0x10, 0x03, 0x0B, 0x02, 255, /* red units */
@@ -217,12 +217,18 @@ void drawText(unsigned char *string, unsigned char size, unsigned char x, unsign
 #define OPTION_END 1
 #define OPTION_CONCEDE 2
 #define OPTION_QUIT 3 
+#define OPTION_DROP 4
+#define OPTION_WAIT 5 
+#define OPTION_LOAD 6
 
 unsigned char optionStrings[][8] =
-  {{0xad, 0xb4, 0xab, 0xab, 0x00},
-   {0xa4, 0xad, 0xa3, 0x00},
-   {0xa2, 0xae, 0xad, 0xa2, 0xa4, 0xa3, 0xa4, 0x00},
-   {0xb0, 0xb4, 0xa8, 0xb3, 0x00}};
+   {{0xad, 0xb4, 0xab, 0xab, 0x00},
+	{0xa4, 0xad, 0xa3, 0x00},
+	{0xa2, 0xae, 0xad, 0xa2, 0xa4, 0xa3, 0xa4, 0x00},
+	{0xb0, 0xb4, 0xa8, 0xb3, 0x00},
+	{0xa3, 0xb1, 0xae, 0xaf, 0x00},
+	{0xb6, 0xa0, 0xa8, 0xb3, 0x00},
+	{0xab, 0xae, 0xa0, 0xa3, 0x00}};
 
 unsigned char healthText[] = {0xa7, 0xa4, 0xa0, 0xab, 0xb3, 0xa7, 0x1c};
 
@@ -235,11 +241,11 @@ void drawUI() {
 
   clearUI();
   
-  /* Display memory footprint on screen
+  /* Display memory footprint on screen *//*
   POKE(0x9F21,0x40+13);
   POKE(0x9F20,0);
   POKE(0x9F22,0x20);
-  POKE(0x9F23,172/\* 'M' - 'A' + 160 \*\); 
+  POKE(0x9F23,'M' - 'A' + 160); 
   POKE(0x9F23,28);
   test = malloc(1);
   i = ((unsigned short)test >> 12) % 16;
@@ -250,9 +256,8 @@ void drawUI() {
   POKE(0x9F23,SCREENBYTE(i));
   i = (unsigned short)test % 16;
   POKE(0x9F23,SCREENBYTE(i));
+  free(test);
   */
-  
-  free(test);  
   
   POKE(0x9F20,16*2);
   POKE(0x9F21,0x41);
@@ -260,7 +265,7 @@ void drawUI() {
 	
   POKE(0x9F23,179 /* 'T' - 'A' + 160 */);
   POKE(0x9F23,0x80);
-  POKE(0x9F23,0x03+(m.whoseTurn << 5));
+  POKE(0x9F23,0x03+(m.whoseTurn << 5)); // Infantry with color of current player's team 
   POKE(0x9F23,m.whoseTurn << 4);
   
   unitPointer = m.board[(c.y+m.top_view)*m.boardWidth+c.x+m.left_view].occupying;
@@ -389,8 +394,6 @@ extern unsigned char unitLastX;
 extern unsigned char unitLastY;
 
 void keyPressed() {  
-  m.oldtop_view = m.top_view;
-  m.oldleft_view = m.left_view;	
 	
   if (menuOptions.length != 0) {
     if (keyCode == 0x57) /* W */ {
@@ -399,6 +402,9 @@ void keyPressed() {
       if (menuOptions.selected < menuOptions.length - 1) {menuOptions.selected++;}
     } else if (keyCode == 0x55) /* U */ {
       menuOptions.length = 0;
+	  if (c.selected != NULL) {
+		undoMove(c.selected);  
+	  }
     } else if (keyCode == 0x49) /* I */ {
       switch (menuOptions.options[menuOptions.selected]) {
       case OPTION_END:
@@ -412,6 +418,30 @@ void keyPressed() {
 		menuOptions.length = 0;
 		POKE(0x9F25,0x80);
 		__asm__ ("jmp ($FFFC)");
+	  case OPTION_WAIT:
+		unitLastX = 255;
+		unitLastY = 255;
+		c.selected->takenAction = 1;
+		c.selected = NULL;
+		menuOptions.length = 0;
+		break;
+	  case OPTION_DROP:
+		// Code for dropping off units 
+		menuOptions.length = 0;
+		pA = malloc(sizeof(struct possibleAttacks));
+		getPossibleDrops(pA,c.selected);
+		actionNo = 1; 
+		selIndex = 0;
+		
+		break;
+	  case OPTION_LOAD:
+		attackCursor.selected->carrying = c.selected;
+		m.board[c.selected->x + m.boardWidth*c.selected->y].occupying = attackCursor.selected;
+		attackCursor.selected = NULL;
+		unitLastX = 255;
+		unitLastY = 255;
+		c.selected = NULL;
+		menuOptions.length = 0;
       default:
 		break;
       }
@@ -421,13 +451,13 @@ void keyPressed() {
       //Switch between attack targets.
       if (keyCode == 0x41) /* A */ {
 		selIndex = (selIndex == 0) ? pA->length - 1 : selIndex - 1;
-		attackCursor.selected = pA->attacks[selIndex];
+		attackCursor.selected = pA->attacks[selIndex]->occupying;
 		attackCursor.x = attackCursor.selected->x;
 		attackCursor.y = attackCursor.selected->y;
       } else if (keyCode == 0x44) /* D */ {
 		++selIndex;
 		if (selIndex >= pA->length) {selIndex = 0;}
-		attackCursor.selected = pA->attacks[selIndex];
+		attackCursor.selected = pA->attacks[selIndex]->occupying;
 		attackCursor.x = attackCursor.selected->x;
 		attackCursor.y = attackCursor.selected->y;
       } else if (keyCode == 0x55) /* U */ {
@@ -500,24 +530,41 @@ void keyPressed() {
 		  } else {
 			if (unitLastX == 255) {
 			  if (c.selected->team == m.whoseTurn && !c.selected->takenAction && move(c.selected,c.x+m.left_view,c.y+m.top_view)) {
-				pA = malloc(sizeof(struct possibleAttacks));
-				getPossibleAttacks(pA,c.x,c.y);
-				if (pA->length == 0) {
-				  unitLastX = 255;
-				  unitLastY = 255;
-				  c.selected->takenAction = 1;
-				  c.selected = NULL;
-				  free(pA);
-				  pA = NULL;
+				if (attackCursor.selected != NULL) {
+					menuOptions.length = 1;
+					menuOptions.options[0] = OPTION_LOAD;
 				} else {
-				  actionNo = 0; // ATTACK
-				  selIndex = 0;
-				  attackCursor.selected = pA->attacks[selIndex];
-				  attackCursor.x = attackCursor.selected->x;
-				  attackCursor.y = attackCursor.selected->y;
+				  pA = malloc(sizeof(struct possibleAttacks));
+				  getPossibleAttacks(pA,c.x+m.left_view,c.y+m.top_view);
+				  if (pA->length == 0) {
+					if (c.selected->carrying != NULL && sizeofGetPossibleDrops(c.selected) != 0) {
+ 					  menuOptions.length = 2;
+					  menuOptions.options[0] = OPTION_DROP;
+					  menuOptions.options[1] = OPTION_WAIT;
+					} else {
+ 					  menuOptions.length = 1;
+					  menuOptions.options[0] = OPTION_WAIT;
+					  /*
+					  unitLastX = 255;
+					  unitLastY = 255;
+					  c.selected->takenAction = 1;
+					  c.selected = NULL;
+					  */
+					}
+				    free(pA);
+				    pA = NULL;
+				  } else {
+					/* Atttacking */
+					actionNo = 0; 
+					selIndex = 0;
+					attackCursor.selected = pA->attacks[0]->occupying;
+					attackCursor.x = attackCursor.selected->x;
+					attackCursor.y = attackCursor.selected->y;
+				  }
 				}
 			  }
 			} else {
+			  // unitLastX != 255
 			  // Do attack action
 			}
 		  } 
@@ -551,14 +598,14 @@ void clearScreen() {
   POKE(0x9F20,0);
   POKE(0x9F21,0);
   POKE(0x9F22,0x10);
-  while (PEEK(0x9F21) < 0x0F) {
+  while (PEEK(0x9F21) < 15) {
     if (PEEK(0x9F20) >= 30 || PEEK(0x9F21) >= 10) {
       if (PEEK(0x9F20) >= 40) {
-	POKE(0x9F20,0);
-	__asm__ ("inc $9F21");
+		POKE(0x9F20,0);
+		__asm__ ("inc $9F21");
       } else {
-	POKE(0x9F23,0x88);
-	POKE(0x9F23,0x80);
+		POKE(0x9F23,0x88);
+		POKE(0x9F23,0x80);
       }
     } else {
       POKE(0x9F23,28);

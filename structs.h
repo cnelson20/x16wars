@@ -1,7 +1,3 @@
-#define NULL 0
-#define false 0
-#define true 1
-
 struct Map;
 struct Tile;
 struct Terrain;
@@ -26,6 +22,8 @@ typedef struct Unit {
   unsigned char airborne:1;
   unsigned char isVehicle:1;
   unsigned char navalOnly:1;
+  
+  struct Unit *carrying;
 };
 
 typedef struct Terrain {
@@ -45,8 +43,9 @@ typedef struct Tile {
 };
 
 typedef struct Captureable {
-  char team;
-  unsigned char critical:1;
+  unsigned char team:6;
+  unsigned char type:2;
+  unsigned char health;
 };
 
 typedef struct Cursor {
@@ -66,7 +65,8 @@ typedef struct Map {
 
 typedef struct possibleAttacks {
   unsigned char length;
-  struct Unit *attacks[4];
+  unsigned char actives;
+  struct Tile *attacks[4];
 };
 
 typedef struct Menu {

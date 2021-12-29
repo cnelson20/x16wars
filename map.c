@@ -123,14 +123,11 @@ void renderMap() {
   POKE(0x9F21,0xFC);
   POKE(0x9F22,0x01);
   
-  resetDamageSprites:
-	__asm__ ("lda $9F23");
-	__asm__ ("and %b",0x0C);
-	__asm__ ("beq %g",exit_resetDamageSprites);
+  while (PEEK(0x9F23) & 0x0C /* != 0 */) {
 	POKE(0x9F23,0);
-	POKEW(0x9F20,PEEKW(0x9F20) + 8);
-	__asm__ ("jmp %g",resetDamageSprites);
-  exit_resetDamageSprites:
+	POKEW(0x9F20,PEEK(0x9F20)+8);
+  }
+  POKE(0x9F23,0);
   
   POKE(0x9F20,32);
   POKE(0x9F21,0xFC);
@@ -163,6 +160,9 @@ void renderMap() {
     POKE(0x9F23,0);
     POKE(0x9F23,0);
   }
+  
+  m.oldtop_view = m.top_view;
+  m.oldleft_view = m.left_view;	
 }
 unsigned char colorstrings[4][7] = 
   {{0xb1, 0xa4, 0xa3, 0, 0, 0, 0}, /* red */
@@ -293,7 +293,6 @@ void initTerrain(struct Terrain *t, unsigned char index) {
 
 // Cursor methods
 void initCursor() {
-  //c = malloc(sizeof (struct Cursor));
   c.x = 0;
   c.y = 0;
   c.storex = 0;
@@ -410,8 +409,40 @@ void renderCursor(unsigned char incFrame) {
   if (incFrame) {c.frame = (c.frame+1)&0x1F;}
 }
 
+// Captureable Methods 
+void initCaptureable(struct Captureable *c, unsigned char init_team, unsigned char init_type) {
+  c->team = init_team;
+  c->type = init_type;
+  c->health = 20;
+  /* 
+	type 0 = base 
+	type 1 = hq
+	type 2 = factory 
+  */
+}
+void capture(struct Unit *u, struct Captureable *c) {
+  unsigned char i;
+  
+  if (u->team != c->team) {
+	i = (u->health + 9) / 10;
+	if (i >= c->health) {
+	  c->team = u->team;
+	  u->health = 20;
+	} else {
+	  c->health -= i;	
+	}
+  }
+}
+
 //Unit methods
-unsigned char mvmtRanges[] = {6,8,2,3,0,0,0,0,0,6,4,5,4,4,4,0,6,6,7,9,0,0,0,0,5,4,6,5};
+unsigned char mvmtRanges[] = {
+  6,8,2,3, /* APC  Recon  Mech  Infantry */
+  0,0,0,0,
+  0,6,4,5, /* blank  Anti-Air  medium tank  small tank */
+  4,4,4,0, /* Missiles  Rockets  Artillery  blank */
+  6,6,7,9, /* Transport  Copter  Bomber  Fighter */ 
+  0,0,0,0, 
+  5,4,6,5}; /* Lander  Submarine  Cruiser  Battleship */
 void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsigned char index, unsigned char team) {
   u->x = init_x;
   u->y = init_y;
@@ -425,6 +456,8 @@ void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsign
   u->attackRangeMin = (index >= 12 && index <= 14) ? (index == 14 ? 2 : 3) : 0;
   u->attackRangeMax = (index >= 12 && index <= 14) ? (index == 14 ? 3 : 5) : 1;
   u->airborne = index >= 16 && index <= 19;
+  
+  u->carrying = NULL;
 }
 
 void newTurnUnit(struct Unit *u, unsigned short i) {
@@ -440,7 +473,7 @@ void renderUnit(struct Unit *u) {
   if (remove_old) {
 	if (m.oldleft_view != m.left_view || m.oldtop_view != m.top_view) {
 	POKE(0x9F20,(u->x - m.oldleft_view) << 1);
-	POKE(0x9F21,u->y - m.oldtop_view +0x40);
+	POKE(0x9F21,u->y - m.oldtop_view + 0x40);
 	POKE(0x9F23,28);
 	}
   } else {
@@ -454,7 +487,6 @@ unsigned char maxSteps;
 struct Unit *checkU;
 struct Tile tempT;
 
-// Units are jesus
 unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned char steps) {
   if (tx >= m.boardWidth || ty >= m.boardHeight) {return false;}
   if (tx == checkU->x && ty == checkU->y) {return true;}
@@ -462,7 +494,7 @@ unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned
   if (checkU->airborne) {
 	++steps;
   } else {
-    if (/* i dont think this did anything tempT.occupying != NULL && */tempT.t->mvmtCosts[checkU->mvmtType] == 0) {return false;}
+    if (!tempT.t->mvmtCosts[checkU->mvmtType]) {return false;}
     steps += tempT.t->mvmtCosts[checkU->mvmtType];
 	if (tempT.t->mvmtCosts[checkU->mvmtType] >= 2 && steps > maxSteps) {
 		--steps;
@@ -480,7 +512,12 @@ unsigned char unitLastX = 255;
 unsigned char unitLastY = 255;
 
 unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
-  if ((u->x != x || u->y != y) && !u->takenAction && m.board[y*m.boardWidth+x].occupying == NULL && x < m.boardWidth && y < m.boardHeight) {
+  if ((u->x != x || u->y != y) && !u->takenAction && x < m.boardWidth && y < m.boardHeight) {
+	if (m.board[y*m.boardWidth+x].occupying != NULL) {
+		if (m.board[y*m.boardWidth+x].occupying->team != u->team || (m.board[y*m.boardWidth+x].occupying->index != 16 && m.board[y*m.boardWidth+x].occupying->index != 0) || m.board[y*m.boardWidth+x].occupying->carrying != NULL) {
+			return 0;
+		}
+	}
 	maxSteps = u->mvmtRange;
     checkU = u;
     if (checkSpaceInMvmtRange(x,y,0)) {
@@ -497,6 +534,7 @@ unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
       m.board[unitLastY*m.boardWidth+unitLastX].occupying = NULL; 
       u->x = x;
       u->y = y;
+	  attackCursor.selected = m.board[y*m.boardWidth+x].occupying;
       m.board[y*m.boardWidth+x].occupying = u;
       return 1;
     }
@@ -505,13 +543,17 @@ unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
 }
 void undoMove(struct Unit *u) {
   m.board[u->y*m.boardWidth+u->x].occupying = NULL;
-  POKE(0x9F20,u->x*2);
-  POKE(0x9F21,0x40+u->y);
+  POKE(0x9F20,(u->x-m.left_view)*2);
+  POKE(0x9F21,0x40+u->y-m.top_view);
   POKE(0x9F22,0x00);
   POKE(0x9F23,28);
   u->x = unitLastX;
   u->y = unitLastY;
   u->takenAction = 0;
+  if (attackCursor.selected != NULL && attackCursor.selected->team == u->team) {
+	m.board[u->y*m.boardWidth+u->x].occupying = attackCursor.selected;
+	attackCursor.selected = NULL;
+  }
   m.board[unitLastY*m.boardWidth+unitLastX].occupying = u;
   unitLastX = 255;
   unitLastY = 255;
@@ -564,35 +606,106 @@ void attack(struct Unit *attacker, struct Unit *defender) {
       __asm__ ("sta $9F22");
       __asm__ ("lda #28");
       __asm__ ("sta $9F23");
+	  if (attacker->carrying != NULL) {free(attacker->carrying);}
       free(attacker);
       ++unitsdeadthisturn;
     }
   } else {
     m.board[m.boardWidth*defender->y+defender->x].occupying = NULL;
-    POKE(0x9F20,(defender->x /*- m.left_view*/) * 2);
-    POKE(0x9F21,defender->y /*- m.top_view*/ + 0x40);
+    POKE(0x9F20,(defender->x - m.left_view) * 2);
+    POKE(0x9F21,defender->y - m.top_view + 0x40);
     __asm__ ("lda #0");
     __asm__ ("sta $9F22");
     __asm__ ("lda #28");
     __asm__ ("sta $9F23");
     ++unitsdeadthisturn;
+	if (defender->carrying != NULL) {free(defender->carrying);}
     free(defender);
   }
 }
+
 void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned char cy) {
   unsigned char i = 0;
-  struct Unit *north = NULL;
-  struct Unit *east = NULL;
-  struct Unit *south = NULL;
-  struct Unit *west = NULL;
+  struct Tile *north = NULL;
+  struct Tile *east = NULL;
+  struct Tile *south = NULL;
+  struct Tile *west = NULL;
 
-  if (cy > 0) {north = m.board[(cy-1)*m.boardWidth+cx].occupying;}
-  if (cx > 0) {west = m.board[cy*m.boardWidth+cx-1].occupying;}
-  if (cy < m.boardHeight - 1) {south = m.board[(cy+1)*m.boardWidth+cx].occupying;}
-  if (cx < m.boardWidth - 1) {east = m.board[cy*m.boardWidth+cx+1].occupying;}
-  if (north != NULL) {pA->attacks[i] = north; i++;}
-  if (east != NULL) {pA->attacks[i] = east; i++;}
-  if (south != NULL) {pA->attacks[i] = south; i++;}
-  if (west != NULL) {pA->attacks[i] = west; i++;}
+  if (cy != 0) { north = &(m.board[(cy-1)*m.boardWidth+cx]); }
+  if (cx != 0) { west = &(m.board[cy*m.boardWidth+cx-1]); }
+  if (cy < m.boardHeight - 1) { south = &(m.board[(cy+1)*m.boardWidth+cx]); }
+  if (cx < m.boardWidth - 1) { east = &(m.board[cy*m.boardWidth+cx+1]); }
+  
+  if (north->occupying != NULL) {pA->attacks[i] = north; i++;}
+  if (east->occupying != NULL) {pA->attacks[i] = east; i++;}
+  if (south->occupying != NULL) {pA->attacks[i] = south; i++;}
+  if (west->occupying != NULL) {pA->attacks[i] = west; i++;}
+  POKE(0x9fb6+i,0);
   pA->length = i;
 } // not tested
+
+void getPossibleDrops(struct possibleAttacks *pA, struct Unit *u) {
+  struct Unit *carry = u->carrying;
+  struct Tile *tile;
+  unsigned int i = 0; 
+	
+  pA->actives = 0;
+	
+  if (u->x != 0) {
+	tile = &(m.board[u->x - 1 + m.boardWidth*u->y]);
+	if (tile->t->mvmtCosts[carry->mvmtType] != 0) {pA->attacks[i] = tile; i++; pA->actives += 1;}  
+  }
+  if (u->y != 0) {
+	tile = &(m.board[u->x + m.boardWidth*(u->y - 1)]);
+	if (tile->t->mvmtCosts[carry->mvmtType] != 0) {pA->attacks[i] = tile; i++; pA->actives += 2;}  
+  }
+  if (u->x < m.boardWidth - 1) {
+	tile = &(m.board[u->x + 1 + m.boardWidth*u->y]);
+	if (tile->t->mvmtCosts[carry->mvmtType] != 0) {pA->attacks[i] = tile; i++; pA->actives += 4;}  
+  }
+  if (u->y < m.boardHeight - 1) {
+	tile = &(m.board[u->x + m.boardWidth*(u->y + 1)]);
+	if (tile->t->mvmtCosts[carry->mvmtType] != 0) {pA->attacks[i] = tile; i++; pA->actives += 8;}  
+  }
+  
+  pA->length = i;
+}
+
+/* x_or_y = 0 -> x, != 0 -> y*/
+unsigned char getXYFromActiveFilters[4] = {0xE, 0xD, 0xB, 0x7};
+unsigned char getXYFromActive(struct Unit *u, unsigned char active, unsigned char index, unsigned char x_or_y) {
+	if (index == 3) {return x_or_y ? u->y + 1: u->x;}
+	if (index == 0) {
+	  if (active & 1) {return x_or_y ? u->y : u->x + 1;}
+	  if (active & 2) {return x_or_y ? u->y - 1: u->x;}
+	  if (active & 4) {return x_or_y ? u->y : u->x - 1;}
+	  return x_or_y ? u->y - 1: u->x;
+	}
+	if (active & 1) {return getXYFromActive(u,getXYFromActiveFilters[0], index - 1, x_or_y);}
+	if (active & 2) {return getXYFromActive(u,getXYFromActiveFilters[1], index - 1, x_or_y);}
+	if (active & 4) {return getXYFromActive(u,getXYFromActiveFilters[2], index - 1, x_or_y);}
+	return getXYFromActive(u,getXYFromActiveFilters[3], index - 1, x_or_y);
+
+}
+
+unsigned char sizeofGetPossibleDrops(struct Unit *u) {
+  struct Unit *carry = u->carrying;
+  unsigned char size = 0;
+	
+  if (u == NULL) {return 0;}
+	
+  if (u->x != 0) {
+	if (m.board[u->x - 1 + m.boardWidth*u->y].t->mvmtCosts[carry->mvmtType] != 0) {size += 1;}  
+  }
+  if (u->y != 0) {
+	if (m.board[u->x + m.boardWidth*(u->y - 1)].t->mvmtCosts[carry->mvmtType] != 0) {size += 2;}  
+  }
+  if (u->x < m.boardWidth - 1) {
+	if (m.board[u->x + 1 + m.boardWidth*u->y].t->mvmtCosts[carry->mvmtType] != 0) {size += 4;}  
+  }
+  if (u->y < m.boardHeight - 1) {
+	if (m.board[u->x + m.boardWidth*(u->y + 1)].t->mvmtCosts[carry->mvmtType] != 0) {size += 8;}  
+  }	
+	
+  return size;
+}
