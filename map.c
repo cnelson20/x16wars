@@ -70,6 +70,10 @@ void initMapData(char data[]) {
 }
 
 extern struct Menu menuOptions;
+unsigned char captureablePaletteOffsets[] = {0,1,2,3,8};
+unsigned char captureableSpriteOffsets[][5] = 
+   {{24, 24, 24, 24, 16}};
+
 void renderMap() {
   unsigned char x,y;
   unsigned short i, temp;
@@ -150,6 +154,33 @@ void renderMap() {
   POKEW(0x9F20,PEEKW(0x9F20)+6);
   POKE(0x9F23,0);
   
+  POKE(0x9F20,0xFF);
+  POKE(0x9F21,0xFC);
+  POKE(0x9F22,0x19);
+  x = 0;
+  y = 0;
+  for (i = m.top_view * m.boardWidth + m.left_view; y < 10; ++i) {
+    if (m.board[i].base != NULL) {
+		
+		POKE(0x9F23,0x50 + captureablePaletteOffsets[m.board[i].base->team]); 
+		POKE(0x9F23,0x08); // Z-depth (b/w layers 0 & 1)
+		POKE(0x9F23,y >> 4);
+		POKE(0x9F23,y << 4);
+		POKE(0x9F23,x >> 4);
+		POKE(0x9F23,x << 4);
+		POKE(0x9F23,8);
+		POKE(0x9F23,captureableSpriteOffsets[m.board[i].base->type][m.board[i].base->team]);
+	}
+	
+	++x;
+    if (x >= 15) {
+	  i += m.boardWidth - 15;	
+      ++y;
+	  x = 0;
+    }
+  }
+  
+  
   renderCursor(1);
   if (menuOptions.length != 0) {
     POKE(0x9F20,0x06);
@@ -212,8 +243,15 @@ void initTile(struct Tile *t, unsigned char index) {
   t->t = malloc(sizeof(struct Terrain));
   initTerrain(t->t,index);
   t->index = index;
-  t->base = 0;
-  t->occupying = 0;
+  t->base = NULL;
+  t->occupying = NULL;
+  
+  if (index >> 4 == 0x04) {
+	t->base = malloc(sizeof(struct Captureable));
+	initCaptureable(t->base,(index & 0x0F)%5,(index & 0x0F)/5);
+	t->t->tileIndex = 0x85;
+	t->t->paletteOffset = 0x60;
+  }
 }
 
 //Terrain Method
@@ -253,6 +291,21 @@ void initTerrain(struct Terrain *t, unsigned char index) {
       t->mvmtCosts[3] = 0;
       t->mvmtCosts[4] = 1;
       break;
+	case 0x40: 
+	case 0x41:	
+	case 0x42:
+	case 0x43:
+	case 0x44:
+	case 0x45:
+	case 0x46:
+	case 0x47:
+	case 0x48:
+	case 0x49:
+	case 0x4A:
+	case 0x4B:
+	case 0x4C:
+	case 0x4D:
+	case 0x4E:
     case 4: // Gray City
       t->paletteOffset = 0x50;
       t->defense = 3;
@@ -364,10 +417,10 @@ void renderCursor(unsigned char incFrame) {
     // Part 0
     POKE(0x9F23,0);
     POKE(0x9F23,8);
-    tempx = (attackCursor.x << 4) - 3 + coff;
+    tempx = ((attackCursor.x - m.left_view) << 4) - 3 + coff;
     POKE(0x9F23,tempx);
     POKE(0x9F23,tempx >> 8);
-    tempy = (attackCursor.y << 4) - 4 + coff;
+    tempy = ((attackCursor.y - m.top_view) << 4) - 4 + coff;
     POKE(0x9F23,tempy);
     POKE(0x9F23,tempy >> 8);
     POKE(0x9F23,12);
@@ -375,10 +428,10 @@ void renderCursor(unsigned char incFrame) {
     // Part 1
     POKE(0x9F23,1);
     POKE(0x9F23,8);
-    tempx = ((attackCursor.x+1) << 4) - 3 - coff;
+    tempx = ((attackCursor.x - m.left_view + 1) << 4) - 3 - coff;
     POKE(0x9F23,tempx);
     POKE(0x9F23,tempx >> 8);
-    tempy = (attackCursor.y << 4) - 4 + coff;
+    tempy = ((attackCursor.y - m.top_view) << 4) - 4 + coff;
     POKE(0x9F23,tempy);
     POKE(0x9F23,tempy >> 8);
     POKE(0x9F23,12);
@@ -386,10 +439,10 @@ void renderCursor(unsigned char incFrame) {
     // Part 2
     POKE(0x9F23,2);
     POKE(0x9F23,8);
-    tempx = (attackCursor.x << 4) - 3 + coff;
+    tempx = ((attackCursor.x - m.left_view) << 4) - 3 + coff;
     POKE(0x9F23,tempx);
     POKE(0x9F23,tempx >> 8);
-    tempy = ((attackCursor.y+1) << 4) - 4 - coff;
+    tempy = ((attackCursor.y - m.top_view + 1) << 4) - 4 - coff;
     POKE(0x9F23,tempy);
     POKE(0x9F23,tempy >> 8);
     POKE(0x9F23,12);
@@ -397,10 +450,10 @@ void renderCursor(unsigned char incFrame) {
     // Part 3
     POKE(0x9F23,3);
     POKE(0x9F23,8);
-    tempx = ((attackCursor.x+1) << 4) - 3 - coff;
+    tempx = ((attackCursor.x - m.left_view + 1) << 4) - 3 - coff;
     POKE(0x9F23,tempx);
     POKE(0x9F23,tempx >> 8);
-    tempy = ((attackCursor.y+1) << 4) - 4 - coff;
+    tempy = ((attackCursor.y - m.top_view + 1) << 4) - 4 - coff;
     POKE(0x9F23,tempy);
     POKE(0x9F23,tempy >> 8);
     POKE(0x9F23,12);
@@ -420,6 +473,7 @@ void initCaptureable(struct Captureable *c, unsigned char init_team, unsigned ch
 	type 2 = factory 
   */
 }
+
 void capture(struct Unit *u, struct Captureable *c) {
   unsigned char i;
   
@@ -427,7 +481,7 @@ void capture(struct Unit *u, struct Captureable *c) {
 	i = (u->health + 9) / 10;
 	if (i >= c->health) {
 	  c->team = u->team;
-	  u->health = 20;
+	  c->health = 20;
 	} else {
 	  c->health -= i;	
 	}
@@ -462,7 +516,7 @@ void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsign
 
 void newTurnUnit(struct Unit *u, unsigned short i) {
   u->takenAction = 0;
-  if (m.whoseTurn == u->team && m.board[i].base != 0 && m.board[i].base->team == u->team) {
+  if (m.whoseTurn == u->team && m.board[i].base != NULL && m.board[i].base->team == u->team) {
     u->health += 20;
     if (u->health > 100) {u->health = 100;}
   }
@@ -514,7 +568,7 @@ unsigned char unitLastY = 255;
 unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
   if ((u->x != x || u->y != y) && !u->takenAction && x < m.boardWidth && y < m.boardHeight) {
 	if (m.board[y*m.boardWidth+x].occupying != NULL) {
-		if (m.board[y*m.boardWidth+x].occupying->team != u->team || (m.board[y*m.boardWidth+x].occupying->index != 16 && m.board[y*m.boardWidth+x].occupying->index != 0) || m.board[y*m.boardWidth+x].occupying->carrying != NULL) {
+		if (m.board[y*m.boardWidth+x].occupying->team != u->team || (m.board[y*m.boardWidth+x].occupying->index != 16 && m.board[y*m.boardWidth+x].occupying->index != 0) || (u->index < 2 || u->index > 3) || m.board[y*m.boardWidth+x].occupying->carrying != NULL) {
 			return 0;
 		}
 	}
@@ -547,13 +601,13 @@ void undoMove(struct Unit *u) {
   POKE(0x9F21,0x40+u->y-m.top_view);
   POKE(0x9F22,0x00);
   POKE(0x9F23,28);
-  u->x = unitLastX;
-  u->y = unitLastY;
-  u->takenAction = 0;
   if (attackCursor.selected != NULL && attackCursor.selected->team == u->team) {
 	m.board[u->y*m.boardWidth+u->x].occupying = attackCursor.selected;
 	attackCursor.selected = NULL;
   }
+  u->x = unitLastX;
+  u->y = unitLastY;
+  u->takenAction = 0;
   m.board[unitLastY*m.boardWidth+unitLastX].occupying = u;
   unitLastX = 255;
   unitLastY = 255;
@@ -636,11 +690,10 @@ void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned c
   if (cy < m.boardHeight - 1) { south = &(m.board[(cy+1)*m.boardWidth+cx]); }
   if (cx < m.boardWidth - 1) { east = &(m.board[cy*m.boardWidth+cx+1]); }
   
-  if (north->occupying != NULL) {pA->attacks[i] = north; i++;}
-  if (east->occupying != NULL) {pA->attacks[i] = east; i++;}
-  if (south->occupying != NULL) {pA->attacks[i] = south; i++;}
-  if (west->occupying != NULL) {pA->attacks[i] = west; i++;}
-  POKE(0x9fb6+i,0);
+  if (north->occupying != NULL && north->occupying->team != m.whoseTurn) {pA->attacks[i] = north; i++;}
+  if (east->occupying != NULL && east->occupying->team != m.whoseTurn) {pA->attacks[i] = east; i++;}
+  if (south->occupying != NULL && south->occupying->team != m.whoseTurn) {pA->attacks[i] = south; i++;}
+  if (west->occupying != NULL && west->occupying->team != m.whoseTurn) {pA->attacks[i] = west; i++;}
   pA->length = i;
 } // not tested
 
