@@ -34,7 +34,6 @@ typedef struct Terrain {
 };
 
 typedef struct Tile {
-  unsigned char index;
   unsigned char dummy;
 
   struct Unit *occupying;

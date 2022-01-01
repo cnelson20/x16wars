@@ -71,8 +71,7 @@ void initMapData(char data[]) {
 
 extern struct Menu menuOptions;
 unsigned char captureablePaletteOffsets[] = {0,1,2,3,8};
-unsigned char captureableSpriteOffsets[][5] = 
-   {{24, 24, 24, 24, 16}};
+unsigned char captureableSpriteOffsets[] = {18};
 
 void renderMap() {
   unsigned char x,y;
@@ -137,17 +136,42 @@ void renderMap() {
   POKE(0x9F21,0xFC);
   POKE(0x9F22,0x11);
   for (i = 0; i < m.boardArea; ++i) {
-    if (m.board[i].occupying != NULL && m.board[i].occupying->health <= 90 && m.board[i].occupying->x >= m.left_view && m.board[i].occupying->x < m.left_view + 15 && m.board[i].occupying->y >= m.top_view && m.board[i].occupying->y < m.top_view + 10) {
-      POKE(0x9F23,6 + ((m.board[i].occupying->health + 9) / 10));
-      POKE(0x9F23,8);
-      temp = ((m.board[i].occupying->x - m.left_view) << 4) + 8;
-      POKE(0x9F23,temp);
-      POKE(0x9F23,temp>>8);
-      temp = ((m.board[i].occupying->y - m.top_view) << 4) + 8;
-      POKE(0x9F23,temp);
-      POKE(0x9F23,temp >> 8);
-      POKE(0x9F23,0x0C);
-      POKE(0x9F23,0x08);
+    if (m.board[i].occupying != NULL && m.board[i].occupying->x >= m.left_view && m.board[i].occupying->x < m.left_view + 15 && m.board[i].occupying->y >= m.top_view && m.board[i].occupying->y < m.top_view + 10) {
+	  if (m.board[i].occupying->carrying != NULL) {
+		POKE(0x9F23,16);
+		POKE(0x9F23,8);
+		temp = (m.board[i].occupying->x - m.left_view) << 4;
+		POKE(0x9F23,temp);
+		POKE(0x9F23,temp>>8);
+		temp = ((m.board[i].occupying->y - m.top_view) << 4) + 8;
+		POKE(0x9F23,temp);
+		POKE(0x9F23,temp >> 8);
+		POKE(0x9F23,0x0C);
+		POKE(0x9F23,(m.board[i].occupying->takenAction ? 9 : 0) + m.board[i].occupying->team);
+	  }	else if (m.board[i].base != NULL && m.board[i].base->health < 20) {
+		POKE(0x9F23,17);
+		POKE(0x9F23,8);
+		temp = (m.board[i].occupying->x - m.left_view) << 4;
+		POKE(0x9F23,temp);
+		POKE(0x9F23,temp>>8);
+		temp = ((m.board[i].occupying->y - m.top_view) << 4) + 8;
+		POKE(0x9F23,temp);
+		POKE(0x9F23,temp >> 8);
+		POKE(0x9F23,0x0C);
+		POKE(0x9F23,(m.board[i].occupying->takenAction ? 9 : 0) + m.board[i].occupying->team);
+	  }		  
+	  if (m.board[i].occupying->health <= 90) {
+		POKE(0x9F23,6 + ((m.board[i].occupying->health + 9) / 10));
+		POKE(0x9F23,8);
+		temp = ((m.board[i].occupying->x - m.left_view) << 4) + 8;
+		POKE(0x9F23,temp);
+		POKE(0x9F23,temp>>8);
+		temp = ((m.board[i].occupying->y - m.top_view) << 4) + 8;
+		POKE(0x9F23,temp);
+		POKE(0x9F23,temp >> 8);
+		POKE(0x9F23,0x0C);
+		POKE(0x9F23,0x08);
+	  }
     }
   }
   // Clear sprites for dead units 
@@ -161,15 +185,14 @@ void renderMap() {
   y = 0;
   for (i = m.top_view * m.boardWidth + m.left_view; y < 10; ++i) {
     if (m.board[i].base != NULL) {
-		
-		POKE(0x9F23,0x50 + captureablePaletteOffsets[m.board[i].base->team]); 
-		POKE(0x9F23,0x08); // Z-depth (b/w layers 0 & 1)
-		POKE(0x9F23,y >> 4);
-		POKE(0x9F23,y << 4);
-		POKE(0x9F23,x >> 4);
-		POKE(0x9F23,x << 4);
-		POKE(0x9F23,8);
-		POKE(0x9F23,captureableSpriteOffsets[m.board[i].base->type][m.board[i].base->team]);
+	  POKE(0x9F23,0x50 + captureablePaletteOffsets[m.board[i].base->team]); 
+	  POKE(0x9F23,0x08); // Z-depth (b/w layers 0 & 1)
+	  POKE(0x9F23,y >> 4);
+	  POKE(0x9F23,y << 4);
+	  POKE(0x9F23,x >> 4);
+	  POKE(0x9F23,x << 4);
+	  POKE(0x9F23,8);
+	  POKE(0x9F23,captureableSpriteOffsets[m.board[i].base->type]);
 	}
 	
 	++x;
@@ -202,29 +225,29 @@ unsigned char colorstrings[4][7] =
    {0xb8, 0xa4, 0xab, 0xab, 0xae, 0xb6, 0}}; /* yellow */
 unsigned char colorstringlengths[4] = {3,5,4,6};
 void win(unsigned char team) {
-	unsigned char i;
+  unsigned char i;
 	
-	POKE(0x9F20,(7 -  (colorstringlengths[team] >> 1)) << 1);
-	POKE(0x9F21,0x44);
-	POKE(0x9F22,0x10);
-	for (i = 0; i < colorstringlengths[team]; ++i) {
-		POKE(0x9F23,colorstrings[team][i]);
-		POKE(0x9F23,0x80);
-	}
-	POKE(0x9F20,10);
-	POKE(0x9F21,0x45);
+  POKE(0x9F20,(7 -  (colorstringlengths[team] >> 1)) << 1);
+  POKE(0x9F21,0x44);
+  POKE(0x9F22,0x10);
+  for (i = 0; i < colorstringlengths[team]; ++i) {
+  	POKE(0x9F23,colorstrings[team][i]);
+  	POKE(0x9F23,0x80);
+  }
+  POKE(0x9F20,10);
+  POKE(0x9F21,0x45);
 
-	POKE(0x9F23,0xb6); // w
-	POKE(0x9F23,0x80);
-	POKE(0x9F23,0xa8); // i
-	POKE(0x9F23,0x80);
-	POKE(0x9F23,0xad); // n 
-	POKE(0x9F23,0x80);
-	POKE(0x9F23,0xb2); // s
-	POKE(0x9F23,0x80);
-	while(1) {
-		waitvsync();
-	}
+  POKE(0x9F23,0xb6); // w
+  POKE(0x9F23,0x80);
+  POKE(0x9F23,0xa8); // i
+  POKE(0x9F23,0x80);
+  POKE(0x9F23,0xad); // n 
+  POKE(0x9F23,0x80);
+  POKE(0x9F23,0xb2); // s
+  POKE(0x9F23,0x80);
+  while(1) {
+	waitvsync();
+  }
 }
 
 void nextTurn() {
@@ -242,11 +265,10 @@ void nextTurn() {
 void initTile(struct Tile *t, unsigned char index) {
   t->t = malloc(sizeof(struct Terrain));
   initTerrain(t->t,index);
-  t->index = index;
   t->base = NULL;
   t->occupying = NULL;
   
-  if (index >> 4 == 0x04) {
+  if (index >> 4 == 0x04) { // 0x40 <= index <= 0x4F
 	t->base = malloc(sizeof(struct Captureable));
 	initCaptureable(t->base,(index & 0x0F)%5,(index & 0x0F)/5);
 	t->t->tileIndex = 0x85;
@@ -291,7 +313,7 @@ void initTerrain(struct Terrain *t, unsigned char index) {
       t->mvmtCosts[3] = 0;
       t->mvmtCosts[4] = 1;
       break;
-	case 0x40: 
+	case 0x40: /* captureable indices */
 	case 0x41:	
 	case 0x42:
 	case 0x43:
