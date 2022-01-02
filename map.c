@@ -70,8 +70,10 @@ void initMapData(char data[]) {
 }
 
 extern struct Menu menuOptions;
-unsigned char captureablePaletteOffsets[] = {0,1,2,3,8};
-unsigned char captureableSpriteOffsets[] = {18};
+unsigned char captureablePaletteOffsets[] = {0xd, 0xd, 0xe, 0xe, 0x8};
+unsigned char captureableSpriteOffsets[][] = 
+   {{18, 34, 18, 34, 34},
+	{50, 66, 50, 66, 66}};
 
 void renderMap() {
   unsigned char x,y;
@@ -185,14 +187,26 @@ void renderMap() {
   y = 0;
   for (i = m.top_view * m.boardWidth + m.left_view; y < 10; ++i) {
     if (m.board[i].base != NULL) {
-	  POKE(0x9F23,0x50 + captureablePaletteOffsets[m.board[i].base->team]); 
-	  POKE(0x9F23,0x08); // Z-depth (b/w layers 0 & 1)
-	  POKE(0x9F23,y >> 4);
-	  POKE(0x9F23,y << 4);
-	  POKE(0x9F23,x >> 4);
-	  POKE(0x9F23,x << 4);
-	  POKE(0x9F23,8);
-	  POKE(0x9F23,captureableSpriteOffsets[m.board[i].base->type]);
+      if (y > 0) {		
+		POKE(0x9F23,0xA0 + captureablePaletteOffsets[m.board[i].base->team]); /* 32 x 32 sprite */
+		POKE(0x9F23,0x08); // Z-depth (b/w layers 0 & 1)
+		POKE(0x9F23,(y-1) >> 4);
+		POKE(0x9F23,(y-1) << 4);
+		POKE(0x9F23,x >> 4);
+		POKE(0x9F23,x << 4);
+		POKE(0x9F23,8);
+		POKE(0x9F23,captureableSpriteOffsets[m.board[i].base->type][m.board[i].base->team]);
+	  } else { /* y == 0 */
+		POKE(0x9F23,0x60 + captureablePaletteOffsets[m.board[i].base->team]); /* 32 x 16 sprite */
+		POKE(0x9F23,0x08); // Z-depth (b/w layers 0 & 1)
+		POKE(0x9F23,y >> 4);
+		POKE(0x9F23,y << 4);
+		POKE(0x9F23,x >> 4);
+		POKE(0x9F23,x << 4);
+		POKE(0x9F23,8);
+		POKE(0x9F23,captureableSpriteOffsets[m.board[i].base->type][m.board[i].base->team] + 8);		
+	  }
+	  
 	}
 	
 	++x;
@@ -269,8 +283,10 @@ void initTile(struct Tile *t, unsigned char index) {
   t->occupying = NULL;
   
   if (index >> 4 == 0x04) { // 0x40 <= index <= 0x4F
+	unsigned char team = (index % 4 == 0 ? player1team : (index % 4 == 1 ? player2team : 4));
+  
 	t->base = malloc(sizeof(struct Captureable));
-	initCaptureable(t->base,(index & 0x0F)%5,(index & 0x0F)/5);
+	initCaptureable(t->base,team,(index & 0x0F) >> 2);
 	t->t->tileIndex = 0x85;
 	t->t->paletteOffset = 0x60;
   }
