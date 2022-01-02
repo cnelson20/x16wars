@@ -45,6 +45,7 @@ typedef struct Captureable {
   unsigned char team:6;
   unsigned char type:2;
   unsigned char health;
+  unsigned char critical;
 };
 
 typedef struct Cursor {
@@ -64,7 +65,6 @@ typedef struct Map {
 
 typedef struct possibleAttacks {
   unsigned char length;
-  unsigned char actives;
   struct Tile *attacks[4];
 };
 

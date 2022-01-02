@@ -18,6 +18,8 @@ unsigned char player1team;
 unsigned char player2team;
 unsigned short turncounter;
 unsigned char unitsdeadthisturn = 0;
+unsigned char currentbases = 0;
+unsigned char oldbases;
 unsigned char remove_old = 0;
 
 // Map methods
@@ -72,8 +74,8 @@ void initMapData(char data[]) {
 extern struct Menu menuOptions;
 unsigned char captureablePaletteOffsets[] = {0xd, 0xd, 0xe, 0xe, 0x8};
 unsigned char captureableSpriteOffsets[][] = 
-   {{18, 34, 18, 34, 34},
-	{50, 66, 50, 66, 66}};
+   {{18, 26, 18, 26, 26},
+	{34, 42, 34, 42, 42}};
 
 void renderMap() {
   unsigned char x,y;
@@ -180,6 +182,9 @@ void renderMap() {
   POKEW(0x9F20,PEEKW(0x9F20)+6);
   POKE(0x9F23,0);
   
+  oldbases = currentbases;
+  currentbases = 0;
+  
   POKE(0x9F20,0xFF);
   POKE(0x9F21,0xFC);
   POKE(0x9F22,0x19);
@@ -187,8 +192,11 @@ void renderMap() {
   y = 0;
   for (i = m.top_view * m.boardWidth + m.left_view; y < 10; ++i) {
     if (m.board[i].base != NULL) {
-      if (y > 0) {		
-		POKE(0x9F23,0xA0 + captureablePaletteOffsets[m.board[i].base->team]); /* 32 x 32 sprite */
+	  ++currentbases;
+	  if (oldbases != 0) {--oldbases;}
+	  
+      if (y != 0) {		
+		POKE(0x9F23,0x90 + captureablePaletteOffsets[m.board[i].base->team]); /* 32 x 32 sprite */
 		POKE(0x9F23,0x08); // Z-depth (b/w layers 0 & 1)
 		POKE(0x9F23,(y-1) >> 4);
 		POKE(0x9F23,(y-1) << 4);
@@ -197,16 +205,15 @@ void renderMap() {
 		POKE(0x9F23,8);
 		POKE(0x9F23,captureableSpriteOffsets[m.board[i].base->type][m.board[i].base->team]);
 	  } else { /* y == 0 */
-		POKE(0x9F23,0x60 + captureablePaletteOffsets[m.board[i].base->team]); /* 32 x 16 sprite */
+		POKE(0x9F23,0x50 + captureablePaletteOffsets[m.board[i].base->team]); /* 32 x 16 sprite */
 		POKE(0x9F23,0x08); // Z-depth (b/w layers 0 & 1)
 		POKE(0x9F23,y >> 4);
 		POKE(0x9F23,y << 4);
 		POKE(0x9F23,x >> 4);
 		POKE(0x9F23,x << 4);
 		POKE(0x9F23,8);
-		POKE(0x9F23,captureableSpriteOffsets[m.board[i].base->type][m.board[i].base->team] + 8);		
+		POKE(0x9F23,captureableSpriteOffsets[m.board[i].base->type][m.board[i].base->team] + 4);		
 	  }
-	  
 	}
 	
 	++x;
@@ -216,7 +223,12 @@ void renderMap() {
 	  x = 0;
     }
   }
-  
+  POKE(0x9F23,34); // Decrement 0x9F20/21 by 1
+  POKE(0x9F22,0x49);
+  while (oldbases != 0) {
+	POKE(0x9F23,0);
+	--oldbases;
+  }
   
   renderCursor(1);
   if (menuOptions.length != 0) {
@@ -392,11 +404,12 @@ void initCursor() {
 }
 
 unsigned char cursoroffsets[] = {0, 1, 2, 1};
+extern struct Menu menuOptions;
 
 void renderCursor(unsigned char incFrame) {
   unsigned short tempx, tempy;
   unsigned char coff = cursoroffsets[c.frame >> 3];
-  if (pA == NULL) {
+  if (pA == NULL || menuOptions.length != 0) {
 
     POKE(0x9F20,0x00);
     POKE(0x9F21,0xFC);
@@ -504,6 +517,7 @@ void renderCursor(unsigned char incFrame) {
 void initCaptureable(struct Captureable *c, unsigned char init_team, unsigned char init_type) {
   c->team = init_team;
   c->type = init_type;
+  c->critical = init_type == 1;
   c->health = 20;
   /* 
 	type 0 = base 
@@ -520,6 +534,10 @@ void capture(struct Unit *u, struct Captureable *c) {
 	if (i >= c->health) {
 	  c->team = u->team;
 	  c->health = 20;
+	  ++unitsdeadthisturn;
+	  if (c->critical) {
+		win(m.whoseTurn);  
+	  }
 	} else {
 	  c->health -= i;	
 	}
@@ -535,6 +553,15 @@ unsigned char mvmtRanges[] = {
   6,6,7,9, /* Transport  Copter  Bomber  Fighter */ 
   0,0,0,0, 
   5,4,6,5}; /* Lander  Submarine  Cruiser  Battleship */
+unsigned char mvmtTypes[] = {
+  1,2,4,0,
+  9,9,9,9,
+  9,1,1,1,
+  2,2,1,9,
+  1,1,1,1, /* airborne units arent affected by this */
+  9,9,9,9,
+  3,3,3,3
+};
 void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsigned char index, unsigned char team) {
   u->x = init_x;
   u->y = init_y;
@@ -542,7 +569,7 @@ void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsign
   u->index = index;
   u->team = team;
   u->health = 100;
-  u->mvmtType = (index >= 24) ? 3 : ((index == 2 || index == 3) ? (index == 3 ? 0 : 4) : (index == 1 || index == 12 || index == 13) ? 2 : 1);
+  u->mvmtType = mvmtTypes[index];
   u->takenAction = 0;
   u->mvmtRange = mvmtRanges[index];
   u->attackRangeMin = (index >= 12 && index <= 14) ? (index == 14 ? 2 : 3) : 0;
@@ -602,10 +629,11 @@ unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned
 
 unsigned char unitLastX = 255;
 unsigned char unitLastY = 255;
+unsigned char baseLastHP = 255;
 
 unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
-  if ((u->x != x || u->y != y) && !u->takenAction && x < m.boardWidth && y < m.boardHeight) {
-	if (m.board[y*m.boardWidth+x].occupying != NULL) {
+  if (!u->takenAction && x < m.boardWidth && y < m.boardHeight) {
+	if (m.board[y*m.boardWidth+x].occupying != NULL && m.board[y*m.boardWidth+x].occupying != u) {
 		if (m.board[y*m.boardWidth+x].occupying->team != u->team || (m.board[y*m.boardWidth+x].occupying->index != 16 && m.board[y*m.boardWidth+x].occupying->index != 0) || (u->index < 2 || u->index > 3) || m.board[y*m.boardWidth+x].occupying->carrying != NULL) {
 			return 0;
 		}
@@ -617,6 +645,10 @@ unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
       maxSteps = 0;
       unitLastX = u->x;
       unitLastY = u->y;
+	  if (m.board[unitLastY*m.boardWidth+unitLastX].base != NULL && (unitLastX != x || unitLastY != y)) {
+		baseLastHP = m.board[unitLastY*m.boardWidth+unitLastX].base->health;  
+		m.board[unitLastY*m.boardWidth+unitLastX].base->health = 20;
+	  }
 	  if (u->x >= m.left_view && u->x < m.left_view + 15 && u->y >= m.top_view && u->y < m.top_view + 10) {
 		POKE(0x9F20,(unitLastX - m.left_view) << 1);
 		POKE(0x9F21,0x40+unitLastY-m.top_view);
@@ -647,6 +679,10 @@ void undoMove(struct Unit *u) {
   u->y = unitLastY;
   u->takenAction = 0;
   m.board[unitLastY*m.boardWidth+unitLastX].occupying = u;
+  if (m.board[unitLastY*m.boardWidth+unitLastX].base != NULL) {
+	m.board[unitLastY*m.boardWidth+unitLastX].base->health = baseLastHP;  
+	baseLastHP = 255;
+  }
   unitLastX = 255;
   unitLastY = 255;
 }
@@ -738,65 +774,35 @@ void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned c
 void getPossibleDrops(struct possibleAttacks *pA, struct Unit *u) {
   struct Unit *carry = u->carrying;
   struct Tile *tile;
-  unsigned int i = 0; 
 	
-  pA->actives = 0;
-	
+  pA->attacks[0] = NULL; 
+  pA->attacks[1] = NULL;	
+  pA->attacks[2] = NULL; 
+  pA->attacks[3] = NULL;	
   if (u->x != 0) {
 	tile = &(m.board[u->x - 1 + m.boardWidth*u->y]);
-	if (tile->t->mvmtCosts[carry->mvmtType] != 0) {pA->attacks[i] = tile; i++; pA->actives += 1;}  
+	if (tile->t->mvmtCosts[carry->mvmtType] != 0 && tile->occupying == NULL) {pA->attacks[0] = tile; ++pA->length;}  
   }
   if (u->y != 0) {
 	tile = &(m.board[u->x + m.boardWidth*(u->y - 1)]);
-	if (tile->t->mvmtCosts[carry->mvmtType] != 0) {pA->attacks[i] = tile; i++; pA->actives += 2;}  
+	if (tile->t->mvmtCosts[carry->mvmtType] != 0 && tile->occupying == NULL) {pA->attacks[1] = tile; ++pA->length;}  
   }
   if (u->x < m.boardWidth - 1) {
 	tile = &(m.board[u->x + 1 + m.boardWidth*u->y]);
-	if (tile->t->mvmtCosts[carry->mvmtType] != 0) {pA->attacks[i] = tile; i++; pA->actives += 4;}  
+	if (tile->t->mvmtCosts[carry->mvmtType] != 0 && tile->occupying == NULL) {pA->attacks[2] = tile; ++pA->length;}  
   }
   if (u->y < m.boardHeight - 1) {
 	tile = &(m.board[u->x + m.boardWidth*(u->y + 1)]);
-	if (tile->t->mvmtCosts[carry->mvmtType] != 0) {pA->attacks[i] = tile; i++; pA->actives += 8;}  
+	if (tile->t->mvmtCosts[carry->mvmtType] != 0 && tile->occupying == NULL) {pA->attacks[3] = tile; ++pA->length;}  
   }
-  
-  pA->length = i;
-}
-
-/* x_or_y = 0 -> x, != 0 -> y*/
-unsigned char getXYFromActiveFilters[4] = {0xE, 0xD, 0xB, 0x7};
-unsigned char getXYFromActive(struct Unit *u, unsigned char active, unsigned char index, unsigned char x_or_y) {
-	if (index == 3) {return x_or_y ? u->y + 1: u->x;}
-	if (index == 0) {
-	  if (active & 1) {return x_or_y ? u->y : u->x + 1;}
-	  if (active & 2) {return x_or_y ? u->y - 1: u->x;}
-	  if (active & 4) {return x_or_y ? u->y : u->x - 1;}
-	  return x_or_y ? u->y - 1: u->x;
-	}
-	if (active & 1) {return getXYFromActive(u,getXYFromActiveFilters[0], index - 1, x_or_y);}
-	if (active & 2) {return getXYFromActive(u,getXYFromActiveFilters[1], index - 1, x_or_y);}
-	if (active & 4) {return getXYFromActive(u,getXYFromActiveFilters[2], index - 1, x_or_y);}
-	return getXYFromActive(u,getXYFromActiveFilters[3], index - 1, x_or_y);
-
 }
 
 unsigned char sizeofGetPossibleDrops(struct Unit *u) {
-  struct Unit *carry = u->carrying;
-  unsigned char size = 0;
+	unsigned char size;
+	struct possibleAttacks *pA = malloc(sizeof(struct possibleAttacks));
 	
-  if (u == NULL) {return 0;}
-	
-  if (u->x != 0) {
-	if (m.board[u->x - 1 + m.boardWidth*u->y].t->mvmtCosts[carry->mvmtType] != 0) {size += 1;}  
-  }
-  if (u->y != 0) {
-	if (m.board[u->x + m.boardWidth*(u->y - 1)].t->mvmtCosts[carry->mvmtType] != 0) {size += 2;}  
-  }
-  if (u->x < m.boardWidth - 1) {
-	if (m.board[u->x + 1 + m.boardWidth*u->y].t->mvmtCosts[carry->mvmtType] != 0) {size += 4;}  
-  }
-  if (u->y < m.boardHeight - 1) {
-	if (m.board[u->x + m.boardWidth*(u->y + 1)].t->mvmtCosts[carry->mvmtType] != 0) {size += 8;}  
-  }	
-	
-  return size;
+	getPossibleDrops(pA,u);
+	size = pA->length;
+	free(pA);
+	return size;
 }

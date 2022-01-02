@@ -19,15 +19,15 @@ char testMap[] = {19,12,/* height and width */ //0,4,2,255,1,5,3,255,
   0x07,0x07,0x01,0x01,0x01,0x01,0x06,0x05,0x06,0x01,0x06,0x05,0x06,0x01,0x01,0x01,0x01,0x07,0x07,
   0x07,0x05,0x06,0x01,0x01,0x01,0x05,0x44,0x05,0x01,0x05,0x45,0x05,0x01,0x01,0x01,0x06,0x05,0x07,
   0x07,0x05,0x06,0x01,0x01,0x01,0x06,0x05,0x07,0x01,0x07,0x05,0x06,0x01,0x01,0x01,0x06,0x05,0x07,
-  0x04,0x05,0x05,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x05,0x05,0x04,
-  0x05,0x04,0x07,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x07,0x04,0x05,
+  0x43,0x05,0x05,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x05,0x05,0x43,
+  0x05,0x43,0x07,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x07,0x43,0x05,
   0x05,0x05,0x06,0x05,0x05,0x05,0x05,0x06,0x05,0x05,0x05,0x06,0x05,0x05,0x05,0x05,0x06,0x05,0x05,
   0x03,0x03,0x03,0x03,0x03,0x03,0x06,0x43,0x06,0x03,0x06,0x43,0x06,0x03,0x03,0x03,0x03,0x03,0x03,
   0x05,0x02,0x05,0x05,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x05,0x05,0x02,0x05,
   0x07,0x02,0x06,0x05,0x05,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x05,0x05,0x06,0x02,0x07,
   0x05,0x02,0x05,0x05,0x05,0x06,0x07,0x05,0x06,0x01,0x06,0x05,0x07,0x06,0x05,0x05,0x05,0x02,0x05,
   0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,
-  0x05,0x06,0x05,0x05,0x06,0x05,0x05,0x04,0x05,0x01,0x05,0x04,0x05,0x05,0x05,0x06,0x05,0x05,0x06,
+  0x05,0x06,0x05,0x05,0x06,0x05,0x05,0x43,0x05,0x01,0x05,0x43,0x05,0x05,0x05,0x06,0x05,0x05,0x06,
   /* tiles */
 };
 
@@ -222,6 +222,7 @@ void drawText(unsigned char *string, unsigned char size, unsigned char x, unsign
 #define OPTION_WAIT 5 
 #define OPTION_LOAD 6
 #define OPTION_CAPTURE 7
+#define OPTION_ATTACK 8
 
 unsigned char optionStrings[][8] =
    {{0xad, 0xb4, 0xab, 0xab, 0x00},
@@ -231,7 +232,8 @@ unsigned char optionStrings[][8] =
 	{0xa3, 0xb1, 0xae, 0xaf, 0x00},
 	{0xb6, 0xa0, 0xa8, 0xb3, 0x00},
 	{0xab, 0xae, 0xa0, 0xa3, 0x00},
-	{0xa2, 0xa0, 0xaf, 0xb3, 0xb4, 0xb1, 0xa4, 0x00}};
+	{0xa2, 0xa0, 0xaf, 0xb3, 0xb4, 0xb1, 0xa4, 0x00},
+	{0xa0, 0xb3, 0xb3, 0xa0, 0xa2, 0xaa, 0x00}};
 
 unsigned char healthText[] = {0xa7, 0xa4, 0xa0, 0xab, 0xb3, 0xa7, 0x1c};
 
@@ -353,7 +355,7 @@ void clearUI() {
   POKE(0x9F20,0x30);
   POKE(0x9F21,0x40);
   POKE(0x9F22,0x10);
-  while (PEEK(0x9F21) < 0x4A) {
+  while (PEEK(0x9F21) < 0x44) {
 	__asm__ ("lda #28");
 	__asm__ ("ldx #$80");
 	
@@ -372,51 +374,18 @@ void clearUI() {
     __asm__ ("inc $9F21");
   }
 
+  POKE(0x9F21,0x4A);	
   while (PEEK(0x9F21) < 0x54) {
     POKE(0x9F20,0);
 	__asm__ ("lda #28");
 	__asm__ ("ldx #$80");
-    
-	__asm__ ("sta $9F23"); // 20 times
+    __asm__ ("ldy #11");
+	
+  clearUILoop:
+	__asm__ ("sta $9F23"); // 11 times
 	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
-	__asm__ ("sta $9F23");
-	__asm__ ("stx $9F23");
+	__asm__ ("dey");
+	__asm__ ("bne %g",clearUILoop);
 	
 	__asm__ ("inc $9F21");
   }
@@ -424,6 +393,10 @@ void clearUI() {
 
 extern unsigned char unitLastX;
 extern unsigned char unitLastY;
+extern unsigned char unitsdeadthisturn;
+
+unsigned char dropOffsetsX[] = {0, 1, 2, 1};
+unsigned char dropOffsetsY[] = {1, 0, 1, 2};
 
 void keyPressed() {  
 	
@@ -437,6 +410,7 @@ void keyPressed() {
 	  if (c.selected != NULL) {
 		undoMove(c.selected);  
 	  }
+	  if (pA != NULL) { free(pA); }
     } else if (keyCode == 0x49) /* I */ {
       switch (menuOptions.options[menuOptions.selected]) {
       case OPTION_END:
@@ -471,7 +445,14 @@ void keyPressed() {
 		pA = malloc(sizeof(struct possibleAttacks));
 		getPossibleDrops(pA,c.selected);
 		actionNo = 1; 
-		selIndex = 0;
+		selIndex = 1;
+		while (pA->attacks[selIndex] == NULL) {  
+		  ++selIndex;
+		  POKE(0x9fb6,0);
+		  if (selIndex >= pA->length) {selIndex = 0;}
+		}
+		attackCursor.x = c.selected->x + dropOffsetsX[selIndex] - 1;
+		attackCursor.y = c.selected->y + dropOffsetsY[selIndex] - 1;
 		
 		break;
 	  case OPTION_LOAD:
@@ -482,6 +463,16 @@ void keyPressed() {
 		unitLastY = 255;
 		c.selected = NULL;
 		menuOptions.length = 0;
+	  case OPTION_ATTACK:
+		/* Atttacking */
+		actionNo = 0; 
+		selIndex = 0;
+		attackCursor.selected = pA->attacks[0]->occupying;
+		attackCursor.x = attackCursor.selected->x;
+		attackCursor.y = attackCursor.selected->y;
+		
+		menuOptions.length = 0;
+		break;
       default:
 		break;
       }
@@ -490,16 +481,30 @@ void keyPressed() {
     if (pA != NULL) {
       //Switch between attack targets.
       if (keyCode == 0x41) /* A */ {
-		selIndex = (selIndex == 0) ? pA->length - 1 : selIndex - 1;
-		attackCursor.selected = pA->attacks[selIndex]->occupying;
-		attackCursor.x = attackCursor.selected->x;
-		attackCursor.y = attackCursor.selected->y;
+		do {  
+		  selIndex = (selIndex == 0) ? pA->length - 1 : selIndex - 1;
+		} while (pA->attacks[selIndex] == NULL);
+		if (actionNo == 0) {
+		  attackCursor.selected = pA->attacks[selIndex]->occupying;
+		  attackCursor.x = attackCursor.selected->x;
+		  attackCursor.y = attackCursor.selected->y;
+		} else if (actionNo == 1) {
+		  attackCursor.x = c.selected->x + dropOffsetsX[selIndex] - 1;
+		  attackCursor.y = c.selected->y + dropOffsetsY[selIndex] - 1;	
+		}
       } else if (keyCode == 0x44) /* D */ {
-		++selIndex;
-		if (selIndex >= pA->length) {selIndex = 0;}
-		attackCursor.selected = pA->attacks[selIndex]->occupying;
-		attackCursor.x = attackCursor.selected->x;
-		attackCursor.y = attackCursor.selected->y;
+		do {  
+		  ++selIndex;
+		  if (selIndex >= pA->length) {selIndex = 0;}
+		} while (pA->attacks[selIndex] == NULL);
+		if (actionNo == 0) {
+		  attackCursor.selected = pA->attacks[selIndex]->occupying;
+		  attackCursor.x = attackCursor.selected->x;
+		  attackCursor.y = attackCursor.selected->y;
+		} else if (actionNo == 1) {
+		  attackCursor.x = c.selected->x + dropOffsetsX[selIndex] - 1;
+		  attackCursor.y = c.selected->y + dropOffsetsY[selIndex] - 1;	
+		}
       } else if (keyCode == 0x55) /* U */ {
 		undoMove(c.selected);
 		c.selected->takenAction = 0;
@@ -509,6 +514,21 @@ void keyPressed() {
 		switch (actionNo) {
 		case 0:
 			attack(c.selected,attackCursor.selected);
+			unitLastX = 255;
+			unitLastY = 255;
+			c.selected->takenAction = 1;
+			c.selected = NULL;
+			free(pA);
+			pA = NULL;
+			break;
+		case 1:
+			pA->attacks[selIndex]->occupying = c.selected->carrying;
+			c.selected->carrying->x = attackCursor.x;
+			c.selected->carrying->y = attackCursor.y;
+			c.selected->carrying->takenAction = 1;
+			c.selected->carrying = NULL;
+			++unitsdeadthisturn;
+		
 			unitLastX = 255;
 			unitLastY = 255;
 			c.selected->takenAction = 1;
@@ -561,6 +581,7 @@ void keyPressed() {
 			c.selected = m.board[c.x+m.left_view+m.boardWidth*(c.y+m.top_view)].occupying;
 			if (c.selected == NULL) {
 			  menuOptions.length = 2;
+			  menuOptions.selected = 0;
 			  menuOptions.options[0] = OPTION_END;
 			  menuOptions.options[1] = OPTION_QUIT;
 			} else {
@@ -572,33 +593,29 @@ void keyPressed() {
 			  if (c.selected->team == m.whoseTurn && !c.selected->takenAction && move(c.selected,c.x+m.left_view,c.y+m.top_view)) {
 				if (attackCursor.selected != NULL) {
 					menuOptions.length = 1;
+					menuOptions.selected = 0;
 					menuOptions.options[0] = OPTION_LOAD;
 				} else {
 				  pA = malloc(sizeof(struct possibleAttacks));
 				  getPossibleAttacks(pA,c.x+m.left_view,c.y+m.top_view);
-				  if (pA->length == 0) {
-					menuOptions.length = 0;
-					if (c.selected->carrying != NULL && sizeofGetPossibleDrops(c.selected) != 0) {
- 					  menuOptions.options[menuOptions.length] = OPTION_DROP;
-					  ++menuOptions.length;
-					} else if ((c.selected->index == 2 || c.selected->index == 3) && m.board[c.selected->x + m.boardWidth*c.selected->y].base != NULL && m.board[c.selected->x + m.boardWidth*c.selected->y].base->team != c.selected->team) {
-					  menuOptions.options[menuOptions.length] = OPTION_CAPTURE;
-					  ++menuOptions.length;
-					}
-					menuOptions.options[menuOptions.length] = OPTION_WAIT;	
- 					++menuOptions.length;
-					
-				    free(pA);
-				    pA = NULL;
+				  menuOptions.selected = 0;  
+				  menuOptions.length = 0;
+				  if (pA->length != 0) {
+					menuOptions.options[menuOptions.length] = OPTION_ATTACK;
+					++menuOptions.length;  
 				  } else {
-					POKE(0x9fba,0); // Distinct invalid address 
-					/* Atttacking */
-					actionNo = 0; 
-					selIndex = 0;
-					attackCursor.selected = pA->attacks[0]->occupying;
-					attackCursor.x = attackCursor.selected->x;
-					attackCursor.y = attackCursor.selected->y;
+					free(pA);
+				    pA = NULL;  
 				  }
+				  if (c.selected->carrying != NULL && sizeofGetPossibleDrops(c.selected) != 0) {
+ 					menuOptions.options[menuOptions.length] = OPTION_DROP;
+					++menuOptions.length;
+				  } else if ((c.selected->index == 2 || c.selected->index == 3) && m.board[c.selected->x + m.boardWidth*c.selected->y].base != NULL && m.board[c.selected->x + m.boardWidth*c.selected->y].base->team != c.selected->team) {
+					menuOptions.options[menuOptions.length] = OPTION_CAPTURE;
+					++menuOptions.length;
+				  }
+				  menuOptions.options[menuOptions.length] = OPTION_WAIT;	
+ 				  ++menuOptions.length;
 				}
 			  }
 			} else {
