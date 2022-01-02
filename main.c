@@ -152,7 +152,7 @@ void setup() {
   POKE(0x9F20,0x00);
   POKE(0x9F21,0x00);
   POKE(0x9F22,0x11);
-  for (i = 0; i < 2626; ++i) {
+  for (i = 0; i < 1600; ++i) {
     POKE(0x9F23,load_address[i]);
   }
   
