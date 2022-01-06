@@ -413,7 +413,7 @@ void keyPressed() {
 	  if (pA != NULL) { free(pA); }
     } else if (keyCode == 0x49) /* I */ {
       switch (menuOptions.options[menuOptions.selected]) {
-      case OPTION_END:
+          case OPTION_END:
 		menuOptions.length = 0;
 		nextTurn();
 		break;
