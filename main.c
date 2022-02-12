@@ -379,7 +379,7 @@ void clearUI() {
     POKE(0x9F20,0);
 	__asm__ ("lda #28");
 	__asm__ ("ldx #$80");
-    __asm__ ("ldy #11");
+    __asm__ ("ldy #12");
 	
   clearUILoop:
 	__asm__ ("sta $9F23"); // 11 times
