@@ -382,7 +382,7 @@ void clearUI() {
     __asm__ ("ldy #12");
 	
   clearUILoop:
-	__asm__ ("sta $9F23"); // 11 times
+	__asm__ ("sta $9F23"); // 12 times ( strlen of 'medium tank' + 1)
 	__asm__ ("stx $9F23");
 	__asm__ ("dey");
 	__asm__ ("bne %g",clearUILoop);
