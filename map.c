@@ -665,7 +665,7 @@ unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
 	}
 	maxSteps = u->mvmtRange;
     checkU = u;
-    if (checkSpaceInMvmtRange(x,y,0)) {
+    if ((u->airborne) ? (SABS(u->x, x) + SABS(u->y, y) <= u->mvmtRange) : checkSpaceInMvmtRange(x,y,0)) {
       checkU = NULL;
       maxSteps = 0;
       unitLastX = u->x;
