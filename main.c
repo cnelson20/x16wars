@@ -65,6 +65,11 @@ void main() {
   }
 }
 
+#define UNIT_CHR_FILELEN 16384
+#define TILE_CHR_FILELEN 1154
+#define SPRITE_CHR_FILELEN 1602
+#define LETTER_CHR_FILELEN 4738
+
 void setup() {
   unsigned char device_no = 8;
 
@@ -110,36 +115,24 @@ void setup() {
   for (i = 0; i < 4096; ++i) {
     POKE(0x9F23,redgraphics[i]); // Red units 
   }			
-	
-  POKE(0x9F20,0x00);
-  POKE(0x9F21,0x90);
   for (i = 0; i < 4096; ++i) {
     POKE(0x9F23,redgraphics[i]); // Green units
   }		
-
-  POKE(0x9F20,0x00);
-  POKE(0x9F21,0xA0);
   for (i = 0; i < 4096; ++i) {
     POKE(0x9F23,redgraphics[i]); // Blue Units 
   }
-	
-  POKE(0x9F20,0x00);
-  POKE(0x9F21,0xB0);
   for (i = 0; i < 4096; ++i) {
     POKE(0x9F23,redgraphics[i]); // Yellow units
   }
 	
-  load_address = malloc(4864); // 128 more than 4,736 (size of letter.c, biggest one)
+  load_address = malloc(5000); // 128 more than 4,736 (size of letter.c, biggest one)
+  
   cbm_k_setnam("tile.chr");
   cbm_k_setlfs(0xFF, device_no, 0x00);
-  if (cbm_k_load(0,(unsigned short)load_address)) {
-    ++device_no;
-    cbm_k_setlfs(0xFF, device_no, 0x00);
-    cbm_k_load(0,(unsigned short)load_address);  
-  }
+  cbm_k_load(0,(unsigned short)load_address);
   POKE(0x9F20,0x00);
   POKE(0x9F21,0xC0);
-  for (i = 0; i < 1200; ++i) {
+  for (i = 0; i < TILE_CHR_FILELEN; ++i) {
     POKE(0x9F23,load_address[i]);
   }
   
@@ -148,7 +141,7 @@ void setup() {
   cbm_k_load(0,(unsigned short)load_address);
   POKE(0x9F20,0x00); 
   POKE(0x9F21,0xD0);
-  for (i = 0; i < 4864; ++i) {
+  for (i = 0; i < LETTER_CHR_FILELEN; ++i) {
     POKE(0x9F23,load_address[i]);
   }
   
@@ -158,7 +151,7 @@ void setup() {
   POKE(0x9F20,0x00);
   POKE(0x9F21,0x00);
   POKE(0x9F22,0x11);
-  for (i = 0; i < 1600; ++i) {
+  for (i = 0; i < SPRITE_CHR_FILELEN; ++i) {
     POKE(0x9F23,load_address[i]);
   }
   
