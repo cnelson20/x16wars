@@ -66,6 +66,8 @@ void main() {
 }
 
 void setup() {
+  unsigned char device_no = 8;
+
   unsigned short i;
   unsigned char *load_address;
 
@@ -129,8 +131,12 @@ void setup() {
 	
   load_address = malloc(4864); // 128 more than 4,736 (size of letter.c, biggest one)
   cbm_k_setnam("tile.chr");
-  cbm_k_setlfs(0xFF,0x08,0x00);
-  cbm_k_load(0,(unsigned short)load_address);
+  cbm_k_setlfs(0xFF, device_no, 0x00);
+  if (cbm_k_load(0,(unsigned short)load_address)) {
+    ++device_no;
+    cbm_k_setlfs(0xFF, device_no, 0x00);
+    cbm_k_load(0,(unsigned short)load_address);  
+  }
   POKE(0x9F20,0x00);
   POKE(0x9F21,0xC0);
   for (i = 0; i < 1200; ++i) {
@@ -138,16 +144,16 @@ void setup() {
   }
   
   cbm_k_setnam("letter.chr");
-  cbm_k_setlfs(0xFF,0x08,0x00);
+  cbm_k_setlfs(0xFF, device_no, 0x00);
   cbm_k_load(0,(unsigned short)load_address);
-  POKE(0x9F20,0x00); // x16 chops off first two bytes (takes it as load address), so two padding bytes in file
+  POKE(0x9F20,0x00); 
   POKE(0x9F21,0xD0);
   for (i = 0; i < 4864; ++i) {
     POKE(0x9F23,load_address[i]);
   }
   
   cbm_k_setnam("sprites.chr");
-  cbm_k_setlfs(0xFF,0x08,0x00);
+  cbm_k_setlfs(0xFF, device_no, 0x00);
   cbm_k_load(0,(unsigned short)load_address);
   POKE(0x9F20,0x00);
   POKE(0x9F21,0x00);
