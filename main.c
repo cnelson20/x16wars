@@ -5,7 +5,7 @@
 #include "structs.h"
 #include "main.h"
 #include "map.h"
-
+#include "waitforjiffy.h"
 
 /* global variables */
 char testMap[] = {19,12,/* height and width */ //0,4,2,255,1,5,3,255,
@@ -66,7 +66,7 @@ void main() {
     keyPressed();
   afterKeyPressed:
     draw();
-    waitvsync(); 
+	waitforjiffy();
   }
 }
 
