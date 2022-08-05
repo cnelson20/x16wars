@@ -50,6 +50,11 @@ unsigned char selIndex;
 struct possibleAttacks *pA = NULL;
 struct Menu menuOptions;
 
+unsigned char mouseEnabled;
+unsigned short mouseX;
+unsigned short mouseY;
+unsigned char mouseButtons;
+
 void main() {
   setup();
   while (1) {
@@ -158,6 +163,7 @@ void setup() {
   
   free(load_address);
   menuOptions.length = 0;
+  mouseEnabled = 0;
 
   loadPalette();
   clearScreen();
@@ -223,6 +229,7 @@ void drawText(unsigned char *string, unsigned char size, unsigned char x, unsign
 #define OPTION_LOAD 6
 #define OPTION_CAPTURE 7
 #define OPTION_ATTACK 8
+#define OPTION_MOUSETOGGLE 9
 
 unsigned char optionStrings[][8] =
    {{0xad, 0xb4, 0xab, 0xab, 0x00},
@@ -233,7 +240,8 @@ unsigned char optionStrings[][8] =
 	{0xb6, 0xa0, 0xa8, 0xb3, 0x00},
 	{0xab, 0xae, 0xa0, 0xa3, 0x00},
 	{0xa2, 0xa0, 0xaf, 0xb3, 0xb4, 0xb1, 0xa4, 0x00},
-	{0xa0, 0xb3, 0xb3, 0xa0, 0xa2, 0xaa, 0x00}};
+	{0xa0, 0xb3, 0xb3, 0xa0, 0xa2, 0xaa, 0x00},
+	{0xac, 0xae, 0xb4, 0xb2, 0xa4, 0x00}};
 
 unsigned char healthText[] = {0xa7, 0xa4, 0xa0, 0xab, 0xb3, 0xa7, 0x1c};
 
@@ -269,6 +277,13 @@ void drawUI() {
   POKE(0x9F23,SCREENBYTE(i));
   free(test);
   */
+  
+  if (mouseButtons) {
+  POKE(0x9F21,0x40 + 14);
+  POKE(0x9F20,2);
+  POKE(0x9F22,0x20);
+  POKE(0x9F23, 0xa0 + mouseButtons);
+  }
   
   POKE(0x9F20,16*2);
   POKE(0x9F21,0x41);
@@ -473,6 +488,21 @@ void keyPressed() {
 		
 		menuOptions.length = 0;
 		break;
+	  case OPTION_MOUSETOGGLE:
+		if (mouseEnabled) {
+			__asm__ ("lda #0");
+			__asm__ ("tax");
+			__asm__ ("tay");
+			__asm__ ("jsr $FF68"); // mouse_config
+			
+		} else {
+			__asm__ ("sec");
+			__asm__ ("jsr $FF5F"); // get screen mode
+			__asm__ ("lda #1"); // enable mouse 
+			__asm__ ("jsr $FF68"); // mouse_config
+		}
+		mouseEnabled = !mouseEnabled;
+		break;
       default:
 		break;
       }
@@ -540,6 +570,25 @@ void keyPressed() {
       }
     } else {
 	  //Move cursor around
+	  if (mouseEnabled) {
+		__asm__ ("jsr $FF71"); 
+		__asm__ ("jsr $FF6B"); 
+		__asm__ ("sta %v", mouseButtons);
+		__asm__ ("lda $00,x");
+		__asm__ ("sta %v",mouseX);
+		__asm__ ("lda $01,x");
+		__asm__ ("sta %v+1",mouseX);
+		__asm__ ("lda $02,x");
+		__asm__ ("sta %v",mouseY);
+		__asm__ ("lda $03,x");
+		__asm__ ("sta %v+1",mouseY);
+		
+		if (mouseButtons % 2 != 0) {
+		  c.x = m.left_view + mouseX >> 5;
+		  c.y = m.top_view + mouseY >> 5;		  
+		  mouseButtons ^= 1;
+		}
+	  }
       if (keyCode == 0x57) /* W */ {
 		if (c.y == 0) {
 			if (m.top_view != 0) { --m.top_view; }
@@ -580,10 +629,11 @@ void keyPressed() {
 		  if (c.selected == NULL) {
 			c.selected = m.board[c.x+m.left_view+m.boardWidth*(c.y+m.top_view)].occupying;
 			if (c.selected == NULL) {
-			  menuOptions.length = 2;
+			  menuOptions.length = 3;
 			  menuOptions.selected = 0;
 			  menuOptions.options[0] = OPTION_END;
 			  menuOptions.options[1] = OPTION_QUIT;
+			  menuOptions.options[2] = OPTION_MOUSETOGGLE;
 			} else {
 			  c.storex = c.x;
 			  c.storey = c.y;

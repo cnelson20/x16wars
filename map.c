@@ -84,6 +84,9 @@ void renderMap() {
   units_exist[player1team] = 0; 
   units_exist[player2team] = 0;
   
+  /*
+	Count units 
+  */
   remove_old = 1;
   for (i = 0; i < m.boardArea; ++i) {
     if (m.board[i].occupying != NULL) {
@@ -100,6 +103,16 @@ void renderMap() {
 	win(player2team);
   }
   
+  // If a unit is stacked on a transport unit draw under it
+  if (menuOptions.length != 0 && menuOptions.options[0] != 1) {
+	POKE(0x9fb6, 9);
+	renderUnit(attackCursor.selected);
+  }
+  
+  /* 
+	Set all the game tiles
+	If a unit is present draw it as well
+  */
   x = 0;
   y = 0;
   POKE(0x9F20,0x00);
@@ -125,8 +138,7 @@ void renderMap() {
 	  POKE(0x9F20,0);
     }
   }
-  
-  POKE(0x9F20,38 /* 4x8+6 */);
+  POKE(0x9F20,46 /* 5x8+6 */);
   POKE(0x9F21,0xFC);
   POKE(0x9F22,0x01);
   
@@ -136,7 +148,7 @@ void renderMap() {
   }
   POKE(0x9F23,0);
   
-  POKE(0x9F20,32);
+  POKE(0x9F20,40);
   POKE(0x9F21,0xFC);
   POKE(0x9F22,0x11);
   for (i = 0; i < m.boardArea; ++i) {
@@ -185,7 +197,7 @@ void renderMap() {
   oldbases = currentbases;
   currentbases = 0;
   
-  POKE(0x9F20,0xFF);
+  POKE(0x9F20,0xF8);
   POKE(0x9F21,0xFC);
   POKE(0x9F22,0x19);
   x = 0;
@@ -411,7 +423,7 @@ void renderCursor(unsigned char incFrame) {
   unsigned char coff = cursoroffsets[c.frame >> 3];
   if (pA == NULL || menuOptions.length != 0) {
 
-    POKE(0x9F20,0x00);
+    POKE(0x9F20,0x08);
     POKE(0x9F21,0xFC);
     POKE(0x9F22,0x11);
 
