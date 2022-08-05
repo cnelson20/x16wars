@@ -70,7 +70,14 @@ void main() {
   }
 }
 
+#define UNIT_CHR_FILELEN 16384
+#define TILE_CHR_FILELEN 1154
+#define SPRITE_CHR_FILELEN 1602
+#define LETTER_CHR_FILELEN 4738
+
 void setup() {
+  unsigned char device_no = 8;
+
   unsigned short i;
   unsigned char *load_address;
 
@@ -113,51 +120,43 @@ void setup() {
   for (i = 0; i < 4096; ++i) {
     POKE(0x9F23,redgraphics[i]); // Red units 
   }			
-	
-  POKE(0x9F20,0x00);
-  POKE(0x9F21,0x90);
   for (i = 0; i < 4096; ++i) {
     POKE(0x9F23,redgraphics[i]); // Green units
   }		
-
-  POKE(0x9F20,0x00);
-  POKE(0x9F21,0xA0);
   for (i = 0; i < 4096; ++i) {
     POKE(0x9F23,redgraphics[i]); // Blue Units 
   }
-	
-  POKE(0x9F20,0x00);
-  POKE(0x9F21,0xB0);
   for (i = 0; i < 4096; ++i) {
     POKE(0x9F23,redgraphics[i]); // Yellow units
   }
 	
-  load_address = malloc(4864); // 128 more than 4,736 (size of letter.c, biggest one)
+  load_address = malloc(5000); // 128 more than 4,736 (size of letter.c, biggest one)
+  
   cbm_k_setnam("tile.chr");
-  cbm_k_setlfs(0xFF,0x08,0x00);
+  cbm_k_setlfs(0xFF, device_no, 0x00);
   cbm_k_load(0,(unsigned short)load_address);
   POKE(0x9F20,0x00);
   POKE(0x9F21,0xC0);
-  for (i = 0; i < 1200; ++i) {
+  for (i = 0; i < TILE_CHR_FILELEN; ++i) {
     POKE(0x9F23,load_address[i]);
   }
   
   cbm_k_setnam("letter.chr");
-  cbm_k_setlfs(0xFF,0x08,0x00);
+  cbm_k_setlfs(0xFF, device_no, 0x00);
   cbm_k_load(0,(unsigned short)load_address);
-  POKE(0x9F20,0x00); // x16 chops off first two bytes (takes it as load address), so two padding bytes in file
+  POKE(0x9F20,0x00); 
   POKE(0x9F21,0xD0);
-  for (i = 0; i < 4864; ++i) {
+  for (i = 0; i < LETTER_CHR_FILELEN; ++i) {
     POKE(0x9F23,load_address[i]);
   }
   
   cbm_k_setnam("sprites.chr");
-  cbm_k_setlfs(0xFF,0x08,0x00);
+  cbm_k_setlfs(0xFF, device_no, 0x00);
   cbm_k_load(0,(unsigned short)load_address);
   POKE(0x9F20,0x00);
   POKE(0x9F21,0x00);
   POKE(0x9F22,0x11);
-  for (i = 0; i < 1600; ++i) {
+  for (i = 0; i < SPRITE_CHR_FILELEN; ++i) {
     POKE(0x9F23,load_address[i]);
   }
   
@@ -394,10 +393,10 @@ void clearUI() {
     POKE(0x9F20,0);
 	__asm__ ("lda #28");
 	__asm__ ("ldx #$80");
-    __asm__ ("ldy #11");
+    __asm__ ("ldy #12");
 	
   clearUILoop:
-	__asm__ ("sta $9F23"); // 11 times
+	__asm__ ("sta $9F23"); // 12 times ( strlen of 'medium tank' + 1)
 	__asm__ ("stx $9F23");
 	__asm__ ("dey");
 	__asm__ ("bne %g",clearUILoop);
@@ -428,7 +427,7 @@ void keyPressed() {
 	  if (pA != NULL) { free(pA); }
     } else if (keyCode == 0x49) /* I */ {
       switch (menuOptions.options[menuOptions.selected]) {
-      case OPTION_END:
+          case OPTION_END:
 		menuOptions.length = 0;
 		nextTurn();
 		break;

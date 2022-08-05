@@ -20,6 +20,8 @@ unsigned short turncounter;
 unsigned char unitsdeadthisturn = 0;
 unsigned char currentbases = 0;
 unsigned char oldbases;
+unsigned char currentunitsprites = 0;
+unsigned char oldunitsprites;
 unsigned char remove_old = 0;
 
 // Map methods
@@ -79,29 +81,9 @@ unsigned char captureableSpriteOffsets[][] =
 
 void renderMap() {
   unsigned char x,y;
-  unsigned short i, temp;
-  unsigned char units_exist[4];
-  units_exist[player1team] = 0; 
-  units_exist[player2team] = 0;
-  
-  /*
-	Count units 
-  */
-  remove_old = 1;
-  for (i = 0; i < m.boardArea; ++i) {
-    if (m.board[i].occupying != NULL) {
-      renderUnit(m.board[i].occupying);
-	  units_exist[m.board[i].occupying->team] = 1;
-    }
-  }
-  
-  if (units_exist[player2team] == 0) {
-	//player 1 wins
-	win(player1team);
-  } else if (units_exist[player1team] == 0) {
-	//player 2 wins 
-	win(player2team);
-  }
+  unsigned short i,temp;
+
+  checkOldUnits();
   
   // If a unit is stacked on a transport unit draw under it
   if (menuOptions.length != 0 && menuOptions.options[0] != 1) {
@@ -151,9 +133,11 @@ void renderMap() {
   POKE(0x9F20,40);
   POKE(0x9F21,0xFC);
   POKE(0x9F22,0x11);
-  for (i = 0; i < m.boardArea; ++i) {
+  for (i = m.top_view * m.boardWidth + m.left_view; i < m.boardArea; ++i) {
     if (m.board[i].occupying != NULL && m.board[i].occupying->x >= m.left_view && m.board[i].occupying->x < m.left_view + 15 && m.board[i].occupying->y >= m.top_view && m.board[i].occupying->y < m.top_view + 10) {
 	  if (m.board[i].occupying->carrying != NULL) {
+		++currentunitsprites;
+		if (oldunitsprites != 0) {--oldunitsprites;}
 		POKE(0x9F23,16);
 		POKE(0x9F23,8);
 		temp = (m.board[i].occupying->x - m.left_view) << 4;
@@ -165,6 +149,8 @@ void renderMap() {
 		POKE(0x9F23,0x0C);
 		POKE(0x9F23,(m.board[i].occupying->takenAction ? 9 : 0) + m.board[i].occupying->team);
 	  }	else if (m.board[i].base != NULL && m.board[i].base->health < 20) {
+		++currentunitsprites;
+		if (oldunitsprites != 0) {--oldunitsprites;}
 		POKE(0x9F23,17);
 		POKE(0x9F23,8);
 		temp = (m.board[i].occupying->x - m.left_view) << 4;
@@ -177,6 +163,8 @@ void renderMap() {
 		POKE(0x9F23,(m.board[i].occupying->takenAction ? 9 : 0) + m.board[i].occupying->team);
 	  }		  
 	  if (m.board[i].occupying->health <= 90) {
+		++currentunitsprites;
+		if (oldunitsprites != 0) {--oldunitsprites;}
 		POKE(0x9F23,6 + ((m.board[i].occupying->health + 9) / 10));
 		POKE(0x9F23,8);
 		temp = ((m.board[i].occupying->x - m.left_view) << 4) + 8;
@@ -191,8 +179,18 @@ void renderMap() {
     }
   }
   // Clear sprites for dead units 
-  POKEW(0x9F20,PEEKW(0x9F20)+6);
-  POKE(0x9F23,0);
+  __asm__ ("lda #0");
+  __asm__ ("sta $9F23");
+  __asm__ ("sta $9F23");
+  __asm__ ("sta $9F23");
+  __asm__ ("sta $9F23");
+  __asm__ ("sta $9F23");
+  __asm__ ("sta $9F23");
+  POKE(0x9F22,0x41);
+  while (oldunitsprites != 0) {
+	POKE(0x9F23,0);
+	--oldunitsprites;  
+  }
   
   oldbases = currentbases;
   currentbases = 0;
@@ -256,6 +254,30 @@ void renderMap() {
   m.oldtop_view = m.top_view;
   m.oldleft_view = m.left_view;	
 }
+
+void checkOldUnits() {
+  unsigned short i;
+  unsigned char units_exist[4];
+  units_exist[player1team] = 0; 
+  units_exist[player2team] = 0;
+  
+  remove_old = 1;
+  for (i = 0; i < m.boardArea; ++i) {
+    if (m.board[i].occupying != NULL) {
+      renderUnit(m.board[i].occupying);
+	  units_exist[m.board[i].occupying->team] = 1;
+    }
+  }
+  
+  if (units_exist[player2team] == 0) {
+	//player 1 wins
+	win(player1team);
+  } else if (units_exist[player1team] == 0) {
+	//player 2 wins 
+	win(player2team);
+  }	
+}
+
 unsigned char colorstrings[4][7] = 
   {{0xb1, 0xa4, 0xa3, 0, 0, 0, 0}, /* red */
    {0xa6, 0xb1, 0xa4, 0xa4, 0xad, 0, 0}, /* green */
@@ -652,7 +674,7 @@ unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
 	}
 	maxSteps = u->mvmtRange;
     checkU = u;
-    if (checkSpaceInMvmtRange(x,y,0)) {
+    if ((u->airborne) ? (SABS(u->x, x) + SABS(u->y, y) <= u->mvmtRange) : checkSpaceInMvmtRange(x,y,0)) {
       checkU = NULL;
       maxSteps = 0;
       unitLastX = u->x;
@@ -747,6 +769,9 @@ void attack(struct Unit *attacker, struct Unit *defender) {
       __asm__ ("lda #28");
       __asm__ ("sta $9F23");
 	  if (attacker->carrying != NULL) {free(attacker->carrying);}
+	  else if (m.board[attacker->y*m.boardWidth + attacker->x].base != NULL) {
+	    m.board[attacker->y*m.boardWidth + attacker->x].base->health = 20;
+	  }
       free(attacker);
       ++unitsdeadthisturn;
     }
@@ -760,6 +785,9 @@ void attack(struct Unit *attacker, struct Unit *defender) {
     __asm__ ("sta $9F23");
     ++unitsdeadthisturn;
 	if (defender->carrying != NULL) {free(defender->carrying);}
+	else if (m.board[defender->y*m.boardWidth + defender->x].base != NULL) {
+	  m.board[defender->y*m.boardWidth + defender->x].base->health = 20;
+	}
     free(defender);
   }
 }

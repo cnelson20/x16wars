@@ -9,6 +9,7 @@ void renderMap();
 void initCursor();
 void renderCursor(unsigned char incFrame);
 
+void checkOldUnits();
 void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsigned char index, unsigned char team);
 void newTurnUnit(struct Unit *u, unsigned short i);
 void renderUnit(struct Unit *u);
