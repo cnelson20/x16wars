@@ -7,6 +7,8 @@
 #include "map.h"
 #include "waitforjiffy.h"
 
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+
 /* global variables */
 char testMap[] = {19,12,/* height and width */ //0,4,2,255,1,5,3,255,
 0x00, 0x04, 0x0D, 0x00, 0x05, 0x0E, 0x01, 0x06, 0x01, 0x00, 0x07, 0x0C, 0x01, 0x07, 0x13, 0x03, 0x07, 0x0B, 
@@ -229,6 +231,7 @@ void drawText(unsigned char *string, unsigned char size, unsigned char x, unsign
 #define OPTION_CAPTURE 7
 #define OPTION_ATTACK 8
 #define OPTION_MOUSETOGGLE 9
+#define OPTION_JOIN 10
 
 unsigned char optionStrings[][8] =
    {{0xad, 0xb4, 0xab, 0xab, 0x00},
@@ -240,7 +243,8 @@ unsigned char optionStrings[][8] =
 	{0xab, 0xae, 0xa0, 0xa3, 0x00},
 	{0xa2, 0xa0, 0xaf, 0xb3, 0xb4, 0xb1, 0xa4, 0x00},
 	{0xa0, 0xb3, 0xb3, 0xa0, 0xa2, 0xaa, 0x00},
-	{0xac, 0xae, 0xb4, 0xb2, 0xa4, 0x00}};
+	{0xac, 0xae, 0xb4, 0xb2, 0xa4, 0x00},
+	{0xa9, 0xae, 0xa8, 0xad, 0x00}};
 
 unsigned char healthText[] = {0xa7, 0xa4, 0xa0, 0xab, 0xb3, 0xa7, 0x1c};
 
@@ -249,6 +253,8 @@ unsigned char baseTypes[][9] =
 	{0xa7, 0xb0, 0x00},
     {0xa5, 0xa0, 0xa2, 0xb3, 0xae, 0xb1, 0xb8, 0x00}};	
 unsigned char baseTypeStringLengths[] = {4,2,8};
+
+unsigned char damageString[] = {0xa3, 0xac, 0xa6}; 
 
 #define SCREENBYTE(a) ((a) >= 10 ? 150 + (a) : 186 + (a))
 
@@ -277,13 +283,6 @@ void drawUI() {
   free(test);
   */
   
-  if (mouseButtons) {
-  POKE(0x9F21,0x40 + 14);
-  POKE(0x9F20,2);
-  POKE(0x9F22,0x20);
-  POKE(0x9F23, 0xa0 + mouseButtons);
-  }
-  
   POKE(0x9F20,16*2);
   POKE(0x9F21,0x41);
   POKE(0x9F22,0x10);
@@ -300,9 +299,9 @@ void drawUI() {
   if (pA != NULL) {
     unitPointer = attackCursor.selected;
   }
+  
   if (menuOptions.length != 0) {
     //display menu options
-    clearUI();
     POKE(0x9F21,0x4B);
     POKE(0x9F22,0x20);
     for (dummy = 0; dummy < menuOptions.length; dummy++) {
@@ -361,6 +360,27 @@ void drawUI() {
       POKE(0x9F23,186 + (unitPointer->health / 10));
       POKE(0x9F23,186 + (unitPointer->health % 10));
     }
+	if (pA != NULL && menuOptions.options[0] == OPTION_ATTACK && attackCursor.selected != NULL) {
+	  static unsigned char oldDamagePreviewNum = 0;
+	  static unsigned char damageModTen;
+	  static unsigned char damageDivTen;
+	  
+	  unsigned char damagePreviewNum = calcPower(c.selected, attackCursor.selected); 	 
+	  
+	  if (damagePreviewNum != oldDamagePreviewNum) {
+		damageDivTen = 186 + (damagePreviewNum / 10);
+		damageModTen = 186 + (damagePreviewNum % 10);
+	  }
+	  
+	  drawText(damageString, sizeof(damageString), 1, 13, 1);
+	  POKE(0x9F20,2*5);
+	  POKE(0x9F21,0x40 + 13);
+	  POKE(0x9F22, 0x20);
+	  POKE(0x9F23, damageDivTen);
+	  POKE(0x9F23, damageModTen);
+	  
+	  oldDamagePreviewNum = damagePreviewNum;
+	}
   } 
 }
 
@@ -487,6 +507,17 @@ void keyPressed() {
 		
 		menuOptions.length = 0;
 		break;
+	  case OPTION_JOIN:
+		unitLastX = 255;
+		unitLastY = 255;
+		
+		c.selected->health = MIN(100, c.selected->health + attackCursor.selected->health);
+		c.selected->takenAction = 1;
+		c.selected = NULL;
+		free(attackCursor.selected);
+		attackCursor.selected = NULL;
+		
+		menuOptions.length = 0;
 	  case OPTION_MOUSETOGGLE:
 		if (mouseEnabled) {
 			__asm__ ("lda #0");
@@ -628,11 +659,12 @@ void keyPressed() {
 		  if (c.selected == NULL) {
 			c.selected = m.board[c.x+m.left_view+m.boardWidth*(c.y+m.top_view)].occupying;
 			if (c.selected == NULL) {
-			  menuOptions.length = 3;
+			  menuOptions.length = 2;
 			  menuOptions.selected = 0;
 			  menuOptions.options[0] = OPTION_END;
 			  menuOptions.options[1] = OPTION_QUIT;
-			  menuOptions.options[2] = OPTION_MOUSETOGGLE;
+			  //menuOptions.options[2] = OPTION_MOUSETOGGLE;
+			  //++menuOptions.length;
 			} else {
 			  c.storex = c.x;
 			  c.storey = c.y;
@@ -643,7 +675,11 @@ void keyPressed() {
 				if (attackCursor.selected != NULL) {
 					menuOptions.length = 1;
 					menuOptions.selected = 0;
-					menuOptions.options[0] = OPTION_LOAD;
+					if (attackCursor.selected->index == c.selected->index) {
+						menuOptions.options[0] = OPTION_JOIN;
+					} else {
+						menuOptions.options[0] = OPTION_LOAD;
+					}
 				} else {
 				  pA = malloc(sizeof(struct possibleAttacks));
 				  getPossibleAttacks(pA,c.x+m.left_view,c.y+m.top_view);

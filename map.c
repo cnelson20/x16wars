@@ -195,7 +195,7 @@ void renderMap() {
   oldbases = currentbases;
   currentbases = 0;
   
-  POKE(0x9F20,0xF8);
+  POKE(0x9F20,0xFF);
   POKE(0x9F21,0xFC);
   POKE(0x9F22,0x19);
   x = 0;
@@ -495,7 +495,7 @@ void renderCursor(unsigned char incFrame) {
     POKE(0x9F23,0x58);
   } else {
 
-    POKE(0x9F20,0x00);
+    POKE(0x9F20,0x08);
     POKE(0x9F21,0xFC);
     POKE(0x9F22,0x11);
 
@@ -668,8 +668,14 @@ unsigned char baseLastHP = 255;
 unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
   if (!u->takenAction && x < m.boardWidth && y < m.boardHeight) {
 	if (m.board[y*m.boardWidth+x].occupying != NULL && m.board[y*m.boardWidth+x].occupying != u) {
-		if (m.board[y*m.boardWidth+x].occupying->team != u->team || (m.board[y*m.boardWidth+x].occupying->index != 16 && m.board[y*m.boardWidth+x].occupying->index != 0) || (u->index < 2 || u->index > 3) || m.board[y*m.boardWidth+x].occupying->carrying != NULL) {
+		if (m.board[y*m.boardWidth+x].occupying->team != u->team) {
 			return 0;
+		/* Check if unit can be loaded on another */
+		} else if ((m.board[y*m.boardWidth+x].occupying->index != 16 && m.board[y*m.boardWidth+x].occupying->index != 0) || (u->index < 2 || u->index > 3) || m.board[y*m.boardWidth+x].occupying->carrying != NULL) {
+			/* Check if units can be joined together */
+			if (m.board[y*m.boardWidth+x].occupying->index != u->index || m.board[y*m.boardWidth+x].occupying->health == 100 || u->health == 100) {
+				return 0;
+			}
 		}
 	}
 	maxSteps = u->mvmtRange;
@@ -846,3 +852,47 @@ unsigned char sizeofGetPossibleDrops(struct Unit *u) {
 	free(pA);
 	return size;
 }
+
+void getPossibleJoins(struct possibleAttacks *pA, struct Unit *u) {
+	unsigned char i = 0;
+	struct Tile *tile;
+	
+	if (u->x != 0) {
+		tile = &(m.board[u->x - 1 + m.boardWidth*u->y]);
+		if (tile->occupying != NULL && tile->occupying->team == m.whoseTurn && tile->occupying->index == u->index) {
+			pA->attacks[i] = tile; i++;
+		}
+	}
+	if (u->y != 0) {
+		tile = &(m.board[u->x + m.boardWidth*(u->y - 1)]);
+		if (tile->occupying != NULL && tile->occupying->team == m.whoseTurn && tile->occupying->index == u->index) {
+			pA->attacks[i] = tile; i++;
+		}
+	}
+	if (u->x < m.boardWidth - 1) {
+		tile = &(m.board[u->x + 1 + m.boardWidth*u->y]);
+		if (tile->occupying != NULL && tile->occupying->team == m.whoseTurn && tile->occupying->index == u->index) {
+			pA->attacks[i] = tile; i++;
+		}
+	}
+	if (u->y < m.boardHeight - 1) {
+		tile = &(m.board[u->x + m.boardWidth*(u->y + 1)]);
+		if (tile->occupying != NULL && tile->occupying->team == m.whoseTurn && tile->occupying->index == u->index) {
+			pA->attacks[i] = tile; i++;
+		}
+	}
+	
+	pA->length = i;
+	return;
+}
+
+unsigned char sizeofGetPossibleJoins(struct Unit *u) {
+	unsigned char size;
+	struct possibleAttacks *pA = malloc(sizeof(struct possibleAttacks));
+	
+	getPossibleJoins(pA,u);
+	size = pA->length;
+	free(pA);
+	return size;
+}
+

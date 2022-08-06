@@ -9,7 +9,7 @@ jsr RDTIM
 sta @byte
 :
 jsr RDTIM
-cpy @byte
+cmp @byte
 beq :-
 
 rts

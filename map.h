@@ -25,8 +25,13 @@ void nextTurn();
 
 unsigned char move(struct Unit *u, unsigned char x, unsigned char y);
 void undoMove(struct Unit *u);
+
+unsigned char calcPower(struct Unit *a, struct Unit *b);
 void attack(struct Unit *attacker, struct Unit *defender);
 
 void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned char cy);
 void getPossibleDrops(struct possibleAttacks *pA, struct Unit *u);
 unsigned char sizeofGetPossibleDrops(struct Unit *u);
+
+void getPossibleJoins(struct possibleAttacks *pA, struct Unit *u);
+unsigned char sizeofGetPossibleJoins(struct Unit *u);
