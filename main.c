@@ -6,6 +6,7 @@
 #include "main.h"
 #include "map.h"
 #include "waitforjiffy.h"
+#include "fastroutines.h"
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
@@ -119,18 +120,11 @@ void setup() {
   POKE(0x9F20,0x00);
   POKE(0x9F21,0x80);
   POKE(0x9F22,0x10);
-  for (i = 0; i < 4096; ++i) {
-    POKE(0x9F23,redgraphics[i]); // Red units 
-  }			
-  for (i = 0; i < 4096; ++i) {
-    POKE(0x9F23,redgraphics[i]); // Green units
-  }		
-  for (i = 0; i < 4096; ++i) {
-    POKE(0x9F23,redgraphics[i]); // Blue Units 
-  }
-  for (i = 0; i < 4096; ++i) {
-    POKE(0x9F23,redgraphics[i]); // Yellow units
-  }
+  load_data_vera_from = redgraphics;
+  load_data_vera(4096);
+  load_data_vera(4096);
+  load_data_vera(4096);
+  load_data_vera(4096);
 	
   load_address = malloc(5000); // 128 more than 4,736 (size of letter.c, biggest one)
   
@@ -139,18 +133,21 @@ void setup() {
   cbm_k_load(0,(unsigned short)load_address);
   POKE(0x9F20,0x00);
   POKE(0x9F21,0xC0);
-  for (i = 0; i < TILE_CHR_FILELEN; ++i) {
+  load_data_vera_from = load_address;
+  load_data_vera(TILE_CHR_FILELEN);
+  /*for (i = 0; i < TILE_CHR_FILELEN; ++i) {
     POKE(0x9F23,load_address[i]);
-  }
+  }*/
   
   cbm_k_setnam("letter.chr");
   cbm_k_setlfs(0xFF, device_no, 0x00);
   cbm_k_load(0,(unsigned short)load_address);
   POKE(0x9F20,0x00); 
   POKE(0x9F21,0xD0);
-  for (i = 0; i < LETTER_CHR_FILELEN; ++i) {
+  load_data_vera(LETTER_CHR_FILELEN);
+  /*for (i = 0; i < LETTER_CHR_FILELEN; ++i) {
     POKE(0x9F23,load_address[i]);
-  }
+  }*/
   
   cbm_k_setnam("sprites.chr");
   cbm_k_setlfs(0xFF, device_no, 0x00);
@@ -158,9 +155,10 @@ void setup() {
   POKE(0x9F20,0x00);
   POKE(0x9F21,0x00);
   POKE(0x9F22,0x11);
-  for (i = 0; i < SPRITE_CHR_FILELEN; ++i) {
+  load_data_vera(SPRITE_CHR_FILELEN);
+  /*for (i = 0; i < SPRITE_CHR_FILELEN; ++i) {
     POKE(0x9F23,load_address[i]);
-  }
+  }*/
   
   free(load_address);
   menuOptions.length = 0;
