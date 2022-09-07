@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <cbm.h>
 #include <peekpoke.h>
+#include <string.h>
 
 #include "structs.h"
 #include "main.h"
@@ -11,13 +12,14 @@
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 /* global variables */
-char testMap[] = {19,12,/* height and width */ //0,4,2,255,1,5,3,255,
+/*
+char testMapData[] = {19,12,// height and width
 0x00, 0x04, 0x0D, 0x00, 0x05, 0x0E, 0x01, 0x06, 0x01, 0x00, 0x07, 0x0C, 0x01, 0x07, 0x13, 0x03, 0x07, 0x0B, 
 0x01, 0x08, 0x12, 0x03, 0x08, 0x0B, 0x04, 0x08, 0x0A, 0x00, 0x09, 0x09, 0x02, 0x09, 0x10, 0x03, 0x09, 0x03, 
-0x01, 0x0A, 0x11, 0x03, 0x0A, 0x03, 0x04, 0x0A, 0x02, 0x02, 0x0B, 0x10, 0x03, 0x0B, 0x02, 255, /* red units */
+0x01, 0x0A, 0x11, 0x03, 0x0A, 0x03, 0x04, 0x0A, 0x02, 0x02, 0x0B, 0x10, 0x03, 0x0B, 0x02, 255, // red units
 0x12, 0x04, 0x0C, 0x11, 0x05, 0x11, 0x11, 0x06, 0x01, 0x10, 0x07, 0x0B, 0x11, 0x07, 0x13, 0x0E, 0x08, 0x0A, 
 0x10, 0x08, 0x0B, 0x11, 0x08, 0x13, 0x0E, 0x09, 0x02, 0x0F, 0x09, 0x03, 0x10, 0x09, 0x10, 0x12, 0x09, 0x09, 
-0x0E, 0x0A, 0x03, 0x0F, 0x0A, 0x03, 0x11, 0x0A, 0x12, 0x0E, 0x0B, 0x02, 0x0F, 0x0B, 0x03, 255, /* blue units */
+0x0E, 0x0A, 0x03, 0x0F, 0x0A, 0x03, 0x11, 0x0A, 0x12, 0x0E, 0x0B, 0x02, 0x0F, 0x0B, 0x03, 255, // blue units
   
   0x07,0x07,0x01,0x01,0x01,0x01,0x06,0x05,0x06,0x01,0x06,0x05,0x06,0x01,0x01,0x01,0x01,0x07,0x07,
   0x07,0x05,0x06,0x01,0x01,0x01,0x05,0x44,0x05,0x01,0x05,0x45,0x05,0x01,0x01,0x01,0x06,0x05,0x07,
@@ -31,9 +33,10 @@ char testMap[] = {19,12,/* height and width */ //0,4,2,255,1,5,3,255,
   0x05,0x02,0x05,0x05,0x05,0x06,0x07,0x05,0x06,0x01,0x06,0x05,0x07,0x06,0x05,0x05,0x05,0x02,0x05,
   0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,
   0x05,0x06,0x05,0x05,0x06,0x05,0x05,0x43,0x05,0x01,0x05,0x43,0x05,0x05,0x05,0x06,0x05,0x05,0x06,
-  /* tiles */
+  // tiles
 };
-
+char *testMap = testMapData;
+*/
 extern unsigned char redgraphics[];
 /* Using copies of red to save space 
 extern unsigned char greengraphics[];
@@ -43,6 +46,7 @@ extern unsigned char yellowgraphics[];
 extern unsigned char customPalette[];
 extern unsigned char player1team;
 extern unsigned char player2team;
+extern unsigned char returnToMenu;
 
 unsigned char keyCode;
 struct Map m;
@@ -60,17 +64,281 @@ unsigned char mouseButtons;
 
 void main() {
   setup();
-  while (1) {
-    __asm__("jsr $FFE4");
+	while (1) {
+		menu();
+		game_start();
+		returnToMenu = 0;
+		while (!returnToMenu) {
+			__asm__("jsr $FFE4");
+			__asm__("sta %v", keyCode);
+			if (keyCode != 0) {
+				keyPressed();
+			}
+			draw();
+			waitforjiffy();
+		}
+		/* Free memory */
+		{
+			unsigned short i;
+			for (i = 0; i < m.totalTiles; ++i) {
+					free(m.board[i].occupying->carrying);
+					free(m.board[i].occupying);
+					free(m.board[i].t);
+					free(m.board[i].base);
+			}
+			free(m.board);
+		}
+	}
+}
 
-    __asm__("cmp #0");
-    __asm__("beq %g", afterKeyPressed);
-    __asm__("sta %v", keyCode);
-    keyPressed();
-  afterKeyPressed:
-    draw();
-	waitforjiffy();
-  }
+char **menu_files_array;
+char menu_files_length;
+
+char **map_files_array;
+char map_files_length;
+
+void load_dir_menu() {	
+	unsigned short i;
+	menu_files_array = NULL;
+	menu_files_length = 0;
+		
+	cbm_k_setnam("$");
+	cbm_k_setlfs(12, 8, 0);
+	cbm_k_open();
+
+	cbm_k_chkin(12);
+	/* 4 prologue bytes */
+	cbm_k_chrin();
+	cbm_k_chrin();
+	cbm_k_chrin();
+	cbm_k_chrin();
+	// Disk stuff done with help from irmen 's prog8 libraries 
+	/* Read files from disk */
+	
+	while (1) {
+		char *temp;
+		if (cbm_k_readst()) {
+			break;
+		}
+		++menu_files_length; 
+		menu_files_array = realloc(menu_files_array, menu_files_length * 2); // sizeof(char *) 
+		
+		while (cbm_k_chrin() != '"') { // Discard up to first quote
+			if (cbm_k_readst()) { break; }
+		}
+		if (cbm_k_readst()) { break; }
+		
+		temp = malloc(32);
+		menu_files_array[menu_files_length - 1] = temp;
+		while (1) {
+			char c = cbm_k_chrin();
+			if (c == 0) { break; }
+			if (c == '"') { break; }
+			*temp = c;
+			++temp;
+		}
+		*temp = '\0';
+		
+		/* If not valid, remove from array */
+		/* if (strstr(temp, ".map") != 0) {
+			__asm__ ("brk");
+			map_files_array = realloc(map_files_array, map_files_length << 1 + 2);
+			map_files_array[map_files_length] = strdup(temp);
+			++map_files_length;
+		} */
+		
+		while (cbm_k_chrin() != 0) {} // Read rest of entry until the end 
+		cbm_k_chrin();
+		cbm_k_chrin();	
+		
+	}
+	cbm_k_clrch();
+	cbm_k_close(12);
+	
+	map_files_array = NULL;
+	map_files_length = 0;
+	for (i = 0; i < menu_files_length; ++i) {
+		char *temp = menu_files_array[i];
+		if (strstr(temp, ".map") != 0) {
+			map_files_array = realloc(map_files_array, map_files_length * sizeof(char *) + 2);
+			map_files_array[map_files_length] = temp;
+			++map_files_length;
+		} else {
+			free(temp);
+		}
+	}
+	free(menu_files_array);
+	menu_files_array = map_files_array;
+	menu_files_length = map_files_length;
+}
+
+void print_hex_number(unsigned char x) {
+	unsigned char j = x >> 4;
+	POKE(0x9F23, (j >= 0xA) ? j - 0xA + 0xA0 : j + 186);
+	j = x & 0xF;
+	POKE(0x9F23, (j >= 0xA) ? j - 0xA + 0xA0 : j + 186);
+}
+
+void print_ascii_str(char *string, unsigned char break_on_period) {
+	while (*string) {		
+		char c = *string;
+		
+		if (c >= 0x30 && c <= 0x39) {
+			c = c + (186 - 0x30);
+		} else if (c >= 'a' && c <= 'z') {
+			c = c + (0xA0 - 'a');
+		} else if (c == '.') {
+			if (break_on_period) { return; }
+			c = 28;
+		} else if (c == ' ') {
+			c = 28;
+		}
+		POKE(0x9F23, c);
+		++string;
+	}
+}
+
+void menu() {
+	unsigned short i;
+	char *map_space;
+	setup_menu();
+	change_directory("maps");
+	load_dir_menu();
+		
+	POKE(0x9F20, 4 * 2);
+	POKE(0x9F21, 0x41);
+	POKE(0x9F22, 0x10);
+	
+	POKE(0x9F23, 3);
+	POKE(0x9F23, 0x00);
+	POKE(0x9F22, 0x20);
+	print_ascii_str(" x16 wars ", 0);
+	POKE(0x9F22, 0x10);
+	POKE(0x9F23, 3);
+	POKE(0x9F23, 0x24);
+	
+	POKE(0x9F20, 8);
+	POKE(0x9F21, 0x40 + 4);
+	POKE(0x9F22, 0x20);
+	
+	POKE(0x9F23, menu_files_length / 10 + 186);
+	POKE(0x9F23, menu_files_length % 10 + 186);
+	print_ascii_str(" maps found", 0);
+	
+	POKE(0x9F20, 2);
+	POKE(0x9F21, 0x46);
+	POKE(0x9F23, 196);
+	for (i = 0; i < menu_files_length; ++i) {	
+		POKE(0x9F20, 4);
+		POKE(0x9F21, 0x46 + i);
+		POKE(0x9F22, 0x20);	
+		print_ascii_str(menu_files_array[i], 1);
+	}
+	
+	player1team = 0;
+  player2team = 2;
+	
+	while (1) {
+		__asm__("jsr $FFE4");
+		__asm__("sta %v", keyCode);
+		
+		if (keyCode != 0) {
+			if (keyCode == 0x57 /* W */ && c.x > 0) {
+				--c.x;
+			} else if (keyCode == 0x53 /* S */ && c.x < menu_files_length - 1) {
+				++c.x;
+			} else if (keyCode == 0x0d /* Enter */) {
+				break;
+			} else if (keyCode == 0x51 /* Q */ || keyCode == 0x58 /* X */) {
+				__asm__ ("brk");
+				__asm__ ("jmp ($FFFC)");
+			} else if (keyCode >= 0x31 && keyCode <= 0x38 /* Between 1 & 8 */) {
+				unsigned char tempteam = (keyCode - 0x31) % 4; 
+				// change player 2 team 
+				if (keyCode >= 0x35) {
+					if (player1team != tempteam) { player2team = tempteam; }	
+				// change player 1 team
+				} else {
+					if (player2team != tempteam) { player1team = tempteam; }
+				}
+			}
+			/* redraw cursor showing selected map */
+			POKE(0x9F20, 2);
+			POKE(0x9F22, 0);
+			for (i = 6; i < 15; ++i) {
+				POKE(0x9F21, 0x40 + i);
+				POKE(0x9F23, 0x88);
+			}
+			POKE(0x9F20, 2);
+			POKE(0x9F21, c.x + 0x46);
+			POKE(0x9F23, 196);
+			
+			POKE(0x9F20, 4 * 2 + 1);
+			POKE(0x9F21, 0x41);
+			//POKE(0x9F22, 0x10);
+			POKE(0x9F23, player1team << 4);
+			POKE(0x9F20, 15 * 2 + 1);
+			POKE(0x9F23, (player2team << 4) | 0x4);
+		}
+	}
+	cbm_k_setnam(menu_files_array[c.x]);
+	cbm_k_setlfs(0xFF, 8, 0);
+	map_space = malloc(768);
+	//map_space = (char *)0x9800;
+	cbm_k_load(0, (unsigned short)map_space);
+	initMapData(map_space);
+	free(map_space);
+	change_directory("..");
+	return;
+}
+
+char change_filename[32] = "cd:";
+void change_directory(char *s) {
+	strcpy(change_filename + 3, s);
+	cbm_k_setnam(change_filename);
+	cbm_k_setlfs(15, 8, 15);
+	cbm_k_open();
+	cbm_k_clrch();
+	cbm_k_close(15);
+}
+
+void setup_menu() {
+	initCursor();
+	POKE(0x9F25, 0);
+	POKE(0x9F29, 0x31);
+	
+	POKE(0x9F20, 0);
+	POKE(0x9F21, 0);
+	POKE(0x9F22, 0x10);
+	while (PEEK(0x9F21) < 15) {
+		POKE(0x9F23,0x88);
+    POKE(0x9F23,0x80);
+    if (PEEK(0x9F20) >= 40) {
+      POKE(0x9F20,0);
+      __asm__ ("inc $9F21");
+    }
+	}
+	POKE(0x9F20, 0);
+	POKE(0x9F21, 0x40);
+	while (PEEK(0x9F21) < 0x5F) {
+		POKE(0x9F23,28);
+    POKE(0x9F23,0x80);
+    if (PEEK(0x9F20) >= 40) {
+      POKE(0x9F20,0);
+      __asm__ ("inc $9F21");
+    }
+	}
+}
+
+void game_start() {
+  menuOptions.length = 0;
+  mouseEnabled = 0;
+  
+	POKE(0x9F25, 0);
+	POKE(0x9F29, 0x71);
+  clearScreen();
+  //initMapData(testMap);
+  initCursor();
 }
 
 #define UNIT_CHR_FILELEN 16384
@@ -81,7 +349,7 @@ void main() {
 void setup() {
   unsigned char device_no = 8;
 
-  unsigned short i;
+  //unsigned short i;
   unsigned char *load_address;
 
   POKE(0x9F29,0x71);
@@ -122,8 +390,11 @@ void setup() {
   POKE(0x9F22,0x10);
   load_data_vera_from = redgraphics;
   load_data_vera(4096);
+  POKE(0x9F20,0x00);
+	load_data_vera(4096);
+	POKE(0x9F20,0x00);
   load_data_vera(4096);
-  load_data_vera(4096);
+	POKE(0x9F20,0x00);
   load_data_vera(4096);
 	
   load_address = malloc(5000); // 128 more than 4,736 (size of letter.c, biggest one)
@@ -161,14 +432,8 @@ void setup() {
   }*/
   
   free(load_address);
-  menuOptions.length = 0;
-  mouseEnabled = 0;
-
   loadPalette();
-  clearScreen();
-  initMapData(testMap);
-  initCursor();
-}
+}  
 
 void draw() {
   renderMap();
@@ -184,25 +449,25 @@ unsigned char unitIndexes[] =
    255,255,255,255,
    14,15,16,17};
 
-unsigned char unitNames[][11] =
-  {{0xa0, 0xaf, 0xa2}, // APC
-   {0xb1, 0xa4, 0xa2, 0xae, 0xad}, // Recon
-   {0xac, 0xa4, 0xa2, 0xa7}, // Mech
-   {0xa8, 0xad, 0xa5, 0xa0, 0xad, 0xb3, 0xb1, 0xb8}, // Infantry
-   {0xa0, 0xad, 0xb3, 0xa8, 0x1C, 0xa0, 0xa8, 0xb1}, // Anti Air
-   {0xac, 0xa4, 0xa3, 0xa8, 0xb4, 0xac, 0x1C, 0xb3, 0xa0, 0xad, 0xaa}, // Medium Tank
-   {0xb2, 0xac, 0xa0, 0xab, 0xab, 0x1c, 0xb3, 0xa0, 0xad, 0xaa}, // Small Tank
-   {0xac, 0xa8, 0xb2, 0xb2, 0xa8, 0xab, 0xa4, 0xb2}, // Missiles
-   {0xb1, 0xae, 0xa2, 0xaa, 0xa4, 0xb3, 0xb2}, // Rockets
-   {0xa0, 0xb1, 0xb3, 0xa8, 0xab, 0xab, 0xa4, 0xb1, 0xb8}, // Artillery
-   {0xa7, 0xa4, 0xab, 0xa8, 0xa2, 0xae, 0xaf, 0xb3, 0xa4, 0xb1}, // Transport
-   {0xa2, 0xae, 0xaf, 0xb3, 0xa4, 0xb1}, // Copter
-   {0xa1, 0xae, 0xac, 0xa1, 0xa4, 0xb1}, // Bomber
-   {0xa5, 0xa8, 0xa6, 0xa7, 0xb3, 0xa4, 0xb1}, // Fighter
-   {0xab, 0xa0, 0xad, 0xa3, 0xa4, 0xb1}, // Lander
-   {0xb2, 0xb4, 0xa1, 0xac, 0xa0, 0xb1, 0xa8, 0xad, 0xa4}, // Submarine
-   {0xa2, 0xb1, 0xb4, 0xa8, 0xb2, 0xa4, 0xb1}, // Cruiser
-   {0xa1, 0xa0, 0xb3, 0xb3, 0xab, 0xa4, 0xb2, 0xa7, 0xa8, 0xaf}}; // Battleship
+unsigned char unitNames[][11] = {
+  {0xa0, 0xaf, 0xa2}, // APC
+  {0xb1, 0xa4, 0xa2, 0xae, 0xad}, // Recon
+  {0xac, 0xa4, 0xa2, 0xa7}, // Mech
+  {0xa8, 0xad, 0xa5, 0xa0, 0xad, 0xb3, 0xb1, 0xb8}, // Infantry
+  {0xa0, 0xad, 0xb3, 0xa8, 0x1C, 0xa0, 0xa8, 0xb1}, // Anti Air
+  {0xac, 0xa4, 0xa3, 0xa8, 0xb4, 0xac, 0x1C, 0xb3, 0xa0, 0xad, 0xaa}, // Medium Tank
+  {0xb2, 0xac, 0xa0, 0xab, 0xab, 0x1c, 0xb3, 0xa0, 0xad, 0xaa}, // Small Tank
+  {0xac, 0xa8, 0xb2, 0xb2, 0xa8, 0xab, 0xa4, 0xb2}, // Missiles
+  {0xb1, 0xae, 0xa2, 0xaa, 0xa4, 0xb3, 0xb2}, // Rockets
+  {0xa0, 0xb1, 0xb3, 0xa8, 0xab, 0xab, 0xa4, 0xb1, 0xb8}, // Artillery
+  {0xa7, 0xa4, 0xab, 0xa8, 0xa2, 0xae, 0xaf, 0xb3, 0xa4, 0xb1}, // Transport
+  {0xa2, 0xae, 0xaf, 0xb3, 0xa4, 0xb1}, // Copter
+  {0xa1, 0xae, 0xac, 0xa1, 0xa4, 0xb1}, // Bomber
+  {0xa5, 0xa8, 0xa6, 0xa7, 0xb3, 0xa4, 0xb1}, // Fighter
+  {0xab, 0xa0, 0xad, 0xa3, 0xa4, 0xb1}, // Lander
+  {0xb2, 0xb4, 0xa1, 0xac, 0xa0, 0xb1, 0xa8, 0xad, 0xa4}, // Submarine
+  {0xa2, 0xb1, 0xb4, 0xa8, 0xb2, 0xa4, 0xb1}, // Cruiser
+  {0xa1, 0xa0, 0xb3, 0xb3, 0xab, 0xa4, 0xb2, 0xa7, 0xa8, 0xaf}}; // Battleship
 
 unsigned char unitNameLengths[] = {3,5,4,8,8,11,10,8,7,9,10,6,6,7,6,9,7,10};
 
@@ -230,9 +495,10 @@ void drawText(unsigned char *string, unsigned char size, unsigned char x, unsign
 #define OPTION_ATTACK 8
 #define OPTION_MOUSETOGGLE 9
 #define OPTION_JOIN 10
+#define OPTION_MENU 11
 
-unsigned char optionStrings[][8] =
-   {{0xad, 0xb4, 0xab, 0xab, 0x00},
+unsigned char optionStrings[][8] = {
+  {0xad, 0xb4, 0xab, 0xab, 0x00},
 	{0xa4, 0xad, 0xa3, 0x00},
 	{0xa2, 0xae, 0xad, 0xa2, 0xa4, 0xa3, 0xa4, 0x00},
 	{0xb0, 0xb4, 0xa8, 0xb3, 0x00},
@@ -242,14 +508,15 @@ unsigned char optionStrings[][8] =
 	{0xa2, 0xa0, 0xaf, 0xb3, 0xb4, 0xb1, 0xa4, 0x00},
 	{0xa0, 0xb3, 0xb3, 0xa0, 0xa2, 0xaa, 0x00},
 	{0xac, 0xae, 0xb4, 0xb2, 0xa4, 0x00},
-	{0xa9, 0xae, 0xa8, 0xad, 0x00}};
+	{0xa9, 0xae, 0xa8, 0xad, 0x00},
+	{0xac, 0xa4, 0xad, 0xb5, 0x00}};
 
 unsigned char healthText[] = {0xa7, 0xa4, 0xa0, 0xab, 0xb3, 0xa7, 0x1c};
 
-unsigned char baseTypes[][9] = 
-   {{0xa1, 0xa0, 0xb2, 0xa4, 0x00},
+unsigned char baseTypes[][9] = {
+  {0xa1, 0xa0, 0xb2, 0xa4, 0x00},
 	{0xa7, 0xb0, 0x00},
-    {0xa5, 0xa0, 0xa2, 0xb3, 0xae, 0xb1, 0xb8, 0x00}};	
+  {0xa5, 0xa0, 0xa2, 0xb3, 0xae, 0xb1, 0xb8, 0x00}};	
 unsigned char baseTypeStringLengths[] = {4,2,8};
 
 unsigned char damageString[] = {0xa3, 0xac, 0xa6}; 
@@ -331,7 +598,7 @@ void drawUI() {
 	POKE(0x9F23,'P' - 'A' + 160);
 	POKE(0x9F23,28);
 	POKE(0x9F23,186 + (capt->health / 10));
-    POKE(0x9F23,186 + (capt->health % 10));
+  POKE(0x9F23,186 + (capt->health % 10));
 	
   } else if (unitPointer != NULL) {
     dummy = unitIndexes[unitPointer->index];
@@ -452,6 +719,7 @@ void keyPressed() {
 	  case OPTION_CONCEDE:
 		menuOptions.length = 0;
 		win(m.whoseTurn == player1team ? player2team : player1team);
+		break;
 	  case OPTION_QUIT:
 		menuOptions.length = 0;
 		POKE(0x9F25,0x80);
@@ -657,11 +925,12 @@ void keyPressed() {
 		  if (c.selected == NULL) {
 			c.selected = m.board[c.x+m.left_view+m.boardWidth*(c.y+m.top_view)].occupying;
 			if (c.selected == NULL) {
-			  menuOptions.length = 2;
+			  menuOptions.length = 3;
 			  menuOptions.selected = 0;
 			  menuOptions.options[0] = OPTION_END;
 			  menuOptions.options[1] = OPTION_QUIT;
-			  //menuOptions.options[2] = OPTION_MOUSETOGGLE;
+				menuOptions.options[2] = OPTION_CONCEDE;
+			  //menuOptions.options[3] = OPTION_MOUSETOGGLE;
 			  //++menuOptions.length;
 			} else {
 			  c.storex = c.x;
@@ -739,11 +1008,11 @@ void clearScreen() {
   while (PEEK(0x9F21) < 15) {
     if (PEEK(0x9F20) >= 30 || PEEK(0x9F21) >= 10) {
       if (PEEK(0x9F20) >= 40) {
-		POKE(0x9F20,0);
-		__asm__ ("inc $9F21");
+				POKE(0x9F20,0);
+				__asm__ ("inc $9F21");
       } else {
-		POKE(0x9F23,0x88);
-		POKE(0x9F23,0x80);
+				POKE(0x9F23,0x88);
+				POKE(0x9F23,0x80);
       }
     } else {
       POKE(0x9F23,28);

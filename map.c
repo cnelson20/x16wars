@@ -8,12 +8,15 @@
 
 #include "structs.h"
 #include "map.h"
+#include "waitforjiffy.h"
 
 // Variables
 extern struct Map m;
 extern struct Cursor c;
 extern struct Cursor attackCursor;
 extern struct possibleAttacks *pA;
+
+unsigned char returnToMenu;
 unsigned char player1team;
 unsigned char player2team;
 unsigned short turncounter;
@@ -26,8 +29,6 @@ unsigned char remove_old = 0;
 
 // Map methods
 void initMap() {
-  player1team = 0;
-  player2team = 2;
   m.whoseTurn = player1team;
   turncounter = 0;
 
@@ -305,9 +306,13 @@ void win(unsigned char team) {
   POKE(0x9F23,0x80);
   POKE(0x9F23,0xb2); // s
   POKE(0x9F23,0x80);
-  while(1) {
-	waitvsync();
+	
+	i = 300;
+  while(i != 0) {
+		waitforjiffy();
+		--i;
   }
+	returnToMenu = 1;
 }
 
 void nextTurn() {
