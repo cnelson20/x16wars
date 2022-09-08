@@ -69,13 +69,13 @@ void main() {
 		game_start();
 		returnToMenu = 0;
 		while (!returnToMenu) {
+			waitforjiffy();
 			__asm__("jsr $FFE4");
 			__asm__("sta %v", keyCode);
 			if (keyCode != 0) {
 				keyPressed();
 			}
 			draw();
-			waitforjiffy();
 		}
 		/* Free memory */
 		{
@@ -190,7 +190,7 @@ void print_ascii_str(char *string, unsigned char break_on_period) {
 		} else if (c == '.') {
 			if (break_on_period) { return; }
 			c = 28;
-		} else if (c == ' ') {
+		} else if (c == ' ' || c == '_') {
 			c = 28;
 		}
 		POKE(0x9F23, c);
@@ -250,7 +250,7 @@ void menu() {
 			} else if (keyCode == 0x0d /* Enter */) {
 				break;
 			} else if (keyCode == 0x51 /* Q */ || keyCode == 0x58 /* X */) {
-				__asm__ ("brk");
+				//__asm__ ("brk");
 				__asm__ ("jmp ($FFFC)");
 			} else if (keyCode >= 0x31 && keyCode <= 0x38 /* Between 1 & 8 */) {
 				unsigned char tempteam = (keyCode - 0x31) % 4; 
@@ -284,7 +284,6 @@ void menu() {
 	cbm_k_setnam(menu_files_array[c.x]);
 	cbm_k_setlfs(0xFF, 8, 0);
 	map_space = malloc(768);
-	//map_space = (char *)0x9800;
 	cbm_k_load(0, (unsigned short)map_space);
 	initMapData(map_space);
 	free(map_space);
@@ -330,10 +329,19 @@ void setup_menu() {
 	}
 }
 
+extern unsigned short turncounter;
+extern unsigned char unitsdeadthisturn;
+extern unsigned char currentbases;
+extern unsigned char oldbases;
+extern unsigned char currentunitsprites;
+extern unsigned char oldunitsprites;
+extern unsigned char remove_old;
+
 void game_start() {
-  menuOptions.length = 0;
-  mouseEnabled = 0;
-  
+	memset(&c, 0, sizeof(c));
+	memset(&attackCursor, 0, sizeof(attackCursor));
+	memset(&menuOptions, 0, sizeof(menuOptions));
+	
 	POKE(0x9F25, 0);
 	POKE(0x9F29, 0x71);
   clearScreen();
@@ -625,22 +633,35 @@ void drawUI() {
       POKE(0x9F23,186 + (unitPointer->health / 10));
       POKE(0x9F23,186 + (unitPointer->health % 10));
     }
+		if (unitPointer->ammo < 10) {
+			POKE(0x9F23,28);
+      POKE(0x9F23,160 + 'A' - 'A');
+			POKE(0x9F23,160 + 'M' - 'A');
+			POKE(0x9F23,160 + 'M' - 'A');
+			POKE(0x9F23,160 + 'O' - 'A');
+      POKE(0x9F23,186 + unitPointer->ammo);
+		}
 	if (pA != NULL && menuOptions.options[0] == OPTION_ATTACK && attackCursor.selected != NULL) {
 	  static unsigned char oldDamagePreviewNum = 0;
-	  static unsigned char damageModTen;
+	  static unsigned char damageHundredsDigit;
+		static unsigned char damageModTen;
 	  static unsigned char damageDivTen;
 	  
 	  unsigned char damagePreviewNum = calcPower(c.selected, attackCursor.selected); 	 
 	  
 	  if (damagePreviewNum != oldDamagePreviewNum) {
-		damageDivTen = 186 + (damagePreviewNum / 10);
-		damageModTen = 186 + (damagePreviewNum % 10);
+			damageHundredsDigit = 186 + (damagePreviewNum / 100);
+			damageDivTen = 186 + ((damagePreviewNum / 10) % 10);
+			damageModTen = 186 + (damagePreviewNum % 10);
 	  }
 	  
 	  drawText(damageString, sizeof(damageString), 1, 13, 1);
 	  POKE(0x9F20,2*5);
 	  POKE(0x9F21,0x40 + 13);
 	  POKE(0x9F22, 0x20);
+		if (damagePreviewNum >= 100) {
+			POKE(0x9F23, damageHundredsDigit);
+		}
 	  POKE(0x9F23, damageDivTen);
 	  POKE(0x9F23, damageModTen);
 	  
@@ -678,10 +699,10 @@ void clearUI() {
     POKE(0x9F20,0);
 	__asm__ ("lda #28");
 	__asm__ ("ldx #$80");
-    __asm__ ("ldy #12");
+    __asm__ ("ldy #20");
 	
   clearUILoop:
-	__asm__ ("sta $9F23"); // 12 times ( strlen of 'medium tank' + 1)
+	__asm__ ("sta $9F23"); // 20 times (width of screen)
 	__asm__ ("stx $9F23");
 	__asm__ ("dey");
 	__asm__ ("bne %g",clearUILoop);
@@ -698,6 +719,10 @@ unsigned char dropOffsetsX[] = {0, 1, 2, 1};
 unsigned char dropOffsetsY[] = {1, 0, 1, 2};
 
 void keyPressed() {  
+	if (keyCode == 0x91) { keyCode = 0x41 + 'w' - 'a'; }
+	if (keyCode == 0x9D) { keyCode = 0x41; }
+	if (keyCode == 0x11) { keyCode = 0x41 + 's' - 'a'; }
+	if (keyCode == 0x1D) { keyCode = 0x41 + 'd' - 'a'; }
 	
   if (menuOptions.length != 0) {
     if (keyCode == 0x57) /* W */ {

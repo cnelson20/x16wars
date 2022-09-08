@@ -188,6 +188,7 @@ void renderMap() {
   __asm__ ("sta $9F23");
   __asm__ ("sta $9F23");
   POKE(0x9F22,0x41);
+	oldunitsprites += 2;
   while (oldunitsprites != 0) {
 	POKE(0x9F23,0);
 	--oldunitsprites;  
@@ -608,6 +609,7 @@ void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsign
   u->index = index;
   u->team = team;
   u->health = 100;
+	u->ammo = 10;
   u->mvmtType = mvmtTypes[index];
   u->takenAction = 0;
   u->mvmtRange = mvmtRanges[index];
@@ -622,8 +624,32 @@ void newTurnUnit(struct Unit *u, unsigned short i) {
   u->takenAction = 0;
   if (m.whoseTurn == u->team && m.board[i].base != NULL && m.board[i].base->team == u->team) {
     u->health += 20;
+		u->ammo = 10;
     if (u->health > 100) {u->health = 100;}
-  }
+  } 
+	if (m.whoseTurn == u->team) {
+		struct Unit *up;
+		/* If a APC unit is surrounding a unit, refill ammo */
+		if (u->x > 0 && m.board[i-1].occupying != NULL) {
+			up = m.board[i - 1].occupying;
+			if (up->team == u->team && up->index == 0) { u->ammo = 10; goto apc_nearby_exit; }
+		}
+		if (u->x < m.boardWidth - 1 && m.board[i+1].occupying != NULL) {
+			up = m.board[i + 1].occupying;
+			if (up->team == u->team && up->index == 0) { u->ammo = 10; goto apc_nearby_exit; }
+		}
+		if (u->y > 0 && m.board[i - m.boardWidth].occupying != NULL) {
+			up = m.board[i - m.boardWidth].occupying;
+			if (up->team == u->team && up->index == 0) { u->ammo = 10; goto apc_nearby_exit; }
+		}
+		if (u->y < m.boardHeight - 1 && m.board[i + m.boardWidth].occupying != NULL) {
+			up = m.board[i + m.boardWidth].occupying;
+			if (up->team == u->team && up->index == 0) { u->ammo = 10; }
+		}
+		apc_nearby_exit:
+		; /* semicolon so compiler says a-ok */
+		
+	}
 }
 
 void renderUnit(struct Unit *u) {
@@ -753,23 +779,25 @@ unsigned char damageChart[] = {
 0x00, 0x00, 0x00, 0x00, 0x00, 0x37, 0x05, 0x00, 0x55, 0x41, 0x00, 0x37, 0x55, 0x00, 0x00, 0x19, 0x00, 0x5f,
 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x37, 0x28, 0x00, 0x19, 0x4b, 0x00, 0x00, 0x37, 0x00, 0x32};
 
-/*unsigned char canAttack(struct Unit *a, struct Unit *b) {
-  if (SABS(b->x,a->x) + SABS(b->y,a->y) >= a->attackRangeMin && SABS(b->x,a->x) + SABS(b->y,a->y) <= a->attackRangeMax) {
+unsigned char canAttack(struct Unit *a, struct Unit *b) {
+  if (a->team != b->team && a->ammo > 0 && SABS(b->x,a->x) + SABS(b->y,a->y) >= a->attackRangeMin && SABS(b->x,a->x) + SABS(b->y,a->y) <= a->attackRangeMax) {
     return damageChart[unitIndexes[b->index] * 18 + unitIndexes[a->index]];
-  }
-  return 0;
-}*/
-#define CANATTACK(a,b) ((a->team != b->team && SABS(b->x,a->x) + SABS(b->y,a->y) >= a->attackRangeMin && SABS(b->x,a->x) + SABS(b->y,a->y) <= a->attackRangeMax) ? (damageChart[unitIndexes[b->index] * 18 + unitIndexes[a->index]]) : 0)
+  } else {
+		return 0;
+	}
+}
 
 unsigned char calcPower(struct Unit *a, struct Unit *b) {
-  return CANATTACK(a,b) * a->health / 100;
+  return canAttack(a,b) * a->health / 100;
 }
 
 void attack(struct Unit *attacker, struct Unit *defender) {
   defender->health -= calcPower(attacker,defender);
+	if (attacker->ammo > 0) { --attacker->ammo; }
   if (defender->health >= 128) {defender->health = 0;}
   if (defender->health > 0) {
     attacker->health -= calcPower(defender,attacker);
+		if (defender->ammo > 0) { --defender->ammo; }
     if (attacker->health >= 128) {attacker->health = 0;}
     if (attacker->health == 0) {
       m.board[m.boardWidth*attacker->y+attacker->x].occupying = NULL;
@@ -815,12 +843,20 @@ void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned c
   if (cy < m.boardHeight - 1) { south = &(m.board[(cy+1)*m.boardWidth+cx]); }
   if (cx < m.boardWidth - 1) { east = &(m.board[cy*m.boardWidth+cx+1]); }
   
-  if (north->occupying != NULL && north->occupying->team != m.whoseTurn) {pA->attacks[i] = north; i++;}
-  if (east->occupying != NULL && east->occupying->team != m.whoseTurn) {pA->attacks[i] = east; i++;}
-  if (south->occupying != NULL && south->occupying->team != m.whoseTurn) {pA->attacks[i] = south; i++;}
-  if (west->occupying != NULL && west->occupying->team != m.whoseTurn) {pA->attacks[i] = west; i++;}
+  if (north->occupying != NULL && north->occupying->team != m.whoseTurn && canAttack(c.selected, north->occupying)) {
+		pA->attacks[i] = north; i++;
+	}
+  if (east->occupying != NULL && east->occupying->team != m.whoseTurn && canAttack(c.selected, east->occupying)) {
+		pA->attacks[i] = east; i++;
+	}
+  if (south->occupying != NULL && south->occupying->team != m.whoseTurn && canAttack(c.selected, south->occupying)) {
+		pA->attacks[i] = south; i++;
+	}
+  if (west->occupying != NULL && west->occupying->team != m.whoseTurn && canAttack(c.selected, west->occupying)) {
+		pA->attacks[i] = west; i++;
+	}
   pA->length = i;
-} // not tested
+}
 
 void getPossibleDrops(struct possibleAttacks *pA, struct Unit *u) {
   struct Unit *carry = u->carrying;

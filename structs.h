@@ -8,7 +8,8 @@ struct Captureable;
 typedef struct Unit {
   unsigned char index;
   unsigned char health;
-  unsigned char x,y;
+  unsigned char ammo;
+	unsigned char x,y;
 
   unsigned char mvmtRange;
   unsigned char mvmtType;

@@ -26,6 +26,7 @@ void nextTurn();
 unsigned char move(struct Unit *u, unsigned char x, unsigned char y);
 void undoMove(struct Unit *u);
 
+unsigned char canAttack(struct Unit *a, struct Unit *b);
 unsigned char calcPower(struct Unit *a, struct Unit *b);
 void attack(struct Unit *attacker, struct Unit *defender);
 
