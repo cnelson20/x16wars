@@ -4,3 +4,7 @@
 
 #X16 program files
 *.prg
+
+#backup files from HxD
+*.bak
+
