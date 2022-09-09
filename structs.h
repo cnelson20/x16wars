@@ -31,7 +31,7 @@ typedef struct Terrain {
   unsigned char tileIndex;
   unsigned char paletteOffset;
   unsigned char defense;
-  unsigned char mvmtCosts[5];
+  unsigned char mvmtCosts[6];
 };
 
 typedef struct Tile {

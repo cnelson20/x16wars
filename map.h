@@ -1,6 +1,23 @@
 #define NULL 0
-#define false 0
-#define true 1
+
+#define UNIT_APC 0
+#define UNIT_RECON 1
+#define UNIT_MECH 2
+#define UNIT_INFANTRY 3
+#define UNIT_ANTI_AIR 9
+#define UNIT_MEDIUM_TANK 0xa
+#define UNIT_SMALL_TANK 0xb
+#define UNIT_MISSILES 0xc
+#define UNIT_ROCKETS 0xd
+#define UNIT_ARTILLERY 0xe
+#define UNIT_TRANSPORT 0x10
+#define UNIT_COPTER 0x11
+#define UNIT_BOMBER 0x12
+#define UNIT_FIGHTER 0x13
+#define UNIT_LANDER 0x18
+#define UNIT_SUBMARINE 0x19
+#define UNIT_CRUISER 0x1A
+#define UNIT_BATTLESHIP 0x1B
 
 void initMap();
 void initMapData(char data[]);

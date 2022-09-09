@@ -350,6 +350,7 @@ void initTile(struct Tile *t, unsigned char index) {
 // mvmtCosts[2] = tires
 // mvmtCosts[3] = boat
 // mvmtCosts[4] = mech
+// mvmtCosts[5] = lander
 void initTerrain(struct Terrain *t, unsigned char index) {
   t->tileIndex = index + 0x80;
   switch (index) {
@@ -361,6 +362,7 @@ void initTerrain(struct Terrain *t, unsigned char index) {
       t->mvmtCosts[2] = 0;
       t->mvmtCosts[3] = 2;
       t->mvmtCosts[4] = 0;
+			t->mvmtCosts[5] = 2;
       break;
     case 1: // Water
       t->paletteOffset = 0x40;
@@ -370,7 +372,19 @@ void initTerrain(struct Terrain *t, unsigned char index) {
       t->mvmtCosts[2] = 0;
       t->mvmtCosts[3] = 1;
       t->mvmtCosts[4] = 0;
+			t->mvmtCosts[5] = 1;
       break;
+		case 9: // Shoal
+			t->paletteOffset = 0x40;
+			t->defense = 0;
+			t->mvmtCosts[0] = 1;
+			t->mvmtCosts[1] = 1;
+			t->mvmtCosts[2] = 1;
+			t->mvmtCosts[3] = 0;
+			t->mvmtCosts[4] = 1;
+			t->mvmtCosts[5] = 1;
+			break;	
+			
     case 2: // Vertical Road
     case 3: // Horizontal Road
       t->paletteOffset = 0x50;
@@ -380,6 +394,7 @@ void initTerrain(struct Terrain *t, unsigned char index) {
       t->mvmtCosts[2] = 1;
       t->mvmtCosts[3] = 0;
       t->mvmtCosts[4] = 1;
+			t->mvmtCosts[5] = 0;
       break;
 	case 0x40: /* captureable indices */
 	case 0x41:	
@@ -404,6 +419,7 @@ void initTerrain(struct Terrain *t, unsigned char index) {
       t->mvmtCosts[2] = 1;
       t->mvmtCosts[3] = 0;
       t->mvmtCosts[4] = 1;
+			t->mvmtCosts[5] = 0;
       break;
     case 5: //Plains
       t->paletteOffset = 0x60;
@@ -413,6 +429,7 @@ void initTerrain(struct Terrain *t, unsigned char index) {
       t->mvmtCosts[2] = 2;
       t->mvmtCosts[3] = 0;
       t->mvmtCosts[4] = 1;
+			t->mvmtCosts[5] = 0;
     case 6: // Forest
       t->paletteOffset = 0x60;
       t->defense = 2;
@@ -421,6 +438,7 @@ void initTerrain(struct Terrain *t, unsigned char index) {
       t->mvmtCosts[2] = 3;
       t->mvmtCosts[3] = 0;
       t->mvmtCosts[4] = 1;
+			t->mvmtCosts[5] = 0;
       break;
     case 7: // Mountain
       t->paletteOffset = 0x70;
@@ -430,7 +448,18 @@ void initTerrain(struct Terrain *t, unsigned char index) {
       t->mvmtCosts[2] = 0;
       t->mvmtCosts[3] = 0;
       t->mvmtCosts[4] = 1;
+			t->mvmtCosts[5] = 0;
       break;
+		case 10: // River
+			t->paletteOffset = 0x40;
+			t->defense = 0;
+			t->mvmtCosts[0] = 2;
+      t->mvmtCosts[1] = 0;
+      t->mvmtCosts[2] = 0;
+      t->mvmtCosts[3] = 0;
+      t->mvmtCosts[4] = 1;
+			t->mvmtCosts[5] = 0;
+			break;
   }
 }
 
@@ -600,7 +629,7 @@ unsigned char mvmtTypes[] = {
   2,2,1,9,
   1,1,1,1, /* airborne units arent affected by this */
   9,9,9,9,
-  3,3,3,3
+  5,3,3,3
 };
 void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsigned char index, unsigned char team) {
   u->x = init_x;
@@ -608,7 +637,7 @@ void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsign
   m.board[init_x+m.boardWidth*init_y].occupying = u;
   u->index = index;
   u->team = team;
-  u->health = 100;
+	u->health = 100;
 	u->ammo = 10;
   u->mvmtType = mvmtTypes[index];
   u->takenAction = 0;
@@ -671,24 +700,31 @@ unsigned char maxSteps;
 struct Unit *checkU;
 struct Tile tempT;
 
+unsigned char canCarryUnit(unsigned char carrier_index, unsigned char carried_index) {
+	if ((carrier_index == UNIT_APC || carrier_index == UNIT_TRANSPORT) && carried_index >= UNIT_MECH && carried_index <= UNIT_INFANTRY) { return 1; }
+	else if (carrier_index == UNIT_LANDER && carried_index <= UNIT_ARTILLERY) { return 1; }
+	else if (carrier_index == UNIT_CRUISER && carried_index == UNIT_COPTER) { return 1; } 
+	return 0;
+}
+
 unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned char steps) {
-  if (tx >= m.boardWidth || ty >= m.boardHeight) {return false;}
-  if (tx == checkU->x && ty == checkU->y) {return true;}
+  if (tx >= m.boardWidth || ty >= m.boardHeight) {return 0;}
+  if (tx == checkU->x && ty == checkU->y) {return 1;}
   tempT = m.board[ty*m.boardWidth+tx];
   if (checkU->airborne) {
 	++steps;
   } else {
-    if (!tempT.t->mvmtCosts[checkU->mvmtType]) {return false;}
+    if (!tempT.t->mvmtCosts[checkU->mvmtType]) {return 0;}
     steps += tempT.t->mvmtCosts[checkU->mvmtType];
 	if (tempT.t->mvmtCosts[checkU->mvmtType] >= 2 && steps > maxSteps) {
 		--steps;
 	}
   }
-  if (steps > maxSteps) {return false;}
+  if (steps > maxSteps) {return 0;}
   
   /* recursive calls */
-  if (SHRTCIRCUIT_AND(tx != 0,checkSpaceInMvmtRange(tx-1,ty,steps))) {return true;}
-  if (SHRTCIRCUIT_AND(ty != 0,checkSpaceInMvmtRange(tx,ty-1,steps))) {return true;}
+  if (SHRTCIRCUIT_AND(tx != 0,checkSpaceInMvmtRange(tx-1,ty,steps))) {return 1;}
+  if (SHRTCIRCUIT_AND(ty != 0,checkSpaceInMvmtRange(tx,ty-1,steps))) {return 1;}
   return checkSpaceInMvmtRange(tx+1,ty,steps) || checkSpaceInMvmtRange(tx,ty+1,steps);
 }
 
@@ -698,41 +734,41 @@ unsigned char baseLastHP = 255;
 
 unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
   if (!u->takenAction && x < m.boardWidth && y < m.boardHeight) {
-	if (m.board[y*m.boardWidth+x].occupying != NULL && m.board[y*m.boardWidth+x].occupying != u) {
-		if (m.board[y*m.boardWidth+x].occupying->team != u->team) {
-			return 0;
-		/* Check if unit can be loaded on another */
-		} else if ((m.board[y*m.boardWidth+x].occupying->index != 16 && m.board[y*m.boardWidth+x].occupying->index != 0) || (u->index < 2 || u->index > 3) || m.board[y*m.boardWidth+x].occupying->carrying != NULL) {
-			/* Check if units can be joined together */
-			if (m.board[y*m.boardWidth+x].occupying->index != u->index || m.board[y*m.boardWidth+x].occupying->health == 100 || u->health == 100) {
+		if (m.board[y*m.boardWidth+x].occupying != NULL && m.board[y*m.boardWidth+x].occupying != u) {
+			if (m.board[y*m.boardWidth+x].occupying->team != u->team) {
 				return 0;
+			/* Check if unit can be loaded on another, if yes, continue to main routine */
+			} else if (!canCarryUnit(m.board[y*m.boardWidth+x].occupying->index, u->index) || m.board[y*m.boardWidth+x].occupying->carrying != NULL) {
+				/* Check if units can be joined together. if yes continue to main part */
+				if (m.board[y*m.boardWidth+x].occupying->index != u->index || m.board[y*m.boardWidth+x].occupying->health == 100 || u->health == 100) {
+					return 0;
+				}
 			}
 		}
-	}
-	maxSteps = u->mvmtRange;
-    checkU = u;
-    if ((u->airborne) ? (SABS(u->x, x) + SABS(u->y, y) <= u->mvmtRange) : checkSpaceInMvmtRange(x,y,0)) {
-      checkU = NULL;
-      maxSteps = 0;
-      unitLastX = u->x;
-      unitLastY = u->y;
-	  if (m.board[unitLastY*m.boardWidth+unitLastX].base != NULL && (unitLastX != x || unitLastY != y)) {
-		baseLastHP = m.board[unitLastY*m.boardWidth+unitLastX].base->health;  
-		m.board[unitLastY*m.boardWidth+unitLastX].base->health = 20;
-	  }
-	  if (u->x >= m.left_view && u->x < m.left_view + 15 && u->y >= m.top_view && u->y < m.top_view + 10) {
-		POKE(0x9F20,(unitLastX - m.left_view) << 1);
-		POKE(0x9F21,0x40+unitLastY-m.top_view);
-        POKE(0x9F22,0x00);
-        POKE(0x9F23,28);
-	  }
-      m.board[unitLastY*m.boardWidth+unitLastX].occupying = NULL; 
-      u->x = x;
-      u->y = y;
-	  attackCursor.selected = m.board[y*m.boardWidth+x].occupying;
-      m.board[y*m.boardWidth+x].occupying = u;
-      return 1;
-    }
+		maxSteps = u->mvmtRange;
+		checkU = u;
+		if ((u->airborne) ? (SABS(u->x, x) + SABS(u->y, y) <= u->mvmtRange) : checkSpaceInMvmtRange(x,y,0)) {
+			checkU = NULL;
+			maxSteps = 0;
+			unitLastX = u->x;
+			unitLastY = u->y;
+			if (m.board[unitLastY*m.boardWidth+unitLastX].base != NULL && (unitLastX != x || unitLastY != y)) {
+				baseLastHP = m.board[unitLastY*m.boardWidth+unitLastX].base->health;  
+				m.board[unitLastY*m.boardWidth+unitLastX].base->health = 20;
+			}
+			if (u->x >= m.left_view && u->x < m.left_view + 15 && u->y >= m.top_view && u->y < m.top_view + 10) {
+				POKE(0x9F20,(unitLastX - m.left_view) << 1);
+				POKE(0x9F21,0x40+unitLastY-m.top_view);
+				POKE(0x9F22,0x00);
+				POKE(0x9F23,28);
+			}
+			m.board[unitLastY*m.boardWidth+unitLastX].occupying = NULL; 
+			u->x = x;
+			u->y = y;
+			attackCursor.selected = m.board[y*m.boardWidth+x].occupying;
+			m.board[y*m.boardWidth+x].occupying = u;
+			return 1;
+		}
   }
   return 0;
 }
