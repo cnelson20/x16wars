@@ -247,7 +247,7 @@ void menu() {
 				--c.x;
 			} else if (keyCode == 0x53 /* S */ && c.x < menu_files_length - 1) {
 				++c.x;
-			} else if (keyCode == 0x0d /* Enter */) {
+			} else if (keyCode == 0x0d /* Enter */ || keyCode == 0x49 /* I */) {
 				break;
 			} else if (keyCode == 0x51 /* Q */ || keyCode == 0x58 /* X */) {
 				//__asm__ ("brk");
@@ -341,6 +341,12 @@ void game_start() {
 	memset(&c, 0, sizeof(c));
 	memset(&attackCursor, 0, sizeof(attackCursor));
 	memset(&menuOptions, 0, sizeof(menuOptions));
+	
+	turncounter = 0;
+	unitsdeadthisturn = 0;
+	currentbases = 0;
+	currentunitsprites = 0;
+	remove_old = 0;
 	
 	POKE(0x9F25, 0);
 	POKE(0x9F29, 0x71);
@@ -514,19 +520,6 @@ void drawText(unsigned char *string, unsigned char size, unsigned char x, unsign
   }
 }
 
-#define OPTION_NULL 0
-#define OPTION_END 1
-#define OPTION_CONCEDE 2
-#define OPTION_QUIT 3 
-#define OPTION_DROP 4
-#define OPTION_WAIT 5 
-#define OPTION_LOAD 6
-#define OPTION_CAPTURE 7
-#define OPTION_ATTACK 8
-#define OPTION_MOUSETOGGLE 9
-#define OPTION_JOIN 10
-#define OPTION_MENU 11
-
 unsigned char optionStrings[][8] = {
   {0xad, 0xb4, 0xab, 0xab, 0x00},
 	{0xa4, 0xad, 0xa3, 0x00},
@@ -559,24 +552,6 @@ void drawUI() {
   unsigned char dummy, i;
 
   clearUI();
-  
-  /* Display memory footprint on screen *//*
-  POKE(0x9F21,0x40+13);
-  POKE(0x9F20,0);
-  POKE(0x9F22,0x20);
-  POKE(0x9F23,'M' - 'A' + 160); 
-  POKE(0x9F23,28);
-  test = malloc(1);
-  i = ((unsigned short)test >> 12) % 16;
-  POKE(0x9F23,SCREENBYTE(i));
-  i = ((unsigned short)test >> 8) % 16;
-  POKE(0x9F23,SCREENBYTE(i));
-  i = ((unsigned short)test >> 4) % 16;
-  POKE(0x9F23,SCREENBYTE(i));
-  i = (unsigned short)test % 16;
-  POKE(0x9F23,SCREENBYTE(i));
-  free(test);
-  */
   
   POKE(0x9F20,16*2);
   POKE(0x9F21,0x41);
