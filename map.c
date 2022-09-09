@@ -661,19 +661,19 @@ void newTurnUnit(struct Unit *u, unsigned short i) {
 		/* If a APC unit is surrounding a unit, refill ammo */
 		if (u->x > 0 && m.board[i-1].occupying != NULL) {
 			up = m.board[i - 1].occupying;
-			if (up->team == u->team && up->index == 0) { u->ammo = 10; goto apc_nearby_exit; }
+			if (up->team == u->team && up->index == UNIT_APC) { u->ammo = 10; goto apc_nearby_exit; }
 		}
 		if (u->x < m.boardWidth - 1 && m.board[i+1].occupying != NULL) {
 			up = m.board[i + 1].occupying;
-			if (up->team == u->team && up->index == 0) { u->ammo = 10; goto apc_nearby_exit; }
+			if (up->team == u->team && up->index == UNIT_APC) { u->ammo = 10; goto apc_nearby_exit; }
 		}
 		if (u->y > 0 && m.board[i - m.boardWidth].occupying != NULL) {
 			up = m.board[i - m.boardWidth].occupying;
-			if (up->team == u->team && up->index == 0) { u->ammo = 10; goto apc_nearby_exit; }
+			if (up->team == u->team && up->index == UNIT_APC) { u->ammo = 10; goto apc_nearby_exit; }
 		}
 		if (u->y < m.boardHeight - 1 && m.board[i + m.boardWidth].occupying != NULL) {
 			up = m.board[i + m.boardWidth].occupying;
-			if (up->team == u->team && up->index == 0) { u->ammo = 10; }
+			if (up->team == u->team && up->index == UNIT_APC) { u->ammo = 10; }
 		}
 		apc_nearby_exit:
 		; /* semicolon so compiler says a-ok */
