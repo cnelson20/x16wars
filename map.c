@@ -641,7 +641,7 @@ void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsign
   u->attackRangeMax = (index >= 12 && index <= 14) ? (index == 14 ? 3 : 5) : 1;
   u->airborne = index >= 16 && index <= 19;
   
-	//u->canAttackAndMove = !(index == UNIT_MISSILES || index == UNIT_ROCKETS);
+	u->canAttackAndMove = !(index == UNIT_MISSILES || index == UNIT_ROCKETS);
 	
   u->carrying = NULL;
 }
@@ -865,8 +865,6 @@ void attack(struct Unit *attacker, struct Unit *defender) {
   }
 }
 
-char temp_string[12];
-
 void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned char cy, unsigned char attackRangeMax) {
 	if (!c.selected->canAttackAndMove && (c.x != unitLastX || c.y != unitLastY)) { pA->length = 0; return; }
 	
@@ -913,8 +911,6 @@ void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned c
 			for (x = xmin; x <= xmax; ++x) {
 				//if (SABS(x, c.x) + SABS(ymin, c.y) <= attackRangeMin) { continue; }
 				temp = &(m.board[m.boardWidth * ymin + x]);
-				itoa(temp->occupying, temp_string, 10);
-				change_directory(temp_string);
 				if (temp->occupying != NULL && temp->occupying->team != m.whoseTurn != NULL && canAttack(c.selected, temp->occupying)) {
 					if (pA->length < 8) { // Cap number of possible attacks to save RAM (shouldn't really come up, limited to 8)
 						pA->attacks[pA->length] = temp;
