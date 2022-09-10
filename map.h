@@ -47,7 +47,7 @@ unsigned char canAttack(struct Unit *a, struct Unit *b);
 unsigned char calcPower(struct Unit *a, struct Unit *b);
 void attack(struct Unit *attacker, struct Unit *defender);
 
-void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned char cy);
+void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned char cy, unsigned char attackRangeMax);
 void getPossibleDrops(struct possibleAttacks *pA, struct Unit *u);
 unsigned char sizeofGetPossibleDrops(struct Unit *u);
 

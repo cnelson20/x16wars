@@ -1206,7 +1206,7 @@ void keyPressed()
 							else
 							{
 								pA = malloc(sizeof(struct possibleAttacks));
-								getPossibleAttacks(pA, c.x + m.left_view, c.y + m.top_view);
+								getPossibleAttacks(pA, c.x + m.left_view, c.y + m.top_view, c.selected->attackRangeMax);
 								menuOptions.selected = 0;
 								menuOptions.length = 0;
 								if (pA->length != 0)
