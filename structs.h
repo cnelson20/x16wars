@@ -13,16 +13,15 @@ typedef struct Unit {
 
   unsigned char mvmtRange;
   unsigned char mvmtType;
-  unsigned char attackRangeMin:4;
-  unsigned char attackRangeMax:4;
+  unsigned char attackRangeMin;
+  unsigned char attackRangeMax;
 
-  unsigned char team:2;
-  unsigned char canAttack:1;
-  unsigned char canAttackAndMove:1;
-  unsigned char takenAction:1;
-  unsigned char airborne:1;
-  unsigned char isVehicle:1;
-  unsigned char navalOnly:1;
+  unsigned char team;
+  unsigned char canAttackAndMove;
+  unsigned char takenAction;
+  unsigned char airborne;
+  unsigned char isVehicle;
+  unsigned char navalOnly;
   
   struct Unit *carrying;
 };
@@ -64,7 +63,7 @@ typedef struct Map {
 
 typedef struct possibleAttacks {
   unsigned char length;
-  struct Tile *attacks[4];
+  struct Tile *attacks[8];
 };
 
 typedef struct Menu {
