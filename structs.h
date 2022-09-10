@@ -35,8 +35,6 @@ typedef struct Terrain {
 };
 
 typedef struct Tile {
-  unsigned char dummy;
-
   struct Unit *occupying;
   struct Terrain *t;
   struct Captureable *base;

@@ -9,6 +9,7 @@
 #include "structs.h"
 #include "map.h"
 #include "waitforjiffy.h"
+#include "main.h"
 
 // Variables
 extern struct Map m;
@@ -33,9 +34,9 @@ void initMap() {
   turncounter = 0;
 
   m.top_view = 0;
-  m.oldtop_view = 0xFF;
+  m.oldtop_view = 0;
   m.left_view = 0;
-  m.oldleft_view = 0xFF;
+  m.oldleft_view = 0;
   m.whoseTurn = player1team;
   m.boardWidth = 3;
   m.boardHeight = 3;
@@ -44,7 +45,7 @@ void initMap() {
 }
 void initMapData(char data[]) {
   unsigned short i, mapI, temp;
-
+	
   initMap();
   free(m.board);
   m.boardWidth = data[0];
@@ -61,9 +62,11 @@ void initMapData(char data[]) {
     ++i;
   }
   for (i = 2; data[i] != 0xFF; i += 3) {
-    temp = data[i]+m.boardWidth*data[i+1];
-    m.board[data[i]+m.boardWidth*data[i+1]].occupying = malloc(sizeof (struct Unit));
-    initUnit(m.board[temp].occupying, data[i], data[i+1], data[i+2], player1team);
+		
+    temp = data[i]+m.boardWidth * data[i+1];
+    m.board[temp].occupying = malloc(sizeof (struct Unit));
+		
+		initUnit(m.board[temp].occupying, data[i], data[i+1], data[i+2], player1team);
   }
   i++;
   for (; data[i] != 0xFF; i += 3) {
@@ -80,166 +83,161 @@ unsigned char captureableSpriteOffsets[][] =
    {{18, 26, 18, 26, 26},
 	{34, 42, 34, 42, 42}};
 
-unsigned char renderMap_draw_tiles;
-
 void renderMap() {
   unsigned char x,y;
   unsigned short i,temp;
 
   checkOldUnits();
   
-  // If a unit is stacked on a transport unit draw under it
-  if (menuOptions.length != 0 && menuOptions.options[0] != 1) {
-	POKE(0x9fb6, 9);
-	renderUnit(attackCursor.selected);
-  }
-  
-  /* 
-	Set all the game tiles
-	If a unit is present draw it as well
-  */
-  x = 0;
-  y = 0;
-  POKE(0x9F20,0x00);
-  POKE(0x9F21,0x00);
-  POKE(0x9F22,0x10);
-  
-  oldunitsprites = currentunitsprites;
-  currentunitsprites = 0;
-  
-  renderMap_draw_tiles = m.top_view != m.oldtop_view || m.left_view != m.oldleft_view;
-  
-  remove_old = 0;
-  for (i = m.top_view * m.boardWidth + m.left_view; y < 10; ++i) {
-	__asm__ ("lda %v", renderMap_draw_tiles);
-	__asm__ ("beq %g", check_if_unit_to_render);
-	POKE(0x9F23,m.board[i].t->tileIndex);
-	POKE(0x9F23,m.board[i].t->paletteOffset);
-	check_if_unit_to_render:
-	if (m.board[i].occupying != NULL) {
-	  renderUnit(m.board[i].occupying);
-	  POKE(0x9F20,(x+1)*2);
-	  POKE(0x9F21,y);
-	  POKE(0x9F22,0x10);
+	POKE(0x9F20, 0);
+	POKE(0x9F21, 0);
+	POKE(0x9F22, 0x10);
+	x = 0;
+	y = 0;
+	i = m.left_view + m.top_view * m.boardWidth; 
+	while (y < 10) {
+		POKE(0x9F23, m.board[i].t->tileIndex);
+		POKE(0x9F23, m.board[i].t->paletteOffset);
+		if (m.board[i].occupying != NULL) {
+			renderUnit(m.board[i].occupying);
+			
+			POKE(0x9F20, (x+1) * 2);
+			POKE(0x9F21, y);
+		}
+		
+		++x;
+		if (x >= 15) {
+			i += m.boardWidth - 15;
+			
+			++y;
+			x = 0;
+			__asm__ ("inc $9F21");
+			POKE(0x9F20, 0);
+		}
+		++i;
 	}
-	++x;
-	if (x >= 15) {
-	  i += m.boardWidth - 15;		
-	  ++y;
-	  __asm__ ("inc $9F21");
-	  x = 0;
-	  POKE(0x9F20,0);
-	}
-  }
-  
-  POKE(0x9F20,40);
+	
+	oldunitsprites = currentunitsprites;
+	currentunitsprites = 0;
+	POKE(0x9F20,40);
   POKE(0x9F21,0xFC);
   POKE(0x9F22,0x11);
   for (i = m.top_view * m.boardWidth + m.left_view; i < m.boardArea; ++i) {
-    if (m.board[i].occupying != NULL && m.board[i].occupying->x >= m.left_view && m.board[i].occupying->x < m.left_view + 15 && m.board[i].occupying->y >= m.top_view && m.board[i].occupying->y < m.top_view + 10) {
-	  if (m.board[i].occupying->carrying != NULL) {
-		++currentunitsprites;
-		POKE(0x9F23,16);
-		POKE(0x9F23,8);
-		temp = (m.board[i].occupying->x - m.left_view) << 4;
-		POKE(0x9F23,temp);
-		POKE(0x9F23,temp>>8);
-		temp = ((m.board[i].occupying->y - m.top_view) << 4) + 8;
-		POKE(0x9F23,temp);
-		POKE(0x9F23,temp >> 8);
-		POKE(0x9F23,0x0C);
-		POKE(0x9F23,(m.board[i].occupying->takenAction ? 9 : 0) + m.board[i].occupying->team);
-	  }	else if (m.board[i].base != NULL && m.board[i].base->health < 20) {
-		++currentunitsprites;
-		POKE(0x9F23,17);
-		POKE(0x9F23,8);
-		temp = (m.board[i].occupying->x - m.left_view) << 4;
-		POKE(0x9F23,temp);
-		POKE(0x9F23,temp>>8);
-		temp = ((m.board[i].occupying->y - m.top_view) << 4) + 8;
-		POKE(0x9F23,temp);
-		POKE(0x9F23,temp >> 8);
-		POKE(0x9F23,0x0C);
-		POKE(0x9F23,(m.board[i].occupying->takenAction ? 9 : 0) + m.board[i].occupying->team);
-	  }		  
-	  if (m.board[i].occupying->health <= 90) {
-		++currentunitsprites;
-		POKE(0x9F23,6 + ((m.board[i].occupying->health + 9) / 10));
-		POKE(0x9F23,8);
-		temp = ((m.board[i].occupying->x - m.left_view) << 4) + 8;
-		POKE(0x9F23,temp);
-		POKE(0x9F23,temp>>8);
-		temp = ((m.board[i].occupying->y - m.top_view) << 4) + 8;
-		POKE(0x9F23,temp);
-		POKE(0x9F23,temp >> 8);
-		POKE(0x9F23,0x0C);
-		POKE(0x9F23,0x08);
-	  }
-    }
-  }
-  // Clear sprites for dead units 
-  while (currentunitsprites < oldunitsprites) {
-	  __asm__ ("ldy #8");
-	  clear_unit_sprites_loop:
-	  __asm__ ("stz $9F23");
-	  __asm__ ("dey");
-	  __asm__ ("bne %g", clear_unit_sprites_loop);
-	  ++currentunitsprites;
-  }
-  
-  oldbases = currentbases;
-  currentbases = 0;
-  
-  POKE(0x9F20,0xFF);
-  POKE(0x9F21,0xFC);
-  POKE(0x9F22,0x19);
-  x = 0;
-  y = 0;
-  for (i = m.top_view * m.boardWidth + m.left_view; y < 10; ++i) {
-    if (m.board[i].base != NULL) {
-	  ++currentbases;
-	  
-      if (y != 0) {		
-		POKE(0x9F23,0x90 + captureablePaletteOffsets[m.board[i].base->team]); /* 32 x 32 sprite */
-		POKE(0x9F23,0x08); // Z-depth (b/w layers 0 & 1)
-		POKE(0x9F23,(y-1) >> 4);
-		POKE(0x9F23,(y-1) << 4);
-		POKE(0x9F23,x >> 4);
-		POKE(0x9F23,x << 4);
-		POKE(0x9F23,8);
-		POKE(0x9F23,captureableSpriteOffsets[m.board[i].base->type][m.board[i].base->team]);
-	  } else { /* y == 0 */
-		POKE(0x9F23,0x50 + captureablePaletteOffsets[m.board[i].base->team]); /* 32 x 16 sprite */
-		POKE(0x9F23,0x08); // Z-depth (b/w layers 0 & 1)
-		POKE(0x9F23,y >> 4);
-		POKE(0x9F23,y << 4);
-		POKE(0x9F23,x >> 4);
-		POKE(0x9F23,x << 4);
-		POKE(0x9F23,8);
-		POKE(0x9F23,captureableSpriteOffsets[m.board[i].base->type][m.board[i].base->team] + 4);		
-	  }
+		struct Unit *tu = m.board[i].occupying;
+		if (tu == NULL) { continue ; }
+		if (tu->x < m.left_view || tu->x >= m.left_view + 15 || tu->y < m.top_view || tu->y >= m.top_view + 10) { continue;	}
+		if (tu->carrying != NULL) {
+			++currentunitsprites;
+			POKE(0x9F23, 16);
+			POKE(0x9F23, 8);
+			temp = (tu->x - m.left_view) << 4;
+			POKE(0x9F23, temp);
+			POKE(0x9F23, temp>>8);
+			temp = ((tu->y - m.top_view) << 4) + 8;
+			POKE(0x9F23, temp);
+			POKE(0x9F23, temp>>8);
+			POKE(0x9F23, 0xC);
+			POKE(0x9F23, (tu->takenAction ? 9 : 0) + tu->team);
+		} else if (m.board[i].base != NULL && m.board[i].base->health < 20) {
+			++currentunitsprites;
+			POKE(0x9F23, 17);
+			POKE(0x9F23, 8);
+			temp = (tu->x - m.left_view) << 4;
+			POKE(0x9F23, temp);
+			POKE(0x9F23, temp>>8);
+			temp = ((tu->y - m.top_view) << 4) + 8;
+			POKE(0x9F23, temp);
+			POKE(0x9F23, temp>>8);
+			POKE(0x9F23, 0xC);
+			POKE(0x9F23, (tu->takenAction ? 9 : 0) + tu->team);
+		}
+		if (tu->health <= 90) {
+			++currentunitsprites;
+			POKE(0x9F23, 6 + ((tu->health + 9) / 10));
+			POKE(0x9F23, 8);
+			temp = ((tu->x - m.left_view) << 4) + 8;
+			POKE(0x9F23, temp);
+			POKE(0x9F23, temp>>8);
+			temp = ((tu->y - m.top_view) << 4) + 8;
+			POKE(0x9F23, temp);
+			POKE(0x9F23, temp>>8);
+			POKE(0x9F23, 0xC);
+			POKE(0x9F23, 0x08);
+		}
+	}
+	while (oldunitsprites > currentunitsprites) {
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		--oldunitsprites;
 	}
 	
-	++x;
-    if (x >= 15) {
-	  i += m.boardWidth - 15;	
-      ++y;
-	  x = 0;
-    }
-  }
-  
-  /* Clear sprites for bases */
-  while (oldbases > currentbases) {
-	__asm__ ("ldy #8");
-	clear_base_sprites_loop:
-	__asm__ ("stz $9F23");
-	__asm__ ("dey");
-	__asm__ ("bne %g", clear_base_sprites_loop);
-	--oldbases;
-  }
-  
-  renderCursor(1);
-  if (menuOptions.length != 0) {
+	oldbases = currentbases;
+	currentbases = 0;
+	
+	POKE(0x9F20, 0xFF);
+	POKE(0x9F21, 0xFF);
+	POKE(0x9F22, 0x19);
+	x = 0;
+	y = 0;
+	i = m.left_view + m.top_view * m.boardWidth; 
+	while (y < 10) {
+		struct Captureable *base = m.board[i].base;
+		if (base != NULL) {
+			++currentbases;
+			if (y == 0) {
+				POKE(0x9F23,0x50 + captureablePaletteOffsets[base->team]); /* 32 x 16 sprite */
+				POKE(0x9F23,0x08); // Z-depth (b/w layers 0 & 1)
+				POKE(0x9F23,y >> 4);
+				POKE(0x9F23,y << 4);
+				POKE(0x9F23,x >> 4);
+				POKE(0x9F23,x << 4);
+				POKE(0x9F23,8);
+				POKE(0x9F23,captureableSpriteOffsets[base->type][base->team] + 4);	
+			} else {
+				POKE(0x9F23,0x90 + captureablePaletteOffsets[base->team]); /* 32 x 32 sprite */
+				POKE(0x9F23,0x08); // Z-depth (b/w layers 0 & 1)
+				POKE(0x9F23,(y-1) >> 4);
+				POKE(0x9F23,(y-1) << 4);
+				POKE(0x9F23,x >> 4);
+				POKE(0x9F23,x << 4);
+				POKE(0x9F23,8);
+				POKE(0x9F23,captureableSpriteOffsets[base->type][base->team]);
+			}				
+		}
+		
+		++x;
+		if (x >= 15) {
+			i += m.boardWidth - 15;
+			++y;
+			x = 0;
+		}
+		++i;
+	}
+	while (oldbases > currentbases) {
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		--oldbases;
+	}
+	
+  m.oldtop_view = m.top_view;
+  m.oldleft_view = m.left_view;	
+	
+	renderCursor(1);
+	if (menuOptions.length != 0) {
     POKE(0x9F20,0x06);
     POKE(0x9F21,0xFC);
     POKE(0x9F22,0x41);
@@ -250,7 +248,7 @@ void renderMap() {
   }
   
   m.oldtop_view = m.top_view;
-  m.oldleft_view = m.left_view;	
+  m.oldleft_view = m.left_view;
 }
 
 void checkOldUnits() {
@@ -266,6 +264,7 @@ void checkOldUnits() {
 	  units_exist[m.board[i].occupying->team] = 1;
     }
   }
+	remove_old = 0;
   
   if (units_exist[player2team] == 0) {
 	//player 1 wins
@@ -643,6 +642,8 @@ void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsign
   u->airborne = index >= 16 && index <= 19;
   
   u->carrying = NULL;
+	
+	//__asm__ ("nop");
 }
 
 void newTurnUnit(struct Unit *u, unsigned short i) {
@@ -657,19 +658,19 @@ void newTurnUnit(struct Unit *u, unsigned short i) {
 		/* If a APC unit is surrounding a unit, refill ammo */
 		if (u->x > 0 && m.board[i-1].occupying != NULL) {
 			up = m.board[i - 1].occupying;
-			if (up->team == u->team && up->index == UNIT_APC) { u->ammo = 10; goto apc_nearby_exit; }
+			if (up->team == u->team && up->index == 0) { u->ammo = 10; goto apc_nearby_exit; }
 		}
 		if (u->x < m.boardWidth - 1 && m.board[i+1].occupying != NULL) {
 			up = m.board[i + 1].occupying;
-			if (up->team == u->team && up->index == UNIT_APC) { u->ammo = 10; goto apc_nearby_exit; }
+			if (up->team == u->team && up->index == 0) { u->ammo = 10; goto apc_nearby_exit; }
 		}
 		if (u->y > 0 && m.board[i - m.boardWidth].occupying != NULL) {
 			up = m.board[i - m.boardWidth].occupying;
-			if (up->team == u->team && up->index == UNIT_APC) { u->ammo = 10; goto apc_nearby_exit; }
+			if (up->team == u->team && up->index == 0) { u->ammo = 10; goto apc_nearby_exit; }
 		}
 		if (u->y < m.boardHeight - 1 && m.board[i + m.boardWidth].occupying != NULL) {
 			up = m.board[i + m.boardWidth].occupying;
-			if (up->team == u->team && up->index == UNIT_APC) { u->ammo = 10; }
+			if (up->team == u->team && up->index == 0) { u->ammo = 10; }
 		}
 		apc_nearby_exit:
 		; /* semicolon so compiler says a-ok */
