@@ -399,10 +399,10 @@ void setup() {
   load_data_vera_from = redgraphics;
   load_data_vera(4096);
   POKE(0x9F20,0x00);
-	load_data_vera(4096);
-	POKE(0x9F20,0x00);
   load_data_vera(4096);
-	POKE(0x9F20,0x00);
+  POKE(0x9F20,0x00);
+  load_data_vera(4096);
+  POKE(0x9F20,0x00);
   load_data_vera(4096);
 	
   load_address = malloc(5000); // 128 more than 4,736 (size of letter.c, biggest one)
