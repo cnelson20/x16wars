@@ -33,9 +33,9 @@ void initMap() {
   turncounter = 0;
 
   m.top_view = 0;
-  m.oldtop_view = 0;
+  m.oldtop_view = 0xFF;
   m.left_view = 0;
-  m.oldleft_view = 0;
+  m.oldleft_view = 0xFF;
   m.whoseTurn = player1team;
   m.boardWidth = 3;
   m.boardHeight = 3;
@@ -80,6 +80,8 @@ unsigned char captureableSpriteOffsets[][] =
    {{18, 26, 18, 26, 26},
 	{34, 42, 34, 42, 42}};
 
+unsigned char renderMap_draw_tiles;
+
 void renderMap() {
   unsigned char x,y;
   unsigned short i,temp;
@@ -101,35 +103,34 @@ void renderMap() {
   POKE(0x9F20,0x00);
   POKE(0x9F21,0x00);
   POKE(0x9F22,0x10);
+  
+  oldunitsprites = currentunitsprites;
+  currentunitsprites = 0;
+  
+  renderMap_draw_tiles = m.top_view != m.oldtop_view || m.left_view != m.oldleft_view;
+  
   remove_old = 0;
   for (i = m.top_view * m.boardWidth + m.left_view; y < 10; ++i) {
-    POKE(0x9F23,m.board[i].t->tileIndex);
-    POKE(0x9F23,m.board[i].t->paletteOffset);
-    if (m.board[i].occupying != NULL) {
-      renderUnit(m.board[i].occupying);
-      POKE(0x9F20,(x+1)*2);
-      POKE(0x9F21,y);
-      POKE(0x9F22,0x10);
-    }
-    ++x;
-    if (x >= 15) {
-	  i += m.boardWidth - 15;	
-		
-      ++y;
-      __asm__ ("inc $9F21");
+	__asm__ ("lda %v", renderMap_draw_tiles);
+	__asm__ ("beq %g", check_if_unit_to_render);
+	POKE(0x9F23,m.board[i].t->tileIndex);
+	POKE(0x9F23,m.board[i].t->paletteOffset);
+	check_if_unit_to_render:
+	if (m.board[i].occupying != NULL) {
+	  renderUnit(m.board[i].occupying);
+	  POKE(0x9F20,(x+1)*2);
+	  POKE(0x9F21,y);
+	  POKE(0x9F22,0x10);
+	}
+	++x;
+	if (x >= 15) {
+	  i += m.boardWidth - 15;		
+	  ++y;
+	  __asm__ ("inc $9F21");
 	  x = 0;
 	  POKE(0x9F20,0);
-    }
+	}
   }
-  POKE(0x9F20,46 /* 5x8+6 */);
-  POKE(0x9F21,0xFC);
-  POKE(0x9F22,0x01);
-  
-  while (PEEK(0x9F23) & 0x0C /* != 0 */) {
-	POKE(0x9F23,0);
-	POKEW(0x9F20,PEEK(0x9F20)+8);
-  }
-  POKE(0x9F23,0);
   
   POKE(0x9F20,40);
   POKE(0x9F21,0xFC);
@@ -138,7 +139,6 @@ void renderMap() {
     if (m.board[i].occupying != NULL && m.board[i].occupying->x >= m.left_view && m.board[i].occupying->x < m.left_view + 15 && m.board[i].occupying->y >= m.top_view && m.board[i].occupying->y < m.top_view + 10) {
 	  if (m.board[i].occupying->carrying != NULL) {
 		++currentunitsprites;
-		if (oldunitsprites != 0) {--oldunitsprites;}
 		POKE(0x9F23,16);
 		POKE(0x9F23,8);
 		temp = (m.board[i].occupying->x - m.left_view) << 4;
@@ -151,7 +151,6 @@ void renderMap() {
 		POKE(0x9F23,(m.board[i].occupying->takenAction ? 9 : 0) + m.board[i].occupying->team);
 	  }	else if (m.board[i].base != NULL && m.board[i].base->health < 20) {
 		++currentunitsprites;
-		if (oldunitsprites != 0) {--oldunitsprites;}
 		POKE(0x9F23,17);
 		POKE(0x9F23,8);
 		temp = (m.board[i].occupying->x - m.left_view) << 4;
@@ -165,7 +164,6 @@ void renderMap() {
 	  }		  
 	  if (m.board[i].occupying->health <= 90) {
 		++currentunitsprites;
-		if (oldunitsprites != 0) {--oldunitsprites;}
 		POKE(0x9F23,6 + ((m.board[i].occupying->health + 9) / 10));
 		POKE(0x9F23,8);
 		temp = ((m.board[i].occupying->x - m.left_view) << 4) + 8;
@@ -180,18 +178,13 @@ void renderMap() {
     }
   }
   // Clear sprites for dead units 
-  __asm__ ("lda #0");
-  __asm__ ("sta $9F23");
-  __asm__ ("sta $9F23");
-  __asm__ ("sta $9F23");
-  __asm__ ("sta $9F23");
-  __asm__ ("sta $9F23");
-  __asm__ ("sta $9F23");
-  POKE(0x9F22,0x41);
-	oldunitsprites += 2;
-  while (oldunitsprites != 0) {
-	POKE(0x9F23,0);
-	--oldunitsprites;  
+  while (currentunitsprites < oldunitsprites) {
+	  __asm__ ("ldy #8");
+	  clear_unit_sprites_loop:
+	  __asm__ ("stz $9F23");
+	  __asm__ ("dey");
+	  __asm__ ("bne %g", clear_unit_sprites_loop);
+	  ++currentunitsprites;
   }
   
   oldbases = currentbases;
@@ -205,7 +198,6 @@ void renderMap() {
   for (i = m.top_view * m.boardWidth + m.left_view; y < 10; ++i) {
     if (m.board[i].base != NULL) {
 	  ++currentbases;
-	  if (oldbases != 0) {--oldbases;}
 	  
       if (y != 0) {		
 		POKE(0x9F23,0x90 + captureablePaletteOffsets[m.board[i].base->team]); /* 32 x 32 sprite */
@@ -235,10 +227,14 @@ void renderMap() {
 	  x = 0;
     }
   }
-  POKE(0x9F23,34); // Decrement 0x9F20/21 by 1
-  POKE(0x9F22,0x49);
-  while (oldbases != 0) {
-	POKE(0x9F23,0);
+  
+  /* Clear sprites for bases */
+  while (oldbases > currentbases) {
+	__asm__ ("ldy #8");
+	clear_base_sprites_loop:
+	__asm__ ("stz $9F23");
+	__asm__ ("dey");
+	__asm__ ("bne %g", clear_base_sprites_loop);
 	--oldbases;
   }
   
