@@ -32,7 +32,7 @@ void newTurnUnit(struct Unit *u, unsigned short i);
 void renderUnit(struct Unit *u);
 
 void initTile(struct Tile *t, unsigned char index);
-void initTerrain(struct Terrain *t, unsigned char index);
+void initTerrain(struct Terrain **t_pointer, unsigned char index);
 
 void initCaptureable(struct Captureable *c, unsigned char init_team, unsigned char init_type);
 void capture(struct Unit *u, struct Captureable *c);

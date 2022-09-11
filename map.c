@@ -321,11 +321,18 @@ void nextTurn() {
   }
 }
 
+#define TILE_REEF 0
+#define TILE_WATER 1
+#define TILE_ROAD_VERTICAL 2
+#define TILE_ROAD_HORIZONTAL 3
+#define TILE_CITY 4
+#define TILE_PLAINS 5
+#define TILE_
 
 //Tile methods
 void initTile(struct Tile *t, unsigned char index) {
-  t->t = malloc(sizeof(struct Terrain));
-  initTerrain(t->t,index);
+  //t->t = malloc(sizeof(struct Terrain));
+  initTerrain(&(t->t), index >= 0x40 ? TILE_CITY : index);
   t->base = NULL;
   t->occupying = NULL;
   
@@ -346,116 +353,127 @@ void initTile(struct Tile *t, unsigned char index) {
 // mvmtCosts[3] = boat
 // mvmtCosts[4] = mech
 // mvmtCosts[5] = lander
-void initTerrain(struct Terrain *t, unsigned char index) {
-  t->tileIndex = index + 0x80;
-  switch (index) {
-    case 0: // Reef
-      t->paletteOffset = 0x40;
-      t->defense = 0;
-      t->mvmtCosts[0] = 0;
-      t->mvmtCosts[1] = 0;
-      t->mvmtCosts[2] = 0;
-      t->mvmtCosts[3] = 2;
-      t->mvmtCosts[4] = 0;
-			t->mvmtCosts[5] = 2;
-      break;
-    case 1: // Water
-      t->paletteOffset = 0x40;
-      t->defense = 0;
-      t->mvmtCosts[0] = 0;
-      t->mvmtCosts[1] = 0;
-      t->mvmtCosts[2] = 0;
-      t->mvmtCosts[3] = 1;
-      t->mvmtCosts[4] = 0;
-			t->mvmtCosts[5] = 1;
-      break;
-		case 9: // Shoal
-			t->paletteOffset = 0x40;
-			t->defense = 0;
-			t->mvmtCosts[0] = 1;
-			t->mvmtCosts[1] = 1;
-			t->mvmtCosts[2] = 1;
-			t->mvmtCosts[3] = 0;
-			t->mvmtCosts[4] = 1;
-			t->mvmtCosts[5] = 1;
-			break;	
-			
-    case 2: // Vertical Road
-    case 3: // Horizontal Road
-      t->paletteOffset = 0x50;
-      t->defense = 0;
-      t->mvmtCosts[0] = 1;
-      t->mvmtCosts[1] = 1;
-      t->mvmtCosts[2] = 1;
-      t->mvmtCosts[3] = 0;
-      t->mvmtCosts[4] = 1;
-			t->mvmtCosts[5] = 0;
-      break;
-	case 0x40: /* captureable indices */
-	case 0x41:	
-	case 0x42:
-	case 0x43:
-	case 0x44:
-	case 0x45:
-	case 0x46:
-	case 0x47:
-	case 0x48:
-	case 0x49:
-	case 0x4A:
-	case 0x4B:
-	case 0x4C:
-	case 0x4D:
-	case 0x4E:
-    case 4: // Gray City
-      t->paletteOffset = 0x50;
-      t->defense = 3;
-      t->mvmtCosts[0] = 1;
-      t->mvmtCosts[1] = 1;
-      t->mvmtCosts[2] = 1;
-      t->mvmtCosts[3] = 0;
-      t->mvmtCosts[4] = 1;
-			t->mvmtCosts[5] = 0;
-      break;
-    case 5: //Plains
-      t->paletteOffset = 0x60;
-      t->defense = 1;
-      t->mvmtCosts[0] = 1;
-      t->mvmtCosts[1] = 1;
-      t->mvmtCosts[2] = 2;
-      t->mvmtCosts[3] = 0;
-      t->mvmtCosts[4] = 1;
-			t->mvmtCosts[5] = 0;
-    case 6: // Forest
-      t->paletteOffset = 0x60;
-      t->defense = 2;
-      t->mvmtCosts[0] = 1;
-      t->mvmtCosts[1] = 2;
-      t->mvmtCosts[2] = 3;
-      t->mvmtCosts[3] = 0;
-      t->mvmtCosts[4] = 1;
-			t->mvmtCosts[5] = 0;
-      break;
-    case 7: // Mountain
-      t->paletteOffset = 0x70;
-      t->defense = 4;
-      t->mvmtCosts[0] = 2;
-      t->mvmtCosts[1] = 0;
-      t->mvmtCosts[2] = 0;
-      t->mvmtCosts[3] = 0;
-      t->mvmtCosts[4] = 1;
-			t->mvmtCosts[5] = 0;
-      break;
-		case 10: // River
-			t->paletteOffset = 0x40;
-			t->defense = 0;
-			t->mvmtCosts[0] = 2;
-      t->mvmtCosts[1] = 0;
-      t->mvmtCosts[2] = 0;
-      t->mvmtCosts[3] = 0;
-      t->mvmtCosts[4] = 1;
-			t->mvmtCosts[5] = 0;
-			break;
-  }
+
+struct Terrain *terrainArray[16];
+
+void initTerrain(struct Terrain **t_pointer, unsigned char index) {
+	if (terrainArray[index] != NULL) {
+		*t_pointer = terrainArray[index];
+	} else {
+		struct Terrain *t = malloc(sizeof(struct Terrain));
+		terrainArray[index] = t;
+		*t_pointer = t;
+		
+		t->tileIndex = index + 0x80;
+		switch (index) {
+			case 0: // Reef
+				t->paletteOffset = 0x40;
+				t->defense = 0;
+				t->mvmtCosts[0] = 0;
+				t->mvmtCosts[1] = 0;
+				t->mvmtCosts[2] = 0;
+				t->mvmtCosts[3] = 2;
+				t->mvmtCosts[4] = 0;
+				t->mvmtCosts[5] = 2;
+				break;
+			case 1: // Water
+				t->paletteOffset = 0x40;
+				t->defense = 0;
+				t->mvmtCosts[0] = 0;
+				t->mvmtCosts[1] = 0;
+				t->mvmtCosts[2] = 0;
+				t->mvmtCosts[3] = 1;
+				t->mvmtCosts[4] = 0;
+				t->mvmtCosts[5] = 1;
+				break;
+			case 9: // Shoal
+				t->paletteOffset = 0x40;
+				t->defense = 0;
+				t->mvmtCosts[0] = 1;
+				t->mvmtCosts[1] = 1;
+				t->mvmtCosts[2] = 1;
+				t->mvmtCosts[3] = 0;
+				t->mvmtCosts[4] = 1;
+				t->mvmtCosts[5] = 1;
+				break;	
+				
+			case 2: // Vertical Road
+			case 3: // Horizontal Road
+				t->paletteOffset = 0x50;
+				t->defense = 0;
+				t->mvmtCosts[0] = 1;
+				t->mvmtCosts[1] = 1;
+				t->mvmtCosts[2] = 1;
+				t->mvmtCosts[3] = 0;
+				t->mvmtCosts[4] = 1;
+				t->mvmtCosts[5] = 0;
+				break;
+		case 0x40: /* captureable indices */
+		case 0x41:	
+		case 0x42:
+		case 0x43:
+		case 0x44:
+		case 0x45:
+		case 0x46:
+		case 0x47:
+		case 0x48:
+		case 0x49:
+		case 0x4A:
+		case 0x4B:
+		case 0x4C:
+		case 0x4D:
+		case 0x4E:
+			case 4: // Gray City
+				t->paletteOffset = 0x50;
+				t->defense = 3;
+				t->mvmtCosts[0] = 1;
+				t->mvmtCosts[1] = 1;
+				t->mvmtCosts[2] = 1;
+				t->mvmtCosts[3] = 0;
+				t->mvmtCosts[4] = 1;
+				t->mvmtCosts[5] = 0;
+				break;
+			case 5: //Plains
+				t->paletteOffset = 0x60;
+				t->defense = 1;
+				t->mvmtCosts[0] = 1;
+				t->mvmtCosts[1] = 1;
+				t->mvmtCosts[2] = 2;
+				t->mvmtCosts[3] = 0;
+				t->mvmtCosts[4] = 1;
+				t->mvmtCosts[5] = 0;
+			case 6: // Forest
+				t->paletteOffset = 0x60;
+				t->defense = 2;
+				t->mvmtCosts[0] = 1;
+				t->mvmtCosts[1] = 2;
+				t->mvmtCosts[2] = 3;
+				t->mvmtCosts[3] = 0;
+				t->mvmtCosts[4] = 1;
+				t->mvmtCosts[5] = 0;
+				break;
+			case 7: // Mountain
+				t->paletteOffset = 0x70;
+				t->defense = 4;
+				t->mvmtCosts[0] = 2;
+				t->mvmtCosts[1] = 0;
+				t->mvmtCosts[2] = 0;
+				t->mvmtCosts[3] = 0;
+				t->mvmtCosts[4] = 1;
+				t->mvmtCosts[5] = 0;
+				break;
+			case 10: // River
+				t->paletteOffset = 0x40;
+				t->defense = 0;
+				t->mvmtCosts[0] = 2;
+				t->mvmtCosts[1] = 0;
+				t->mvmtCosts[2] = 0;
+				t->mvmtCosts[3] = 0;
+				t->mvmtCosts[4] = 1;
+				t->mvmtCosts[5] = 0;
+				break;
+		}
+	}
 }
 
 // Cursor methods
