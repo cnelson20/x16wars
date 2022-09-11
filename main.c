@@ -407,17 +407,20 @@ extern unsigned char oldbases;
 extern unsigned char currentunitsprites;
 extern unsigned char oldunitsprites;
 extern unsigned char remove_old;
+extern struct Terrain *terrainArray[16];
 
 void game_start()
 {
 	memset(&c, 0, sizeof(c));
 	memset(&attackCursor, 0, sizeof(attackCursor));
 	memset(&menuOptions, 0, sizeof(menuOptions));
+	memset(&terrainArray, 0, 16 * sizeof(void *));
 
 	POKE(0x9F25, 0);
 	POKE(0x9F29, 0x71);
 	clearScreen();
 	// initMapData(testMap);
+	clearUI();
 	initCursor();
 }
 
@@ -623,33 +626,30 @@ unsigned char baseTypeStringLengths[] = {4, 2, 8};
 
 unsigned char damageString[] = {0xa3, 0xac, 0xa6};
 
+void clearRestOfLine() {
+	POKE(0x9F22, 0x20);
+	while (PEEK(0x9F20) < 40) {
+		POKE(0x9F23, 28);
+	}
+}
+
+void clearOtherLines() {
+	__asm__ ("inc $9F21");
+	while (PEEK(0x9F21) < 0x4F) {
+		__asm__ ("stz $9F20");
+		clearRestOfLine();
+		__asm__ ("inc $9F21");
+	}
+}
+
 #define SCREENBYTE(a) ((a) >= 10 ? 150 + (a) : 186 + (a))
 
-void drawUI()
-{
+void drawUI() {
 	struct Unit *unitPointer;
 	void *test = NULL;
 	unsigned char dummy, i;
 
-	clearUI();
-
-	/* Display memory footprint on screen */ /*
-	 POKE(0x9F21,0x40+13);
-	 POKE(0x9F20,0);
-	 POKE(0x9F22,0x20);
-	 POKE(0x9F23,'M' - 'A' + 160);
-	 POKE(0x9F23,28);
-	 test = malloc(1);
-	 i = ((unsigned short)test >> 12) % 16;
-	 POKE(0x9F23,SCREENBYTE(i));
-	 i = ((unsigned short)test >> 8) % 16;
-	 POKE(0x9F23,SCREENBYTE(i));
-	 i = ((unsigned short)test >> 4) % 16;
-	 POKE(0x9F23,SCREENBYTE(i));
-	 i = (unsigned short)test % 16;
-	 POKE(0x9F23,SCREENBYTE(i));
-	 free(test);
-	 */
+	//clearUI();
 
 	POKE(0x9F20, 16 * 2);
 	POKE(0x9F21, 0x41);
@@ -661,124 +661,132 @@ void drawUI()
 	POKE(0x9F23, m.whoseTurn << 4);
 
 	unitPointer = m.board[(c.y + m.top_view) * m.boardWidth + c.x + m.left_view].occupying;
-	if (unitPointer == NULL)
-	{
+	if (unitPointer == NULL) {
 		unitPointer = c.selected;
 	}
-	if (pA != NULL)
-	{
+	if (pA != NULL) {
 		unitPointer = attackCursor.selected;
 	}
 
-	if (menuOptions.length != 0)
-	{
+	if (menuOptions.length != 0) {
 		// display menu options
-		POKE(0x9F21, 0x4B);
+		POKE(0x9F21, 0x40 + 11);
 		POKE(0x9F22, 0x20);
-		for (dummy = 0; dummy < menuOptions.length; dummy++)
-		{
+		for (dummy = 0; dummy < menuOptions.length; dummy++) {
 			POKE(0x9F20, 2);
 			POKE(0x9F23, menuOptions.selected == dummy ? 196 : 28);
-			for (i = 0; optionStrings[menuOptions.options[dummy]][i] != 0; i++)
-			{
+			for (i = 0; optionStrings[menuOptions.options[dummy]][i] != 0; i++) {
 				POKE(0x9F23, optionStrings[menuOptions.options[dummy]][i]);
 			}
+			clearRestOfLine();
 			__asm__("inc $9F21");
 		}
-	}
-	else if (m.board[c.x + m.left_view + m.boardWidth * (c.y + m.top_view)].base != NULL && (unitPointer == NULL || c.selected != NULL))
-	{
-		struct Captureable *capt = m.board[c.x + m.left_view + m.boardWidth * (c.y + m.top_view)].base;
-		drawText(baseTypes[capt->type], baseTypeStringLengths[capt->type], 1, 11, 1);
-		POKE(0x9F20, (baseTypeStringLengths[capt->type] + 2) << 1);
-		POKE(0x9F22, 0x10);
-		POKE(0x9F23, 'T' - 'A' + 0xA0);
-		POKE(0x9F23, 0x80);
-		if (capt->team != 4)
-		{
-			POKE(0x9F23, 0x03);
-			POKE(0x9F23, capt->team << 4);
-		}
-		else
-		{
-			POKE(0x9F23, 'N' - 'A' + 0xA0);
+		clearOtherLines();
+	} else {
+		if (m.board[c.x + m.left_view + m.boardWidth * (c.y + m.top_view)].base != NULL && (unitPointer == NULL || c.selected != NULL)) {
+			struct Captureable *capt = m.board[c.x + m.left_view + m.boardWidth * (c.y + m.top_view)].base;
+			drawText(baseTypes[capt->type], baseTypeStringLengths[capt->type], 1, 11, 1);
+			POKE(0x9F20, (baseTypeStringLengths[capt->type] + 1) << 1);
+			POKE(0x9F22, 0x10);
+			
+			POKE(0x9F23, 28);
 			POKE(0x9F23, 0x80);
-		}
-		POKE(0x9F21, 0x40 + 12);
-		POKE(0x9F20, 2);
-		POKE(0x9F22, 0x20);
-		POKE(0x9F23, 'H' - 'A' + 160);
-		POKE(0x9F23, 'P' - 'A' + 160);
-		POKE(0x9F23, 28);
-		POKE(0x9F23, 186 + (capt->health / 10));
-		POKE(0x9F23, 186 + (capt->health % 10));
-	}
-	else if (unitPointer != NULL)
-	{
-		dummy = unitIndexes[unitPointer->index];
-		drawText(unitNames[dummy], unitNameLengths[dummy], 1, 11, 1);
-		POKE(0x9F20, 2);
-		POKE(0x9F21, 0x40 + 12);
-		POKE(0x9F22, 0x20);
-		POKE(0x9F23, 183); // X
-		if (unitPointer->x >= 16)
-		{
-			POKE(0x9F23, SCREENBYTE(unitPointer->x >> 4));
-		}
-		POKE(0x9F23, SCREENBYTE(unitPointer->x & 15));
-
-		POKE(0x9F23, 28);
-		POKE(0x9F23, 184); // Y
-		if (unitPointer->y >= 16)
-		{
-			POKE(0x9F23, SCREENBYTE(unitPointer->y >> 4));
-		}
-		POKE(0x9F23, SCREENBYTE(unitPointer->y & 15));
-		
-		if (unitPointer->health <= 99)
-		{
-			POKE(0x9F23, 28);
-			POKE(0x9F23, 167);
-			POKE(0x9F23, 186 + (unitPointer->health / 10));
-			POKE(0x9F23, 186 + (unitPointer->health % 10));
-		}
-		if (unitPointer->ammo < 10)
-		{
-			POKE(0x9F23, 28);
-			POKE(0x9F23, 160 + 'A' - 'A');
-			POKE(0x9F23, 160 + 'M' - 'A');
-			POKE(0x9F23, 160 + 'M' - 'A');
-			POKE(0x9F23, 160 + 'O' - 'A');
-			POKE(0x9F23, 186 + unitPointer->ammo);
-		}
-		if (pA != NULL && menuOptions.options[0] == OPTION_ATTACK && attackCursor.selected != NULL)
-		{
-			static unsigned char oldDamagePreviewNum = 0;
-			static unsigned char damageHundredsDigit;
-			static unsigned char damageModTen;
-			static unsigned char damageDivTen;
-
-			unsigned char damagePreviewNum = calcPower(c.selected, attackCursor.selected);
-
-			if (damagePreviewNum != oldDamagePreviewNum)
-			{
-				damageHundredsDigit = 186 + (damagePreviewNum / 100);
-				damageDivTen = 186 + ((damagePreviewNum / 10) % 10);
-				damageModTen = 186 + (damagePreviewNum % 10);
+			POKE(0x9F23, 'T' - 'A' + 0xA0);
+			POKE(0x9F23, 0x80);
+			if (capt->team != 4) {
+				POKE(0x9F23, 0x03);
+				POKE(0x9F23, capt->team << 4);
+			} else {
+				POKE(0x9F23, 'N' - 'A' + 0xA0);
+				POKE(0x9F23, 0x80);
 			}
-
-			drawText(damageString, sizeof(damageString), 1, 13, 1);
-			POKE(0x9F20, 2 * 5);
-			POKE(0x9F21, 0x40 + 13);
+			clearRestOfLine();
+			
+			POKE(0x9F21, 0x40 + 12);
+			POKE(0x9F20, 2);
 			POKE(0x9F22, 0x20);
-			if (damagePreviewNum >= 100)
-			{
-				POKE(0x9F23, damageHundredsDigit);
+			POKE(0x9F23, 'H' - 'A' + 160);
+			POKE(0x9F23, 'P' - 'A' + 160);
+			POKE(0x9F23, 28);
+			POKE(0x9F23, 186 + (capt->health / 10));
+			POKE(0x9F23, 186 + (capt->health % 10));
+			clearRestOfLine();
+			clearOtherLines();
+		} else if (unitPointer != NULL) {
+			dummy = unitIndexes[unitPointer->index];
+			drawText(unitNames[dummy], unitNameLengths[dummy], 1, 11, 1);
+			clearRestOfLine();
+			
+			POKE(0x9F20, 2);
+			POKE(0x9F21, 0x40 + 12);
+			POKE(0x9F22, 0x20);
+			POKE(0x9F23, 183); // X
+			if (unitPointer->x >= 16) {
+				POKE(0x9F23, SCREENBYTE(unitPointer->x >> 4));
 			}
-			POKE(0x9F23, damageDivTen);
-			POKE(0x9F23, damageModTen);
+			POKE(0x9F23, SCREENBYTE(unitPointer->x & 15));
 
-			oldDamagePreviewNum = damagePreviewNum;
+			POKE(0x9F23, 28);
+			POKE(0x9F23, 184); // Y
+			if (unitPointer->y >= 16)	{
+				POKE(0x9F23, SCREENBYTE(unitPointer->y >> 4));
+			}
+			POKE(0x9F23, SCREENBYTE(unitPointer->y & 15));
+			
+			POKE(0x9F23, 28);
+			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 12) & 0xF));
+			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 8) & 0xF));
+			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 4) & 0xF));
+			POKE(0x9F23, SCREENBYTE((unsigned short)unitPointer & 0xF));
+			if (unitPointer->health <= 99) {
+				POKE(0x9F23, 28);
+				POKE(0x9F23, 167);
+				POKE(0x9F23, 186 + (unitPointer->health / 10));
+				POKE(0x9F23, 186 + (unitPointer->health % 10));
+			}
+			if (unitPointer->ammo < 10) {
+				POKE(0x9F23, 28);
+				POKE(0x9F23, 160 + 'A' - 'A');
+				POKE(0x9F23, 160 + 'M' - 'A');
+				POKE(0x9F23, 160 + 'M' - 'A');
+				POKE(0x9F23, 160 + 'O' - 'A');
+				POKE(0x9F23, 186 + unitPointer->ammo);
+			}
+			clearRestOfLine();
+			
+			if (pA != NULL && menuOptions.options[0] == OPTION_ATTACK && attackCursor.selected != NULL) {
+				static unsigned char oldDamagePreviewNum = 0;
+				static unsigned char damageHundredsDigit;
+				static unsigned char damageModTen;
+				static unsigned char damageDivTen;
+
+				unsigned char damagePreviewNum = calcPower(c.selected, attackCursor.selected);
+
+				if (damagePreviewNum != oldDamagePreviewNum) {
+					damageHundredsDigit = 186 + (damagePreviewNum / 100);
+					damageDivTen = 186 + ((damagePreviewNum / 10) % 10);
+					damageModTen = 186 + (damagePreviewNum % 10);
+				}
+
+				drawText(damageString, sizeof(damageString), 1, 13, 1);
+				
+				POKE(0x9F20, 2 * 5);
+				POKE(0x9F21, 0x40 + 13);
+				POKE(0x9F22, 0x20);
+				if (damagePreviewNum >= 100) {
+					POKE(0x9F23, damageHundredsDigit);
+				}
+				POKE(0x9F23, damageDivTen);
+				POKE(0x9F23, damageModTen);
+				clearRestOfLine();
+
+				oldDamagePreviewNum = damagePreviewNum;
+			}
+			clearOtherLines();
+		} else {
+			POKE(0x9F22, 0x20);
+			POKE(0x9F21, 0x49);
+			clearOtherLines();
 		}
 	}
 }
