@@ -240,6 +240,8 @@ void print_ascii_str(char *string, unsigned char break_on_period)
 
 extern char change_filename[];
 
+#define DEVICE_NUM 8
+
 void menu()
 {
 	unsigned short i;
@@ -347,7 +349,7 @@ void menu()
 		}
 	}
 	cbm_k_setnam(menu_files_array[c.x]);
-	cbm_k_setlfs(0xFF, 8, 0);
+	cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
 	map_space = malloc(768);
 	i = cbm_k_load(0, (unsigned short)map_space);
 	initMapData(map_space);
@@ -361,7 +363,7 @@ void change_directory(char *s)
 {
 	strcpy(change_filename + 3, s);
 	cbm_k_setnam(change_filename);
-	cbm_k_setlfs(15, 8, 15);
+	cbm_k_setlfs(15, DEVICE_NUM, 15);
 	cbm_k_open();
 	cbm_k_clrch();
 	cbm_k_close(15);
@@ -433,9 +435,6 @@ unsigned char *load_address;
 
 void setup()
 {
-	unsigned char device_no = 8;
-
-	unsigned short i;
 	
 	POKE(0x9F29, 0x71);
 	__asm__("lda #$40");
@@ -484,7 +483,7 @@ void setup()
 	load_address = malloc(LETTER_CHR_FILELEN); // 128 more than 4,736 (size of letter.c, biggest one)
 	
 	cbm_k_setnam("tile.chr");
-	cbm_k_setlfs(0xFF, device_no, 0x00);
+	cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
 	cbm_k_load(0, (unsigned short)load_address);
 	POKE(0x9F20, 0x00);
 	POKE(0x9F21, 0xC0);
@@ -495,7 +494,7 @@ void setup()
 	__asm__ ("jsr $FEE7");
 
 	cbm_k_setnam("letter.chr");
-	cbm_k_setlfs(0xFF, device_no, 0x00);
+	cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
 	cbm_k_load(0, (unsigned short)load_address);
 	POKE(0x9F20, 0x00);
 	POKE(0x9F21, 0xD0);
@@ -503,7 +502,7 @@ void setup()
 	__asm__ ("jsr $FEE7");
 
 	cbm_k_setnam("sprites.chr");
-	cbm_k_setlfs(0xFF, device_no, 0x00);
+	cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
 	cbm_k_load(0, (unsigned short)load_address);
 	POKE(0x9F20, 0x00);
 	POKE(0x9F21, 0x00);
@@ -564,7 +563,7 @@ unsigned char unitNames[][11] = {
 	/* 08 */ {0xb1, 0xae, 0xa2, 0xaa, 0xa4, 0xb3, 0xb2},						 // Rockets
 	/* 09 */ {0xa0, 0xb1, 0xb3, 0xa8, 0xab, 0xab, 0xa4, 0xb1, 0xb8},			 // Artillery
 	/* 10 */ {0xa7, 0xa4, 0xab, 0xa8, 0xa2, 0xae, 0xaf, 0xb3, 0xa4, 0xb1},		 // Transport
-	/* 11 */ {0xa2, 0xae, 0xaf, 0xb3, 0xa4, 0xb1},								 // Copter
+	/* 11 */ {0xa1, 28,   0xa2, 0xae, 0xaf, 0xb3, 0xa4, 0xb1},								 // Copter
 	/* 12 */ {0xa1, 0xae, 0xac, 0xa1, 0xa4, 0xb1},								 // Bomber
 	/* 13 */ {0xa5, 0xa8, 0xa6, 0xa7, 0xb3, 0xa4, 0xb1},						 // Fighter
 	/* 14 */ {0xab, 0xa0, 0xad, 0xa3, 0xa4, 0xb1},								 // Lander

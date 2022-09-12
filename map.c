@@ -327,7 +327,11 @@ void nextTurn() {
 #define TILE_ROAD_HORIZONTAL 3
 #define TILE_CITY 4
 #define TILE_PLAINS 5
-#define TILE_
+#define TILE_FOREST 6
+#define TILE_MOUNTAIN 7
+#define TILE_MENU_FILLED 8
+#define TILE_SHOAL 9
+#define TILE_RIVER 10
 
 //Tile methods
 void initTile(struct Tile *t, unsigned char index) {
@@ -346,6 +350,31 @@ void initTile(struct Tile *t, unsigned char index) {
   }
 }
 
+unsigned char terrainDefenseArray[] = {
+	0x00, 0x00, 0x00, 0x00, 
+	0x03, 0x01, 0x02, 0x04, 
+	0xFF, 0x00, 0x00,
+};
+unsigned char terrainPaletteOffsetArray[] = {
+	0x40, 0x40, 0x50, 0x50, 
+	0x50, 0x60, 0x60, 0x70,
+	0xFF, 0x40, 0x40,
+};
+
+unsigned char terrainMvmtCostsArray[][6] = {
+	{0, 0, 0, 2, 0, 2}, // Reef 
+	{0, 0, 0, 1, 0, 1}, // Water
+	{1, 1, 1, 0, 1, 0}, // Horizontal Road
+	{1, 1, 1, 0, 1, 0}, // Vertical Road
+	{1, 1, 1, 0, 1, 0}, // Cities
+	{1, 1, 2, 0, 1, 0}, // Plains
+	{1, 2, 3, 0, 1, 0}, // Forest
+	{2, 0, 0, 0, 1, 0}, // Mountain
+	{0, 0, 0, 0, 0, 0}, // Filled tile for menu
+	{1, 1, 1, 0, 1, 1}, // Shoal
+	{2, 0, 0, 0, 1, 0}, // River
+};
+
 //Terrain Method
 // mvmtCosts[0] = infantry
 // mvmtCosts[1] = treads
@@ -357,6 +386,8 @@ void initTile(struct Tile *t, unsigned char index) {
 struct Terrain *terrainArray[16];
 
 void initTerrain(struct Terrain **t_pointer, unsigned char index) {
+	unsigned char i;
+	
 	if (terrainArray[index] != NULL) {
 		*t_pointer = terrainArray[index];
 	} else {
@@ -365,113 +396,11 @@ void initTerrain(struct Terrain **t_pointer, unsigned char index) {
 		*t_pointer = t;
 		
 		t->tileIndex = index + 0x80;
-		switch (index) {
-			case 0: // Reef
-				t->paletteOffset = 0x40;
-				t->defense = 0;
-				t->mvmtCosts[0] = 0;
-				t->mvmtCosts[1] = 0;
-				t->mvmtCosts[2] = 0;
-				t->mvmtCosts[3] = 2;
-				t->mvmtCosts[4] = 0;
-				t->mvmtCosts[5] = 2;
-				break;
-			case 1: // Water
-				t->paletteOffset = 0x40;
-				t->defense = 0;
-				t->mvmtCosts[0] = 0;
-				t->mvmtCosts[1] = 0;
-				t->mvmtCosts[2] = 0;
-				t->mvmtCosts[3] = 1;
-				t->mvmtCosts[4] = 0;
-				t->mvmtCosts[5] = 1;
-				break;
-			case 9: // Shoal
-				t->paletteOffset = 0x40;
-				t->defense = 0;
-				t->mvmtCosts[0] = 1;
-				t->mvmtCosts[1] = 1;
-				t->mvmtCosts[2] = 1;
-				t->mvmtCosts[3] = 0;
-				t->mvmtCosts[4] = 1;
-				t->mvmtCosts[5] = 1;
-				break;	
-				
-			case 2: // Vertical Road
-			case 3: // Horizontal Road
-				t->paletteOffset = 0x50;
-				t->defense = 0;
-				t->mvmtCosts[0] = 1;
-				t->mvmtCosts[1] = 1;
-				t->mvmtCosts[2] = 1;
-				t->mvmtCosts[3] = 0;
-				t->mvmtCosts[4] = 1;
-				t->mvmtCosts[5] = 0;
-				break;
-		case 0x40: /* captureable indices */
-		case 0x41:	
-		case 0x42:
-		case 0x43:
-		case 0x44:
-		case 0x45:
-		case 0x46:
-		case 0x47:
-		case 0x48:
-		case 0x49:
-		case 0x4A:
-		case 0x4B:
-		case 0x4C:
-		case 0x4D:
-		case 0x4E:
-			case 4: // Gray City
-				t->paletteOffset = 0x50;
-				t->defense = 3;
-				t->mvmtCosts[0] = 1;
-				t->mvmtCosts[1] = 1;
-				t->mvmtCosts[2] = 1;
-				t->mvmtCosts[3] = 0;
-				t->mvmtCosts[4] = 1;
-				t->mvmtCosts[5] = 0;
-				break;
-			case 5: //Plains
-				t->paletteOffset = 0x60;
-				t->defense = 1;
-				t->mvmtCosts[0] = 1;
-				t->mvmtCosts[1] = 1;
-				t->mvmtCosts[2] = 2;
-				t->mvmtCosts[3] = 0;
-				t->mvmtCosts[4] = 1;
-				t->mvmtCosts[5] = 0;
-			case 6: // Forest
-				t->paletteOffset = 0x60;
-				t->defense = 2;
-				t->mvmtCosts[0] = 1;
-				t->mvmtCosts[1] = 2;
-				t->mvmtCosts[2] = 3;
-				t->mvmtCosts[3] = 0;
-				t->mvmtCosts[4] = 1;
-				t->mvmtCosts[5] = 0;
-				break;
-			case 7: // Mountain
-				t->paletteOffset = 0x70;
-				t->defense = 4;
-				t->mvmtCosts[0] = 2;
-				t->mvmtCosts[1] = 0;
-				t->mvmtCosts[2] = 0;
-				t->mvmtCosts[3] = 0;
-				t->mvmtCosts[4] = 1;
-				t->mvmtCosts[5] = 0;
-				break;
-			case 10: // River
-				t->paletteOffset = 0x40;
-				t->defense = 0;
-				t->mvmtCosts[0] = 2;
-				t->mvmtCosts[1] = 0;
-				t->mvmtCosts[2] = 0;
-				t->mvmtCosts[3] = 0;
-				t->mvmtCosts[4] = 1;
-				t->mvmtCosts[5] = 0;
-				break;
+		t->paletteOffset = terrainPaletteOffsetArray[index];
+		t->defense = terrainDefenseArray[index];
+		
+		for (i = 0; i < 6; ++i) {
+			t->mvmtCosts[i] = terrainMvmtCostsArray[index][i];
 		}
 	}
 }
@@ -718,7 +647,7 @@ struct Tile tempT;
 unsigned char canCarryUnit(unsigned char carrier_index, unsigned char carried_index) {
 	if ((carrier_index == UNIT_APC || carrier_index == UNIT_TRANSPORT) && carried_index >= UNIT_MECH && carried_index <= UNIT_INFANTRY) { return 1; }
 	else if (carrier_index == UNIT_LANDER && carried_index <= UNIT_ARTILLERY) { return 1; }
-	else if (carrier_index == UNIT_CRUISER && carried_index == UNIT_COPTER) { return 1; } 
+	else if (carrier_index == UNIT_CRUISER && (carried_index == UNIT_COPTER || carried_index == UNIT_TRANSPORT)) { return 1; } 
 	return 0;
 }
 
