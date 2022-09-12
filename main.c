@@ -283,7 +283,14 @@ void menu()
 
 	player1team = 0;
 	player2team = 2;
-
+	
+	do
+	{
+		__asm__ ("jsr $FFE4");
+		__asm__("sta %v", keyCode);
+	}
+	while (keyCode != 0);
+	
 	while (1)
 	{
 		__asm__("jsr $FFE4");
@@ -299,7 +306,7 @@ void menu()
 			{
 				++c.x;
 			}
-			else if (keyCode == 0x0d /* Enter */)
+			else if (keyCode == 0x0d /* Enter */ || keyCode == 0x49 /* I */)
 			{
 				break;
 			}
@@ -571,7 +578,7 @@ unsigned char unitNames[][11] = {
 	/* 16 */ {0xa2, 0xb1, 0xb4, 0xa8, 0xb2, 0xa4, 0xb1},						 // Cruiser
 	/* 17 */ {0xa1, 0xa0, 0xb3, 0xb3, 0xab, 0xa4, 0xb2, 0xa7, 0xa8, 0xaf}};		 // Battleship
 
-unsigned char unitNameLengths[] = {3, 5, 4, 8, 8, 11, 10, 8, 7, 9, 10, 6, 6, 7, 6, 9, 7, 10};
+unsigned char unitNameLengths[] = {3, 5, 4, 8, 8, 11, 10, 8, 7, 9, 10, 8, 6, 7, 6, 9, 7, 10};
 
 unsigned char globalSize;
 void drawText(unsigned char *string, unsigned char size, unsigned char x, unsigned char y, unsigned char layer)
@@ -680,6 +687,7 @@ void drawUI() {
 			clearRestOfLine();
 			__asm__("inc $9F21");
 		}
+		__asm__("dec $9F21");
 		clearOtherLines();
 	} else {
 		if (m.board[c.x + m.left_view + m.boardWidth * (c.y + m.top_view)].base != NULL && (unitPointer == NULL || c.selected != NULL)) {
@@ -720,17 +728,17 @@ void drawUI() {
 			POKE(0x9F21, 0x40 + 12);
 			POKE(0x9F22, 0x20);
 			POKE(0x9F23, 183); // X
-			if (unitPointer->x >= 16) {
-				POKE(0x9F23, SCREENBYTE(unitPointer->x >> 4));
+			if (unitPointer->x >= 10) {
+				POKE(0x9F23, 186 + unitPointer->x / 10);
 			}
-			POKE(0x9F23, SCREENBYTE(unitPointer->x & 15));
+			POKE(0x9F23, 186 + (unitPointer->x % 10));
 
 			POKE(0x9F23, 28);
 			POKE(0x9F23, 184); // Y
-			if (unitPointer->y >= 16)	{
-				POKE(0x9F23, SCREENBYTE(unitPointer->y >> 4));
+			if (unitPointer->y >= 10)	{
+				POKE(0x9F23, 186 + unitPointer->y / 10);
 			}
-			POKE(0x9F23, SCREENBYTE(unitPointer->y & 15));
+			POKE(0x9F23, 186 + (unitPointer->y % 10));
 			
 			POKE(0x9F23, 28);
 			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 12) & 0xF));
@@ -746,9 +754,9 @@ void drawUI() {
 			if (unitPointer->ammo < 10) {
 				POKE(0x9F23, 28);
 				POKE(0x9F23, 160 + 'A' - 'A');
-				POKE(0x9F23, 160 + 'M' - 'A');
-				POKE(0x9F23, 160 + 'M' - 'A');
-				POKE(0x9F23, 160 + 'O' - 'A');
+				//POKE(0x9F23, 160 + 'M' - 'A');
+				//POKE(0x9F23, 160 + 'M' - 'A');
+				//POKE(0x9F23, 160 + 'O' - 'A');
 				POKE(0x9F23, 186 + unitPointer->ammo);
 			}
 			clearRestOfLine();
@@ -961,12 +969,14 @@ void keyPressed()
 				unitLastY = 255;
 
 				c.selected->health = MIN(100, c.selected->health + attackCursor.selected->health);
+				c.selected->ammo = MIN(10, c.selected->ammo + attackCursor.selected->ammo);
 				c.selected->takenAction = 1;
 				c.selected = NULL;
 				free(attackCursor.selected);
 				attackCursor.selected = NULL;
 
 				menuOptions.length = 0;
+				break;
 			case OPTION_MOUSETOGGLE:
 				if (mouseEnabled)
 				{
