@@ -21,6 +21,7 @@ unsigned char returnToMenu;
 unsigned char player1team;
 unsigned char player2team;
 unsigned short turncounter;
+unsigned short daycount;
 unsigned char unitsdeadthisturn = 0;
 unsigned char currentbases = 0;
 unsigned char oldbases;
@@ -32,6 +33,7 @@ unsigned char remove_old = 0;
 void initMap() {
   m.whoseTurn = player1team;
   turncounter = 0;
+	daycount = 0;
 
   m.top_view = 0;
   m.oldtop_view = 0;
@@ -316,6 +318,9 @@ void nextTurn() {
 
   m.whoseTurn = (m.whoseTurn == player1team) ? player2team : player1team;
   ++turncounter;
+	if (m.whoseTurn == player1team) {
+		++daycount;
+	}
   for (; i < m.boardArea; ++i) {
     if ((m.board[i].occupying) != 0) {newTurnUnit(m.board[i].occupying,i);}
   }
@@ -656,13 +661,13 @@ unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned
   if (tx == checkU->x && ty == checkU->y) {return 1;}
   tempT = m.board[ty*m.boardWidth+tx];
   if (checkU->airborne) {
-	++steps;
+		++steps;
   } else {
     if (!tempT.t->mvmtCosts[checkU->mvmtType]) {return 0;}
     steps += tempT.t->mvmtCosts[checkU->mvmtType];
-	if (tempT.t->mvmtCosts[checkU->mvmtType] >= 2 && steps > maxSteps) {
-		--steps;
-	}
+		/*if (tempT.t->mvmtCosts[checkU->mvmtType] >= 2 && steps > maxSteps) {
+			--steps;
+		}*/
   }
   if (steps > maxSteps) {return 0;}
   
@@ -877,6 +882,7 @@ void getPossibleDrops(struct possibleAttacks *pA, struct Unit *u) {
   pA->attacks[1] = NULL;	
   pA->attacks[2] = NULL; 
   pA->attacks[3] = NULL;	
+	pA->length = 0;
   if (u->x != 0) {
 	tile = &(m.board[u->x - 1 + m.boardWidth*u->y]);
 	if (tile->t->mvmtCosts[carry->mvmtType] != 0 && tile->occupying == NULL) {pA->attacks[0] = tile; ++pA->length;}  
