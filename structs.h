@@ -9,6 +9,7 @@ typedef struct Unit {
   unsigned char index;
   unsigned char health;
   unsigned char ammo;
+	unsigned char fuel;
 	unsigned char x,y;
 
   unsigned char mvmtRange;

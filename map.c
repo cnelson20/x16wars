@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <cbm.h>
 #include <peekpoke.h>
+#include <string.h>
 
 #define SABS(a,b) ((a > b) ? (a - b) : (b - a))
 #define SHRTCIRCUIT_AND(a,b) ((a) ? (b) : 0)
@@ -27,7 +28,6 @@ unsigned char currentbases = 0;
 unsigned char oldbases;
 unsigned char currentunitsprites = 0;
 unsigned char oldunitsprites;
-unsigned char remove_old = 0;
 
 // Map methods
 void initMap() {
@@ -259,21 +259,19 @@ void checkOldUnits() {
   units_exist[player1team] = 0; 
   units_exist[player2team] = 0;
   
-  remove_old = 1;
   for (i = 0; i < m.boardArea; ++i) {
     if (m.board[i].occupying != NULL) {
-      renderUnit(m.board[i].occupying);
-	  units_exist[m.board[i].occupying->team] = 1;
+      removeRenderUnit(m.board[i].occupying);
+			units_exist[m.board[i].occupying->team] = 1;
     }
   }
-	remove_old = 0;
   
   if (units_exist[player2team] == 0) {
-	//player 1 wins
-	win(player1team);
+		//player 1 wins
+		win(player1team);
   } else if (units_exist[player1team] == 0) {
-	//player 2 wins 
-	win(player2team);
+		//player 2 wins 
+		win(player2team);
   }	
 }
 
@@ -346,12 +344,12 @@ void initTile(struct Tile *t, unsigned char index) {
   t->occupying = NULL;
   
   if (index >> 4 == 0x04) { // 0x40 <= index <= 0x4F
-	unsigned char team = (index % 4 == 0 ? player1team : (index % 4 == 1 ? player2team : 4));
+		unsigned char team = (index % 4 == 0 ? player1team : (index % 4 == 1 ? player2team : 4));
   
-	t->base = malloc(sizeof(struct Captureable));
-	initCaptureable(t->base,team,(index & 0x0F) >> 2);
-	t->t->tileIndex = 0x85;
-	t->t->paletteOffset = 0x60;
+		t->base = malloc(sizeof(struct Captureable));
+		initCaptureable(t->base,team,(index & 0x0F) >> 2);
+		t->t->tileIndex = 0x85;
+		t->t->paletteOffset = 0x60;
   }
 }
 
@@ -586,14 +584,15 @@ void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsign
   u->team = team;
 	u->health = 100;
 	u->ammo = 10;
+	u->fuel = 100;
   u->mvmtType = mvmtTypes[index];
   u->takenAction = 0;
   u->mvmtRange = mvmtRanges[index];
   u->attackRangeMin = (index >= 12 && index <= 14) ? (index == 14 ? 2 : 3) : 0;
   u->attackRangeMax = (index >= 12 && index <= 14) ? (index == 14 ? 3 : 5) : 1;
   u->airborne = index >= 16 && index <= 19;
-  
-	u->canAttackAndMove = !(index == UNIT_MISSILES || index == UNIT_ROCKETS);
+	
+	u->canAttackAndMove = !(index == UNIT_MISSILES || index == UNIT_ROCKETS || index == UNIT_ARTILLERY);
 	
   u->carrying = NULL;
 }
@@ -603,6 +602,7 @@ void newTurnUnit(struct Unit *u, unsigned short i) {
   if (m.whoseTurn == u->team && m.board[i].base != NULL && m.board[i].base->team == u->team) {
     u->health += 20;
 		u->ammo = 10;
+		u->fuel = 100;
     if (u->health > 100) {u->health = 100;}
   } 
 	if (m.whoseTurn == u->team) {
@@ -610,41 +610,68 @@ void newTurnUnit(struct Unit *u, unsigned short i) {
 		/* If a APC unit is surrounding a unit, refill ammo */
 		if (u->x > 0 && m.board[i-1].occupying != NULL) {
 			up = m.board[i - 1].occupying;
-			if (up->team == u->team && up->index == 0) { u->ammo = 10; goto apc_nearby_exit; }
+			if (up->team == u->team && up->index == 0) {
+				u->ammo = 10; 
+				u->fuel = 100;
+				goto apc_nearby_exit; 
+			}
 		}
 		if (u->x < m.boardWidth - 1 && m.board[i+1].occupying != NULL) {
 			up = m.board[i + 1].occupying;
-			if (up->team == u->team && up->index == 0) { u->ammo = 10; goto apc_nearby_exit; }
+			if (up->team == u->team && up->index == 0) {
+				u->ammo = 10; 
+				u->fuel = 100;
+				goto apc_nearby_exit; 
+			}
 		}
 		if (u->y > 0 && m.board[i - m.boardWidth].occupying != NULL) {
 			up = m.board[i - m.boardWidth].occupying;
-			if (up->team == u->team && up->index == 0) { u->ammo = 10; goto apc_nearby_exit; }
+			if (up->team == u->team && up->index == 0) {
+				u->ammo = 10; 
+				u->fuel = 100;
+				goto apc_nearby_exit; 
+			}
 		}
 		if (u->y < m.boardHeight - 1 && m.board[i + m.boardWidth].occupying != NULL) {
 			up = m.board[i + m.boardWidth].occupying;
-			if (up->team == u->team && up->index == 0) { u->ammo = 10; }
+			if (up->team == u->team && up->index == 0) {
+				u->ammo = 10; 
+				u->fuel = 100;
+				goto apc_nearby_exit; 
+			}
 		}
 		apc_nearby_exit:
-		; /* semicolon so compiler says a-ok */
-		
+		; /* semicolon so compiler says a-ok */	
+		if (u->index >= UNIT_TRANSPORT) {
+			if (u->fuel  >= 2) {
+				u->fuel -= 2;
+			} else {
+				// Destroy unit
+				m.board[m.boardWidth * u->y + u->x].occupying = NULL;
+				if (u->carrying) { free(u->carrying); }
+				free(u);
+			}
+		}
 	}
 }
 
 void renderUnit(struct Unit *u) {
-  POKE(0x9F22,0x10);
-  if (remove_old) {
-	if (m.oldleft_view != m.left_view || m.oldtop_view != m.top_view) {
-	POKE(0x9F20,(u->x - m.oldleft_view) << 1);
-	POKE(0x9F21,u->y - m.oldtop_view + 0x40);
-	POKE(0x9F23,28);
-	}
-  } else {
+	POKE(0x9F22, 0x10);
 	POKE(0x9F20,(u->x - m.left_view) << 1);
 	POKE(0x9F21,u->y - m.top_view +0x40);
 	POKE(0x9F23,(u->team << 5)+u->index);
 	POKE(0x9F23,(u->takenAction ? 0x90 : 0x00) + (u->team << 4)+ ((u->team != player1team) << 2));
-  }
 }
+
+void removeRenderUnit(struct Unit *u) {
+	if (m.oldleft_view != m.left_view || m.oldtop_view != m.top_view) {
+		POKE(0x9F22,0x10);
+		POKE(0x9F20,(u->x - m.oldleft_view) << 1);
+		POKE(0x9F21,u->y - m.oldtop_view + 0x40);
+		POKE(0x9F23,28);
+	}
+}
+
 unsigned char maxSteps;
 struct Unit *checkU;
 struct Tile tempT;
@@ -679,7 +706,11 @@ unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned
 
 unsigned char unitLastX = 255;
 unsigned char unitLastY = 255;
+unsigned char unitLastFuel = 255;
 unsigned char baseLastHP = 255;
+
+unsigned char unitChangedPosition;
+
 
 unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
   if (!u->takenAction && x < m.boardWidth && y < m.boardHeight) {
@@ -694,6 +725,10 @@ unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
 				}
 			}
 		}
+		/* If not enough fuel, can't move */
+		if (u->fuel < SABS(u->x, x) + SABS(u->y, y)) {
+			return 0;
+		}
 		maxSteps = u->mvmtRange;
 		checkU = u;
 		if ((u->airborne) ? (SABS(u->x, x) + SABS(u->y, y) <= u->mvmtRange) : checkSpaceInMvmtRange(x,y,0)) {
@@ -701,6 +736,7 @@ unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
 			maxSteps = 0;
 			unitLastX = u->x;
 			unitLastY = u->y;
+			unitLastFuel = u->fuel;
 			if (m.board[unitLastY*m.boardWidth+unitLastX].base != NULL && (unitLastX != x || unitLastY != y)) {
 				baseLastHP = m.board[unitLastY*m.boardWidth+unitLastX].base->health;  
 				m.board[unitLastY*m.boardWidth+unitLastX].base->health = 20;
@@ -712,6 +748,9 @@ unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
 				POKE(0x9F23,28);
 			}
 			m.board[unitLastY*m.boardWidth+unitLastX].occupying = NULL; 
+			u->fuel -= SABS(u->x, x) + SABS(u->y, y);
+			
+			unitChangedPosition = (u->x != x || u->y != y);
 			u->x = x;
 			u->y = y;
 			attackCursor.selected = m.board[y*m.boardWidth+x].occupying;
@@ -728,45 +767,48 @@ void undoMove(struct Unit *u) {
   POKE(0x9F22,0x00);
   POKE(0x9F23,28);
   if (attackCursor.selected != NULL && attackCursor.selected->team == u->team) {
-	m.board[u->y*m.boardWidth+u->x].occupying = attackCursor.selected;
-	attackCursor.selected = NULL;
+		m.board[u->y*m.boardWidth+u->x].occupying = attackCursor.selected;
+		attackCursor.selected = NULL;
   }
   u->x = unitLastX;
   u->y = unitLastY;
+	u->fuel = unitLastFuel;
   u->takenAction = 0;
   m.board[unitLastY*m.boardWidth+unitLastX].occupying = u;
   if (m.board[unitLastY*m.boardWidth+unitLastX].base != NULL) {
-	m.board[unitLastY*m.boardWidth+unitLastX].base->health = baseLastHP;  
-	baseLastHP = 255;
+		m.board[unitLastY*m.boardWidth+unitLastX].base->health = baseLastHP;  
+		baseLastHP = 255;
   }
   unitLastX = 255;
   unitLastY = 255;
+	unitLastFuel = 255;
 }
 
 extern unsigned char unitIndexes[];
 unsigned char damageChart[] = {
-				/* 0 ,   1,   2,     3,    4,    5,    6,    7,    8,    9,   10,   11,   12,   13,   14,   15,   16,   17 */
-/* 0 */ 0x00, 0x2d, 0x4b, 0x0e, 0x32, 0x69, 0x4b, 0x00, 0x50, 0x46, 0x00, 0x41, 0x00, 0x69, 0x00, 0x00, 0x00, 0x50,
-/* 1 */ 0x00, 0x23, 0x55, 0x0c, 0x3c, 0x69, 0x55, 0x00, 0x5a, 0x50, 0x00, 0x37, 0x00, 0x69, 0x00, 0x00, 0x00, 0x5a,
-/* 2 */ 0x00, 0x41, 0x37, 0x2d, 0x69, 0x5f, 0x46, 0x00, 0x5a, 0x55, 0x00, 0x4b, 0x00, 0x6e, 0x00, 0x00, 0x00, 0x5a,
-/* 3 */ 0x00, 0x46, 0x41, 0x37, 0x69, 0x69, 0x4b, 0x00, 0x5f, 0x5a, 0x00, 0x4b, 0x00, 0x6e, 0x00, 0x00, 0x00, 0x5f,
-/* 4 */ 0x00, 0x04, 0x41, 0x05, 0x2d, 0x69, 0x41, 0x00, 0x55, 0x4b, 0x00, 0x19, 0x00, 0x5f, 0x00, 0x00, 0x00, 0x55,
-/* 5 */ 0x00, 0x01, 0x0f, 0x01, 0x0a, 0x37, 0x0f, 0x00, 0x37, 0x2d, 0x00, 0x19, 0x00, 0x5f, 0x00, 0x00, 0x00, 0x37,
-/* 6 */ 0x00, 0x06, 0x37, 0x05, 0x19, 0x55, 0x37, 0x00, 0x55, 0x46, 0x00, 0x37, 0x00, 0x69, 0x00, 0x00, 0x00, 0x55,
-/* 7 */ 0x00, 0x1c, 0x55, 0x19, 0x37, 0x69, 0x55, 0x00, 0x5a, 0x50, 0x00, 0x41, 0x00, 0x69, 0x00, 0x00, 0x00, 0x5a,
-/* 8 */ 0x00, 0x37, 0x55, 0x19, 0x2d, 0x69, 0x55, 0x00, 0x55, 0x50, 0x00, 0x41, 0x00, 0x69, 0x00, 0x00, 0x00, 0x55,
-/* 9 */ 0x00, 0x2d, 0x46, 0x0f, 0x32, 0x69, 0x46, 0x00, 0x50, 0x4b, 0x00, 0x41, 0x00, 0x69, 0x00, 0x00, 0x00, 0x50,
-/*10 */ 0x00, 0x23, 0x23, 0x1e, 0x78, 0x2d, 0x28, 0x78, 0x00, 0x00, 0x00, 0x5f, 0x64, 0x00, 0x00, 0x00, 0x73, 0x00,
-/*11 */ 0x00, 0x0a, 0x09, 0x07, 0x78, 0x0c, 0x0a, 0x78, 0x00, 0x00, 0x00, 0x41, 0x64, 0x00, 0x00, 0x00, 0x73, 0x00,
-/*12 */ 0x00, 0x00, 0x00, 0x00, 0x4b, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x41, 0x00,
-/*13 */ 0x00, 0x00, 0x00, 0x00, 0x41, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x37, 0x00, 0x00, 0x00, 0x37, 0x00,
-/*14 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x23, 0x0a, 0x00, 0x3c, 0x37, 0x00, 0x19, 0x00, 0x5f, 0x00, 0x5f, 0x00, 0x5f,
-/*15 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x55, 0x3c, 0x00, 0x19, 0x00, 0x5f, 0x00, 0x37, 0x5a, 0x5f,
-/*16 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x37, 0x05, 0x00, 0x55, 0x41, 0x00, 0x37, 0x00, 0x55, 0x00, 0x19, 0x00, 0x5f,
-/*17 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x37, 0x28, 0x00, 0x19, 0x00, 0x4b, 0x00, 0x37, 0x00, 0x32};
+/* 							0,    1,    2,    3,    9,   10,   11,   12,   13,   14    16,   17,   18,   19,   24,   25,   26,   27 */
+/* 						  0,    1,    2,    3,    4,    5,    6,    7,    8,    9,   10,   11,   12,   13,   14,   15,   16,   17 */
+/* 0 | 00 */ 0x00, 0x2d, 0x4b, 0x0e, 0x32, 0x69, 0x4b, 0x00, 0x50, 0x46, 0x00, 0x41, 0x69, 0x00, 0x00, 0x00, 0x00, 0x50,
+/* 1 | 01 */ 0x00, 0x23, 0x55, 0x0c, 0x3c, 0x69, 0x55, 0x00, 0x5a, 0x50, 0x00, 0x37, 0x69, 0x00, 0x00, 0x00, 0x00, 0x5a,
+/* 2 | 02 */ 0x00, 0x41, 0x37, 0x2d, 0x69, 0x5f, 0x46, 0x00, 0x5a, 0x55, 0x00, 0x4b, 0x6e, 0x00, 0x00, 0x00, 0x00, 0x5a,
+/* 3 | 03 */ 0x00, 0x46, 0x41, 0x37, 0x69, 0x69, 0x4b, 0x00, 0x5f, 0x5a, 0x00, 0x4b, 0x6e, 0x00, 0x00, 0x00, 0x00, 0x5f,
+/* 4 | 09 */ 0x00, 0x04, 0x41, 0x05, 0x2d, 0x69, 0x41, 0x00, 0x55, 0x4b, 0x00, 0x19, 0x5f, 0x00, 0x00, 0x00, 0x00, 0x55,
+/* 5 | 10 */ 0x00, 0x01, 0x0f, 0x01, 0x0a, 0x37, 0x0f, 0x00, 0x37, 0x2d, 0x00, 0x19, 0x5f, 0x00, 0x00, 0x00, 0x00, 0x37,
+/* 6 | 11 */ 0x00, 0x06, 0x37, 0x05, 0x19, 0x55, 0x37, 0x00, 0x55, 0x46, 0x00, 0x37, 0x69, 0x00, 0x00, 0x00, 0x00, 0x55,
+/* 7 | 12 */ 0x00, 0x1c, 0x55, 0x19, 0x37, 0x69, 0x55, 0x00, 0x5a, 0x50, 0x00, 0x41, 0x69, 0x00, 0x00, 0x00, 0x00, 0x5a,
+/* 8 | 13 */ 0x00, 0x37, 0x55, 0x19, 0x2d, 0x69, 0x55, 0x00, 0x55, 0x50, 0x00, 0x41, 0x69, 0x00, 0x00, 0x00, 0x00, 0x55,
+/* 9 | 14 */ 0x00, 0x2d, 0x46, 0x0f, 0x32, 0x69, 0x46, 0x00, 0x50, 0x4b, 0x00, 0x41, 0x69, 0x00, 0x00, 0x00, 0x00, 0x50,
+/*10 | 16 */ 0x00, 0x23, 0x23, 0x1e, 0x78, 0x2d, 0x28, 0x78, 0x00, 0x00, 0x00, 0x5f, 0x00, 0x64, 0x00, 0x00, 0x73, 0x00,
+/*11 | 17 */ 0x00, 0x0a, 0x09, 0x07, 0x78, 0x0c, 0x0a, 0x78, 0x00, 0x00, 0x00, 0x41, 0x00, 0x64, 0x00, 0x00, 0x73, 0x00,
+/*12 | 18 */ 0x00, 0x00, 0x00, 0x00, 0x4b, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x41, 0x00,
+/*13 | 19 */ 0x00, 0x00, 0x00, 0x00, 0x41, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x37, 0x00, 0x00, 0x37, 0x00,
+/*14 | 24 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x23, 0x0a, 0x00, 0x3c, 0x37, 0x00, 0x19, 0x5f, 0x00, 0x00, 0x5f, 0x00, 0x5f,
+/*15 | 25 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x55, 0x3c, 0x00, 0x19, 0x5f, 0x00, 0x00, 0x37, 0x5a, 0x5f,
+/*16 | 26 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x37, 0x05, 0x00, 0x55, 0x41, 0x00, 0x37, 0x55, 0x00, 0x00, 0x19, 0x00, 0x5f,
+/*17 | 27 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x37, 0x28, 0x00, 0x19, 0x4b, 0x00, 0x00, 0x37, 0x00, 0x32};
 
 unsigned char canAttack(struct Unit *a, struct Unit *b) {
-  if (a->team != b->team && a->ammo > 0 && SABS(b->x,a->x) + SABS(b->y,a->y) >= a->attackRangeMin && SABS(b->x,a->x) + SABS(b->y,a->y) <= a->attackRangeMax) {
+  if (a->team != b->team && !a->takenAction && a->ammo > 0 && SABS(b->x,a->x) + SABS(b->y,a->y) >= a->attackRangeMin && SABS(b->x,a->x) + SABS(b->y,a->y) <= a->attackRangeMax) {
     return damageChart[unitIndexes[b->index] * 18 + unitIndexes[a->index]];
   } else {
 		return 0;
@@ -781,31 +823,32 @@ unsigned char calcPower(struct Unit *a, struct Unit *b) {
 	static unsigned char temp, randValue;
 
 	temp = canAttack(a,b) * a->health / 100;
-	if (temp != 0 && temp <= (100 + 5)) {
+	if (temp != 0) {
 		__asm__ ("jsr $FECF"); /* Call entropy_get kernal routine */
 		__asm__ ("stx %v", randValue);
 		__asm__ ("eor %v", randValue);
 		__asm__ ("sty %v", randValue);
 		__asm__ ("eor %v", randValue);
 		__asm__ ("sta %v", randValue);
-		randValue = randValue % 10;
-		__asm__ ("lda %v", randValue);
-		__asm__ ("sec");
-		__asm__ ("sbc #4"); /* Luck modifies damage from (-5, 5] */
-		__asm__ ("clc");
-		__asm__ ("adc %v", temp);
-		__asm__ ("sta %v", temp);
+		temp += randValue % 8;
 	}
 	return temp;
 }
 
 void attack(struct Unit *attacker, struct Unit *defender) {
   defender->health -= calcPower(attacker,defender);
-	if (attacker->ammo > 0) { --attacker->ammo; }
+	--attacker->ammo;
   if (defender->health >= 128) {defender->health = 0;}
   if (defender->health > 0) {
-    attacker->health -= calcPower(defender,attacker);
-		if (defender->ammo > 0) { --defender->ammo; }
+		if (defender->ammo > 0) {
+			static unsigned char defender_damage;
+			defender_damage = calcPower(defender,attacker);
+			/* If defender can't fire back, don't drain ammo */
+			if (defender_damage) {
+				attacker->health -= defender_damage;
+				--defender->ammo;
+			}
+		}
     if (attacker->health >= 128) {attacker->health = 0;}
     if (attacker->health == 0) {
       m.board[m.boardWidth*attacker->y+attacker->x].occupying = NULL;
@@ -840,7 +883,9 @@ void attack(struct Unit *attacker, struct Unit *defender) {
 }
 
 void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned char cy, unsigned char attackRangeMax) {
-	if (!c.selected->canAttackAndMove && (c.x != unitLastX || c.y != unitLastY)) { pA->length = 0; return; }
+	pA->length = 0;
+	//POKE(0x9fbd, 0);
+	if (!c.selected->canAttackAndMove && unitChangedPosition) { /*POKE(0x9fba, 0); */ return; }
 	
 	if (attackRangeMax == 1) {
 		/* Handle direct attack units */
@@ -870,29 +915,31 @@ void getPossibleAttacks(struct possibleAttacks *pA, unsigned char cx, unsigned c
 	} else {
 		/* Handle units with ranged attacks */
 		unsigned char xmin, ymin, xmax, ymax;
-		unsigned char x;
+		unsigned char x, y;
 		struct Tile *temp;
-		
-		change_directory("range");
+		unsigned char i;
 		
 		xmin = (c.x >= attackRangeMax) ? c.x - attackRangeMax : 0;
 		ymin = (c.y >= attackRangeMax) ? c.y - attackRangeMax : 0;
-		xmax = (c.x + attackRangeMax < 15) ? c.x + attackRangeMax : 14;
-		ymax = (c.y + attackRangeMax < 10) ? c.y + attackRangeMax : 9;
+		xmax = (c.x + attackRangeMax < m.boardWidth) ? c.x + attackRangeMax : m.boardWidth - 1;
+		ymax = (c.y + attackRangeMax < m.boardHeight) ? c.y + attackRangeMax : m.boardHeight - 1;
 		
-		pA->length = 0;
-		for (; ymin <= ymax; ++ymin) {
+		i = 0;
+		for (y = ymin; y <= ymax; ++y) {
 			for (x = xmin; x <= xmax; ++x) {
-				//if (SABS(x, c.x) + SABS(ymin, c.y) <= attackRangeMin) { continue; }
-				temp = &(m.board[m.boardWidth * ymin + x]);
-				if (temp->occupying != NULL && temp->occupying->team != m.whoseTurn != NULL && canAttack(c.selected, temp->occupying)) {
-					if (pA->length < 8) { // Cap number of possible attacks to save RAM (shouldn't really come up, limited to 8)
-						pA->attacks[pA->length] = temp;
-						++pA->length;
+				POKE(0x9fbb, x);
+				POKE(0x9fbc, y);
+				temp = &(m.board[y * m.boardWidth + x]);
+				if (temp->occupying != NULL) {
+					if (canAttack(c.selected, temp->occupying)) {
+						
+						pA->attacks[i] = temp;
+						++i;
 					}
 				}
 			}
 		}
+		pA->length = i;
 	}
 }
 

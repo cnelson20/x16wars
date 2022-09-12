@@ -30,6 +30,14 @@ void checkOldUnits();
 void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsigned char index, unsigned char team);
 void newTurnUnit(struct Unit *u, unsigned short i);
 void renderUnit(struct Unit *u);
+void removeRenderUnit(struct Unit *u);
+
+/* Unit vars */
+extern unsigned char unitLastX;
+extern unsigned char unitLastY;
+extern unsigned char unitLastFuel;
+extern unsigned char baseLastHP;
+extern unsigned char unitsdeadthisturn;
 
 void initTile(struct Tile *t, unsigned char index);
 void initTerrain(struct Terrain **t_pointer, unsigned char index);

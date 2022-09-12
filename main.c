@@ -415,15 +415,19 @@ extern unsigned char currentbases;
 extern unsigned char oldbases;
 extern unsigned char currentunitsprites;
 extern unsigned char oldunitsprites;
-extern unsigned char remove_old;
 extern struct Terrain *terrainArray[16];
 
 void game_start()
 {
+	/* Reset some game variables */
 	memset(&c, 0, sizeof(c));
 	memset(&attackCursor, 0, sizeof(attackCursor));
 	memset(&menuOptions, 0, sizeof(menuOptions));
 	memset(&terrainArray, 0, 16 * sizeof(void *));
+	unitLastX = 255;
+	unitLastX = 255;
+	unitLastFuel = 255;
+	baseLastHP = 255;
 
 	POKE(0x9F25, 0);
 	POKE(0x9F29, 0x71);
@@ -740,11 +744,11 @@ void drawUI() {
 			}
 			POKE(0x9F23, 186 + (unitPointer->y % 10));
 			
-			POKE(0x9F23, 28);
+			/*POKE(0x9F23, 28);
 			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 12) & 0xF));
 			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 8) & 0xF));
 			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 4) & 0xF));
-			POKE(0x9F23, SCREENBYTE((unsigned short)unitPointer & 0xF));
+			POKE(0x9F23, SCREENBYTE((unsigned short)unitPointer & 0xF));*/
 			if (unitPointer->health <= 99) {
 				POKE(0x9F23, 28);
 				POKE(0x9F23, 167);
@@ -754,10 +758,13 @@ void drawUI() {
 			if (unitPointer->ammo < 10) {
 				POKE(0x9F23, 28);
 				POKE(0x9F23, 160 + 'A' - 'A');
-				//POKE(0x9F23, 160 + 'M' - 'A');
-				//POKE(0x9F23, 160 + 'M' - 'A');
-				//POKE(0x9F23, 160 + 'O' - 'A');
 				POKE(0x9F23, 186 + unitPointer->ammo);
+			}
+			if (unitPointer->fuel < 100) {
+				POKE(0x9F23, 28);
+				POKE(0x9F23, 0xA5);
+				POKE(0x9F23, 186 + (unitPointer->fuel / 10));
+				POKE(0x9F23, 186 + (unitPointer->fuel % 10));
 			}
 			clearRestOfLine();
 			
@@ -841,10 +848,6 @@ void clearUI()
 	}
 }
 
-extern unsigned char unitLastX;
-extern unsigned char unitLastY;
-extern unsigned char unitsdeadthisturn;
-
 unsigned char dropOffsetsX[] = {0, 1, 2, 1};
 unsigned char dropOffsetsY[] = {1, 0, 1, 2};
 
@@ -914,7 +917,10 @@ void keyPressed()
 			case OPTION_WAIT:
 				unitLastX = 255;
 				unitLastY = 255;
+				unitLastFuel = 255;
 				c.selected->takenAction = 1;
+				c.x = c.selected->x - m.left_view;
+				c.y = c.selected->y - m.top_view;
 				c.selected = NULL;
 				menuOptions.length = 0;
 				break;
@@ -922,6 +928,7 @@ void keyPressed()
 				capture(c.selected, m.board[c.selected->x + m.boardWidth * c.selected->y].base);
 				unitLastX = 255;
 				unitLastY = 255;
+				unitLastFuel = 255;
 				c.selected->takenAction = 1;
 				c.selected = NULL;
 				menuOptions.length = 0;
@@ -952,6 +959,7 @@ void keyPressed()
 				attackCursor.selected = NULL;
 				unitLastX = 255;
 				unitLastY = 255;
+				unitLastFuel = 255;
 				c.selected = NULL;
 				menuOptions.length = 0;
 			case OPTION_ATTACK:
@@ -967,6 +975,7 @@ void keyPressed()
 			case OPTION_JOIN:
 				unitLastX = 255;
 				unitLastY = 255;
+				unitLastFuel = 255;
 
 				c.selected->health = MIN(100, c.selected->health + attackCursor.selected->health);
 				c.selected->ammo = MIN(10, c.selected->ammo + attackCursor.selected->ammo);
@@ -1059,6 +1068,7 @@ void keyPressed()
 					attack(c.selected, attackCursor.selected);
 					unitLastX = 255;
 					unitLastY = 255;
+					unitLastFuel = 255;
 					c.selected->takenAction = 1;
 					c.selected = NULL;
 					free(pA);
@@ -1074,6 +1084,7 @@ void keyPressed()
 
 					unitLastX = 255;
 					unitLastY = 255;
+					unitLastFuel = 255;
 					c.selected->takenAction = 1;
 					c.selected = NULL;
 					free(pA);
