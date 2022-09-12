@@ -773,8 +773,30 @@ unsigned char canAttack(struct Unit *a, struct Unit *b) {
 	}
 }
 
+unsigned char damagePreview(struct Unit *a, struct Unit *b) {
+	return canAttack(a,b) * a->health / 100;
+}
+
 unsigned char calcPower(struct Unit *a, struct Unit *b) {
-  return canAttack(a,b) * a->health / 100;
+	static unsigned char temp, randValue;
+
+	temp = canAttack(a,b) * a->health / 100;
+	if (temp != 0 && temp <= (100 + 5)) {
+		__asm__ ("jsr $FECF"); /* Call entropy_get kernal routine */
+		__asm__ ("stx %v", randValue);
+		__asm__ ("eor %v", randValue);
+		__asm__ ("sty %v", randValue);
+		__asm__ ("eor %v", randValue);
+		__asm__ ("sta %v", randValue);
+		randValue = randValue % 10;
+		__asm__ ("lda %v", randValue);
+		__asm__ ("sec");
+		__asm__ ("sbc #4"); /* Luck modifies damage from (-5, 5] */
+		__asm__ ("clc");
+		__asm__ ("adc %v", temp);
+		__asm__ ("sta %v", temp);
+	}
+	return temp;
 }
 
 void attack(struct Unit *attacker, struct Unit *defender) {
