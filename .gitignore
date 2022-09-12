@@ -8,3 +8,6 @@
 #backup files from HxD
 *.bak
 
+# release binary files
+release/
+
