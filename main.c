@@ -37,12 +37,7 @@ char testMapData[] = {19,12,// height and width
 };
 char *testMap = testMapData;
 */
-extern unsigned char redgraphics[];
-/* Using copies of red to save space
-extern unsigned char greengraphics[];
-extern unsigned char bluegraphics[];
-extern unsigned char yellowgraphics[];
-*/
+
 extern unsigned char customPalette[];
 extern unsigned char player1team;
 extern unsigned char player2team;
@@ -97,6 +92,9 @@ void free_game_mem() {
 		free(m.board[i].base);
 	}
 	free(m.board);
+	for (i = 0; i < LEN_TERRAIN_ARRAY; ++i) {
+		free(terrainArray[i]);
+	}
 }
 
 char **menu_files_array;
@@ -440,7 +438,7 @@ void game_start()
 	initCursor();
 }
 
-#define UNIT_CHR_FILELEN 16384
+#define UNIT_CHR_FILELEN 4096
 #define TILE_CHR_FILELEN 1410
 #define SPRITE_CHR_FILELEN 1602
 #define LETTER_CHR_FILELEN 4738
@@ -483,28 +481,48 @@ void setup()
 	POKE(0x9F33, 0);
 	POKE(0x9F3A, 0);
 
+	load_address = malloc(LETTER_CHR_FILELEN); // 128 more than 4,736 (size of letter.c, biggest one)
+	
+	cbm_k_setnam("red.chr");
+	cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
+	cbm_k_load(0, (unsigned short)load_address);
 	POKE(0x9F20, 0x00);
 	POKE(0x9F21, 0x80);
 	POKE(0x9F22, 0x10);
-	POKEW(0x2, (unsigned short)redgraphics);
+	POKEW(0x2, (unsigned short)load_address);
 	POKEW(0x4, 0x9F23);
-	POKEW(0x6, 4096);
+	POKEW(0x6, UNIT_CHR_FILELEN);
 	__asm__ ("jsr $FEE7");
+	
+	cbm_k_setnam("green.chr");
+	cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
+	cbm_k_load(0, (unsigned short)load_address);
+	POKE(0x9F20, 0x00);
+	POKE(0x9F21, 0x90);
 	__asm__ ("jsr $FEE7");
+	
+	cbm_k_setnam("blue.chr");
+	cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
+	cbm_k_load(0, (unsigned short)load_address);
+	POKE(0x9F20, 0x00);
+	POKE(0x9F21, 0xA0);
 	__asm__ ("jsr $FEE7");
+	
+	cbm_k_setnam("yellow.chr");
+	cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
+	//cbm_k_load(0, (unsigned short)load_address);
+	POKE(0x9F20, 0x00);
+	POKE(0x9F21, 0xB0);
 	__asm__ ("jsr $FEE7");
-
-	load_address = malloc(LETTER_CHR_FILELEN); // 128 more than 4,736 (size of letter.c, biggest one)
 	
 	cbm_k_setnam("tile.chr");
 	cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
 	cbm_k_load(0, (unsigned short)load_address);
 	POKE(0x9F20, 0x00);
 	POKE(0x9F21, 0xC0);
-	POKEW(0x2, (unsigned short)load_address);
-	POKEW(0x4, 0x9F23);
+	//POKEW(0x2, (unsigned short)load_address);
+	//POKEW(0x4, 0x9F23);
 	POKEW(0x6, TILE_CHR_FILELEN);
-	//__asm__ ("stp");
 	__asm__ ("jsr $FEE7");
 
 	cbm_k_setnam("letter.chr");

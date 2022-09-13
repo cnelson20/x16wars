@@ -41,6 +41,8 @@ extern unsigned char unitLastFuel;
 extern unsigned char baseLastHP;
 extern unsigned char unitsdeadthisturn;
 
+extern struct Terrain *terrainArray[];
+
 void initTile(struct Tile *t, unsigned char index);
 void initTerrain(struct Terrain **t_pointer, unsigned char index);
 
