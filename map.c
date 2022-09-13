@@ -43,7 +43,8 @@ void initMap() {
   m.boardWidth = 3;
   m.boardHeight = 3;
   m.boardArea = m.boardWidth * m.boardHeight;
-  m.board = malloc(m.boardWidth * m.boardHeight * sizeof(struct Tile));
+	/* This line caused a memory leak; leaving it here in rememberance */
+  //m.board = malloc(m.boardWidth * m.boardHeight * sizeof(struct Tile));
 }
 void initMapData(char data[]) {
   unsigned short i, mapI, temp;
@@ -65,14 +66,14 @@ void initMapData(char data[]) {
   }
   for (i = 2; data[i] != 0xFF; i += 3) {
 		
-    temp = data[i]+m.boardWidth * data[i+1];
+    temp = data[i] + m.boardWidth * data[i+1];
     m.board[temp].occupying = malloc(sizeof (struct Unit));
 		
 		initUnit(m.board[temp].occupying, data[i], data[i+1], data[i+2], player1team);
   }
   i++;
   for (; data[i] != 0xFF; i += 3) {
-    temp = data[i]+m.boardWidth*data[i+1];
+    temp = data[i] + m.boardWidth*data[i+1];
     m.board[temp].occupying = malloc(sizeof (struct Unit));
     initUnit(m.board[temp].occupying, data[i], data[i+1], data[i+2], player2team);
   }
@@ -303,6 +304,8 @@ void win(unsigned char team) {
   POKE(0x9F23,0xb2); // s
   POKE(0x9F23,0x80);
 	
+	returnToMenu = 1;
+	returnToMenu = 1;
 	i = 300;
   while(i != 0) {
 		waitforjiffy();
@@ -335,6 +338,8 @@ void nextTurn() {
 #define TILE_MENU_FILLED 8
 #define TILE_SHOAL 9
 #define TILE_RIVER 10
+
+#define MAX_TILE_INDEX 10
 
 //Tile methods
 void initTile(struct Tile *t, unsigned char index) {
@@ -386,7 +391,8 @@ unsigned char terrainMvmtCostsArray[][6] = {
 // mvmtCosts[4] = mech
 // mvmtCosts[5] = lander
 
-struct Terrain *terrainArray[16];
+
+struct Terrain *terrainArray[LEN_TERRAIN_ARRAY];
 
 void initTerrain(struct Terrain **t_pointer, unsigned char index) {
 	unsigned char i;
@@ -544,17 +550,17 @@ void capture(struct Unit *u, struct Captureable *c) {
   unsigned char i;
   
   if (u->team != c->team) {
-	i = (u->health + 9) / 10;
-	if (i >= c->health) {
-	  c->team = u->team;
-	  c->health = 20;
-	  ++unitsdeadthisturn;
-	  if (c->critical) {
-		win(m.whoseTurn);  
-	  }
-	} else {
-	  c->health -= i;	
-	}
+		i = (u->health + 9) / 10;
+		if (i >= c->health) {
+			c->team = u->team;
+			c->health = 20;
+			++unitsdeadthisturn;
+			if (c->critical) {
+			win(m.whoseTurn);  
+			}
+		} else {
+			c->health -= i;	
+		}
   }
 }
 
@@ -1023,3 +1029,66 @@ unsigned char sizeofGetPossibleJoins(struct Unit *u) {
 	return size;
 }
 
+unsigned char canSupply(struct Unit *u) {
+	struct Unit *supp; 
+	if (u->index != UNIT_APC) { return 0; }
+	
+	if (u->x > 0) {
+		supp = m.board[u->y * m.boardWidth + u->x - 1].occupying;
+		if (supp != NULL && supp->team == u->team) {
+			return 1;
+		}
+	}
+	if (u->x < m.boardWidth - 1) {
+		supp = m.board[u->y * m.boardWidth + u->x + 1].occupying;
+		if (supp != NULL && supp->team == u->team) {
+			return 1;
+		}
+	}
+	if (u->y > 0) {
+		supp = m.board[u->y * m.boardWidth + u->x - m.boardWidth].occupying;
+		if (supp != NULL && supp->team == u->team) {
+			return 1;
+		}
+	}
+	if (u->y < m.boardHeight - 1) {
+		supp = m.board[u->y * m.boardWidth + u->x + m.boardWidth].occupying;
+		if (supp != NULL && supp->team == u->team) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+void supplyUnits(struct Unit *u) {
+	struct Unit *supp; 
+	
+	if (u->x > 0) {
+		supp = m.board[u->y * m.boardWidth + u->x - 1].occupying;
+		if (supp != NULL && supp->team == u->team) {
+			supp->ammo = 10;
+			supp->fuel = 100;
+		}
+	}
+	if (u->x < m.boardWidth - 1) {
+		supp = m.board[u->y * m.boardWidth + u->x + 1].occupying;
+		if (supp != NULL && supp->team == u->team) {
+			supp->ammo = 10;
+			supp->fuel = 100;
+		}
+	}
+	if (u->y > 0) {
+		supp = m.board[u->y * m.boardWidth + u->x - m.boardWidth].occupying;
+		if (supp != NULL && supp->team == u->team) {
+			supp->ammo = 10;
+			supp->fuel = 100;
+		}
+	}
+	if (u->y < m.boardHeight - 1) {
+		supp = m.board[u->y * m.boardWidth + u->x + m.boardWidth].occupying;
+		if (supp != NULL && supp->team == u->team) {
+			supp->ammo = 10;
+			supp->fuel = 100;
+		}
+	}
+}

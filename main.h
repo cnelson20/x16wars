@@ -12,6 +12,8 @@ void menu();
 
 void print_ascii_str(char *string, unsigned char break_on_period);
 
+void free_game_mem();
+
 void draw();
 void drawUI();
 void clearUI();

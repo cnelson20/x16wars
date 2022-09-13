@@ -47,6 +47,7 @@ extern unsigned char customPalette[];
 extern unsigned char player1team;
 extern unsigned char player2team;
 extern unsigned char returnToMenu;
+extern struct Terrain *terrainArray[];
 
 unsigned char keyCode;
 struct Map m;
@@ -62,38 +63,40 @@ unsigned short mouseX;
 unsigned short mouseY;
 unsigned char mouseButtons;
 
-void main()
-{
+void main() {
 	setup();
-	while (1)
-	{
+	__asm__ ("lda #10");
+	__asm__ ("sta $00");
+	_heapadd((void *)0xA000, 0x2000);
+	
+	while (1)	{
+		//__asm__ ("stp");
 		menu();
 		game_start();
 		returnToMenu = 0;
-		while (!returnToMenu)
-		{
+		while (!returnToMenu)	{
 			waitforjiffy();
 			__asm__("jsr $FFE4");
 			__asm__("sta %v", keyCode);
-			if (keyCode != 0)
-			{
+			if (keyCode != 0) {
 				keyPressed();
 			}
 			draw();
 		}
 		/* Free memory */
-		{
-			unsigned short i;
-			for (i = 0; i < m.totalTiles; ++i)
-			{
-				free(m.board[i].occupying->carrying);
-				free(m.board[i].occupying);
-				free(m.board[i].t);
-				free(m.board[i].base);
-			}
-			free(m.board);
-		}
+		free_game_mem();
 	}
+}
+
+void free_game_mem() {
+	unsigned short i;
+	
+	for (i = 0; i < m.boardArea; ++i) {
+		free(m.board[i].occupying->carrying);
+		free(m.board[i].occupying);
+		free(m.board[i].base);
+	}
+	free(m.board);
 }
 
 char **menu_files_array;
@@ -611,6 +614,7 @@ void drawText(unsigned char *string, unsigned char size, unsigned char x, unsign
 #define OPTION_MOUSETOGGLE 9
 #define OPTION_JOIN 10
 #define OPTION_MENU 11
+#define OPTION_SUPPLY 12
 
 unsigned char optionStrings[][8] = {
 	{0xad, 0xb4, 0xab, 0xab, 0x00},
@@ -624,7 +628,8 @@ unsigned char optionStrings[][8] = {
 	{0xa0, 0xb3, 0xb3, 0xa0, 0xa2, 0xaa, 0x00},
 	{0xac, 0xae, 0xb4, 0xb2, 0xa4, 0x00},
 	{0xa9, 0xae, 0xa8, 0xad, 0x00},
-	{0xac, 0xa4, 0xad, 0xb5, 0x00}};
+	{0xac, 0xa4, 0xad, 0xb5, 0x00},
+	{0xb2, 0xb4, 0xaf, 0xaf, 0xab, 0xb8}};
 
 unsigned char healthText[] = {0xa7, 0xa4, 0xa0, 0xab, 0xb3, 0xa7, 0x1c};
 
@@ -915,10 +920,11 @@ void keyPressed()
 				POKE(0x9F25, 0x80);
 				__asm__("jmp ($FFFC)");
 			case OPTION_WAIT:
+				c.selected->takenAction = 1;
+				wait_code:
 				unitLastX = 255;
 				unitLastY = 255;
 				unitLastFuel = 255;
-				c.selected->takenAction = 1;
 				c.x = c.selected->x - m.left_view;
 				c.y = c.selected->y - m.top_view;
 				c.selected = NULL;
@@ -926,16 +932,29 @@ void keyPressed()
 				break;
 			case OPTION_CAPTURE:
 				capture(c.selected, m.board[c.selected->x + m.boardWidth * c.selected->y].base);
-				unitLastX = 255;
+				
+				goto wait_code;
+				/*unitLastX = 255;
 				unitLastY = 255;
 				unitLastFuel = 255;
-				c.selected->takenAction = 1;
 				c.selected = NULL;
-				menuOptions.length = 0;
+				menuOptions.length = 0;*/
+				break;
+			case OPTION_SUPPLY:
+				supplyUnits(c.selected);
+				
+				c.selected->takenAction = 1;
+				goto wait_code;
+				/*unitLastX = 255;
+				unitLastY = 255;
+				unitLastFuel = 255;
+				c.selected = NULL;
+				menuOptions.length = 0;*/
 				break;
 			case OPTION_DROP:
 				// Code for dropping off units
 				menuOptions.length = 0;
+				free(pA);
 				pA = malloc(sizeof(struct possibleAttacks));
 				getPossibleDrops(pA, c.selected);
 				actionNo = 1;
@@ -957,11 +976,14 @@ void keyPressed()
 				attackCursor.selected->carrying = c.selected;
 				m.board[c.selected->x + m.boardWidth * c.selected->y].occupying = attackCursor.selected;
 				attackCursor.selected = NULL;
-				unitLastX = 255;
+				
+				goto wait_code;
+				/*unitLastX = 255;
 				unitLastY = 255;
 				unitLastFuel = 255;
 				c.selected = NULL;
-				menuOptions.length = 0;
+				menuOptions.length = 0;*/
+				//break;
 			case OPTION_ATTACK:
 				/* Atttacking */
 				actionNo = 0;
@@ -973,19 +995,20 @@ void keyPressed()
 				menuOptions.length = 0;
 				break;
 			case OPTION_JOIN:
-				unitLastX = 255;
-				unitLastY = 255;
-				unitLastFuel = 255;
-
 				c.selected->health = MIN(100, c.selected->health + attackCursor.selected->health);
 				c.selected->ammo = MIN(10, c.selected->ammo + attackCursor.selected->ammo);
 				c.selected->takenAction = 1;
-				c.selected = NULL;
+				
 				free(attackCursor.selected);
 				attackCursor.selected = NULL;
-
-				menuOptions.length = 0;
-				break;
+				
+				goto wait_code;
+				/*unitLastX = 255;
+				unitLastY = 255;
+				unitLastFuel = 255;
+				c.selected = NULL;
+				menuOptions.length = 0;*/
+				//break;
 			case OPTION_MOUSETOGGLE:
 				if (mouseEnabled)
 				{
@@ -1233,6 +1256,7 @@ void keyPressed()
 							}
 							else
 							{
+								free(pA);
 								pA = malloc(sizeof(struct possibleAttacks));
 								getPossibleAttacks(pA, c.x + m.left_view, c.y + m.top_view, c.selected->attackRangeMax);
 								menuOptions.selected = 0;
@@ -1252,13 +1276,17 @@ void keyPressed()
 									menuOptions.options[menuOptions.length] = OPTION_DROP;
 									++menuOptions.length;
 								}
-								else if ((c.selected->index == 2 || c.selected->index == 3) && m.board[c.selected->x + m.boardWidth * c.selected->y].base != NULL && m.board[c.selected->x + m.boardWidth * c.selected->y].base->team != c.selected->team)
+								else if ((c.selected->index == UNIT_MECH || c.selected->index == UNIT_INFANTRY) && m.board[c.selected->x + m.boardWidth * c.selected->y].base != NULL && m.board[c.selected->x + m.boardWidth * c.selected->y].base->team != c.selected->team)
 								{
 									menuOptions.options[menuOptions.length] = OPTION_CAPTURE;
 									++menuOptions.length;
 								}
 								menuOptions.options[menuOptions.length] = OPTION_WAIT;
 								++menuOptions.length;
+								if (canSupply(c.selected)) {
+									menuOptions.options[menuOptions.length] = OPTION_SUPPLY;
+									++menuOptions.length;
+								}
 							}
 						}
 					}

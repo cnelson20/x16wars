@@ -58,7 +58,6 @@ typedef struct Map {
   unsigned char whoseTurn;
   unsigned char boardWidth, boardHeight;
   unsigned short boardArea;
-  unsigned char totalTiles;
   struct Tile *board;
 };
 
@@ -70,5 +69,5 @@ typedef struct possibleAttacks {
 typedef struct Menu {
   unsigned char length;
   unsigned char selected;
-  unsigned char options[3];
+  unsigned char options[4];
 };

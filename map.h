@@ -19,6 +19,8 @@
 #define UNIT_CRUISER 0x1A
 #define UNIT_BATTLESHIP 0x1B
 
+#define LEN_TERRAIN_ARRAY 12
+
 void initMap();
 void initMapData(char data[]);
 void renderMap();
@@ -62,3 +64,6 @@ unsigned char sizeofGetPossibleDrops(struct Unit *u);
 
 void getPossibleJoins(struct possibleAttacks *pA, struct Unit *u);
 unsigned char sizeofGetPossibleJoins(struct Unit *u);
+
+unsigned char canSupply(struct Unit *u);
+void supplyUnits(struct Unit *u);
