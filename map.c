@@ -572,7 +572,8 @@ unsigned char mvmtRanges[] = {
   4,4,4,0, /* Missiles  Rockets  Artillery  blank */
   6,6,7,9, /* Transport  Copter  Bomber  Fighter */ 
   0,0,0,0, 
-  5,4,6,5}; /* Lander  Submarine  Cruiser  Battleship */
+  5,4,6,5,
+}; /* Lander  Submarine  Cruiser  Battleship */
 unsigned char mvmtTypes[] = {
   1,2,4,0,
   9,9,9,9,
@@ -580,8 +581,18 @@ unsigned char mvmtTypes[] = {
   2,2,1,9,
   1,1,1,1, /* airborne units arent affected by this */
   9,9,9,9,
-  5,3,3,3
+  5,3,3,3,
 };
+unsigned char maxFuel[] = {
+	70,80,99,99,
+	0 , 0, 0, 0,
+	0 ,60,50,70,
+	50,50,50, 0,
+	99,99,99,99,
+	0 , 0, 0, 0,
+	99,60,99,99,
+};
+
 void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsigned char index, unsigned char team) {
   u->x = init_x;
   u->y = init_y;
@@ -590,25 +601,38 @@ void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsign
   u->team = team;
 	u->health = 100;
 	u->ammo = 10;
-	u->fuel = 100;
+	u->fuel = maxFuel[index];
   u->mvmtType = mvmtTypes[index];
   u->takenAction = 0;
   u->mvmtRange = mvmtRanges[index];
-  u->attackRangeMin = (index >= 12 && index <= 14) ? (index == 14 ? 2 : 3) : 0;
-  u->attackRangeMax = (index >= 12 && index <= 14) ? (index == 14 ? 3 : 5) : 1;
-  u->airborne = index >= 16 && index <= 19;
+	if ((index >= UNIT_MISSILES && index <= UNIT_ARTILLERY) || index == UNIT_BATTLESHIP) {
+		/* Ranges:
+		artillery : [2,3]
+		rockets & missiles : [3, 5]
+		battleship : [2,6]
+		*/
+		u->attackRangeMin = (index == UNIT_ARTILLERY || index == UNIT_BATTLESHIP) ? 2 : 3;
+		u->attackRangeMax = index == UNIT_ARTILLERY ? 3 : (index == UNIT_BATTLESHIP ? 6 : 5);
+	} else {
+		u->attackRangeMin = 0;
+		u->attackRangeMax = 1;
+	}
+  u->airborne = index >= UNIT_TRANSPORT && index <= UNIT_FIGHTER;
 	
-	u->canAttackAndMove = !(index == UNIT_MISSILES || index == UNIT_ROCKETS || index == UNIT_ARTILLERY);
+	u->canAttackAndMove = !(index == UNIT_MISSILES || index == UNIT_ROCKETS || index == UNIT_ARTILLERY || index == UNIT_BATTLESHIP);
 	
   u->carrying = NULL;
 }
+
+#define FUEL_SUSTAIN_OFFSET 0x10
+unsigned char fuelSustainCostsArray[] = {2, 2, 5, 5,};
 
 void newTurnUnit(struct Unit *u, unsigned short i) {
   u->takenAction = 0;
   if (m.whoseTurn == u->team && m.board[i].base != NULL && m.board[i].base->team == u->team) {
     u->health += 20;
 		u->ammo = 10;
-		u->fuel = 100;
+		u->fuel = maxFuel[u->index];
     if (u->health > 100) {u->health = 100;}
   } 
 	if (m.whoseTurn == u->team) {
@@ -618,7 +642,7 @@ void newTurnUnit(struct Unit *u, unsigned short i) {
 			up = m.board[i - 1].occupying;
 			if (up->team == u->team && up->index == 0) {
 				u->ammo = 10; 
-				u->fuel = 100;
+				u->fuel = maxFuel[u->index];
 				goto apc_nearby_exit; 
 			}
 		}
@@ -626,7 +650,7 @@ void newTurnUnit(struct Unit *u, unsigned short i) {
 			up = m.board[i + 1].occupying;
 			if (up->team == u->team && up->index == 0) {
 				u->ammo = 10; 
-				u->fuel = 100;
+				u->fuel = maxFuel[u->index];
 				goto apc_nearby_exit; 
 			}
 		}
@@ -634,7 +658,7 @@ void newTurnUnit(struct Unit *u, unsigned short i) {
 			up = m.board[i - m.boardWidth].occupying;
 			if (up->team == u->team && up->index == 0) {
 				u->ammo = 10; 
-				u->fuel = 100;
+				u->fuel = maxFuel[u->index];
 				goto apc_nearby_exit; 
 			}
 		}
@@ -642,15 +666,16 @@ void newTurnUnit(struct Unit *u, unsigned short i) {
 			up = m.board[i + m.boardWidth].occupying;
 			if (up->team == u->team && up->index == 0) {
 				u->ammo = 10; 
-				u->fuel = 100;
+				u->fuel = maxFuel[u->index];
 				goto apc_nearby_exit; 
 			}
 		}
 		apc_nearby_exit:
 		; /* semicolon so compiler says a-ok */	
 		if (u->index >= UNIT_TRANSPORT) {
-			if (u->fuel  >= 2) {
-				u->fuel -= 2;
+			unsigned char fuel_cost = u->airborne ? fuelSustainCostsArray[u->index - FUEL_SUSTAIN_OFFSET] : 1;
+			if (u->fuel  >= fuel_cost) {
+				u->fuel -= fuel_cost;
 			} else {
 				// Destroy unit
 				m.board[m.boardWidth * u->y + u->x].occupying = NULL;
@@ -1067,28 +1092,28 @@ void supplyUnits(struct Unit *u) {
 		supp = m.board[u->y * m.boardWidth + u->x - 1].occupying;
 		if (supp != NULL && supp->team == u->team) {
 			supp->ammo = 10;
-			supp->fuel = 100;
+			supp->fuel = maxFuel[u->index];
 		}
 	}
 	if (u->x < m.boardWidth - 1) {
 		supp = m.board[u->y * m.boardWidth + u->x + 1].occupying;
 		if (supp != NULL && supp->team == u->team) {
 			supp->ammo = 10;
-			supp->fuel = 100;
+			supp->fuel = maxFuel[u->index];
 		}
 	}
 	if (u->y > 0) {
 		supp = m.board[u->y * m.boardWidth + u->x - m.boardWidth].occupying;
 		if (supp != NULL && supp->team == u->team) {
 			supp->ammo = 10;
-			supp->fuel = 100;
+			supp->fuel = maxFuel[u->index];
 		}
 	}
 	if (u->y < m.boardHeight - 1) {
 		supp = m.board[u->y * m.boardWidth + u->x + m.boardWidth].occupying;
 		if (supp != NULL && supp->team == u->team) {
 			supp->ammo = 10;
-			supp->fuel = 100;
+			supp->fuel = maxFuel[u->index];
 		}
 	}
 }

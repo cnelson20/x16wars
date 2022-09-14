@@ -43,6 +43,8 @@ extern unsigned char unitsdeadthisturn;
 
 extern struct Terrain *terrainArray[];
 
+extern unsigned char maxFuel[];
+
 void initTile(struct Tile *t, unsigned char index);
 void initTerrain(struct Terrain **t_pointer, unsigned char index);
 
