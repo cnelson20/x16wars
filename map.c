@@ -19,8 +19,8 @@ extern struct Cursor attackCursor;
 extern struct possibleAttacks *pA;
 
 unsigned char returnToMenu;
-unsigned char player1team;
-unsigned char player2team;
+unsigned char player1team = 0;
+unsigned char player2team = 2;
 unsigned short turncounter;
 unsigned short daycount;
 unsigned char unitsdeadthisturn = 0;
@@ -39,10 +39,6 @@ void initMap() {
   m.oldtop_view = 0;
   m.left_view = 0;
   m.oldleft_view = 0;
-  m.whoseTurn = player1team;
-  m.boardWidth = 3;
-  m.boardHeight = 3;
-  m.boardArea = m.boardWidth * m.boardHeight;
 	/* This line caused a memory leak; leaving it here in rememberance */
   //m.board = malloc(m.boardWidth * m.boardHeight * sizeof(struct Tile));
 }
@@ -317,13 +313,16 @@ void win(unsigned char team) {
 void nextTurn() {
   unsigned short i = 0;
 
+	//__asm__ ("stp");
+
   m.whoseTurn = (m.whoseTurn == player1team) ? player2team : player1team;
-  ++turncounter;
+	 ++turncounter;
 	if (m.whoseTurn == player1team) {
 		++daycount;
 	}
+	
   for (; i < m.boardArea; ++i) {
-    if ((m.board[i].occupying) != 0) {newTurnUnit(m.board[i].occupying,i);}
+    if ((m.board[i].occupying) != NULL) {newTurnUnit(m.board[i].occupying,i);}
   }
 }
 
@@ -678,7 +677,7 @@ void newTurnUnit(struct Unit *u, unsigned short i) {
 				u->fuel -= fuel_cost;
 			} else {
 				// Destroy unit
-				m.board[m.boardWidth * u->y + u->x].occupying = NULL;
+				m.board[i].occupying = NULL;
 				if (u->carrying) { free(u->carrying); }
 				free(u);
 			}
@@ -717,10 +716,11 @@ unsigned char canCarryUnit(unsigned char carrier_index, unsigned char carried_in
 unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned char steps) {
   if (tx >= m.boardWidth || ty >= m.boardHeight) {return 0;}
   if (tx == checkU->x && ty == checkU->y) {return 1;}
-  tempT = m.board[ty*m.boardWidth+tx];
-  if (checkU->airborne) {
+  tempT = m.board[ty * m.boardWidth + tx];
+	if (checkU->airborne) {
 		++steps;
   } else {
+		if (tempT.occupying != NULL && tempT.occupying->team != checkU->team) { return 0; }
     if (!tempT.t->mvmtCosts[checkU->mvmtType]) {return 0;}
     steps += tempT.t->mvmtCosts[checkU->mvmtType];
 		/*if (tempT.t->mvmtCosts[checkU->mvmtType] >= 2 && steps > maxSteps) {
@@ -762,7 +762,7 @@ unsigned char move(struct Unit *u, unsigned char x, unsigned char y) {
 		}
 		maxSteps = u->mvmtRange;
 		checkU = u;
-		if ((u->airborne) ? (SABS(u->x, x) + SABS(u->y, y) <= u->mvmtRange) : checkSpaceInMvmtRange(x,y,0)) {
+		if ((u->airborne) ? (SABS(u->x, x) + SABS(u->y, y) <= u->mvmtRange) : checkSpaceInMvmtRange(x, y, 0)) {
 			checkU = NULL;
 			maxSteps = 0;
 			unitLastX = u->x;

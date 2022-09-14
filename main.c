@@ -245,11 +245,18 @@ extern char change_filename[];
 
 void menu()
 {
+	static unsigned char already_loaded_dir = 0;
 	unsigned short i;
 	char *map_space;
 	setup_menu();
 	change_directory("maps");
-	load_dir_menu();
+	if (!already_loaded_dir) {
+		load_dir_menu();
+		already_loaded_dir = 1;
+	}
+
+	player1team = 0;
+	player2team = 2;
 
 	POKE(0x9F20, 4 * 2);
 	POKE(0x9F21, 0x41);
@@ -260,7 +267,7 @@ void menu()
 	POKE(0x9F22, 0x20);
 	print_ascii_str(" x16 wars ", 0);
 	POKE(0x9F22, 0x10);
-	POKE(0x9F23, 3);
+	POKE(0x9F23, 3 + 32 * 2/* blue unit */);
 	POKE(0x9F23, 0x24);
 
 	POKE(0x9F20, 8);
@@ -282,9 +289,6 @@ void menu()
 		print_ascii_str(menu_files_array[i], 1); // "CD:31438"   
 	}
 
-	player1team = 0;
-	player2team = 2;
-	
 	do
 	{
 		__asm__ ("jsr $FFE4");
@@ -348,11 +352,13 @@ void menu()
 			POKE(0x9F21, c.x + 0x46);
 			POKE(0x9F23, 196);
 
-			POKE(0x9F20, 4 * 2 + 1);
+			POKE(0x9F22, 0x10);
+			POKE(0x9F20, 4 * 2);
 			POKE(0x9F21, 0x41);
-			// POKE(0x9F22, 0x10);
+			POKE(0x9F23, 3 + player1team * 32);
 			POKE(0x9F23, player1team << 4);
-			POKE(0x9F20, 15 * 2 + 1);
+			POKE(0x9F20, 15 * 2);
+			POKE(0x9F23, 3 + player2team * 32);
 			POKE(0x9F23, (player2team << 4) | 0x4);
 		}
 	}
@@ -783,7 +789,7 @@ void drawUI() {
 				POKE(0x9F23, 160 + 'A' - 'A');
 				POKE(0x9F23, 186 + unitPointer->ammo);
 			}
-			if (unitPointer->fuel < 100) {
+			if (unitPointer->fuel < maxFuel[unitPointer->index]) {
 				POKE(0x9F23, 28);
 				POKE(0x9F23, 0xA5);
 				POKE(0x9F23, 186 + (unitPointer->fuel / 10));
@@ -1010,6 +1016,7 @@ void keyPressed()
 				attackCursor.x = attackCursor.selected->x;
 				attackCursor.y = attackCursor.selected->y;
 
+				menuOptions.store_length = menuOptions.length;
 				menuOptions.length = 0;
 				break;
 			case OPTION_JOIN:
@@ -1049,7 +1056,7 @@ void keyPressed()
 			}
 		}
 	}
-	else
+	else /* menuOptions.length == 0 */
 	{
 		if (pA != NULL)
 		{
@@ -1096,10 +1103,7 @@ void keyPressed()
 			}
 			else if (keyCode == 0x55) /* U */
 			{
-				undoMove(c.selected);
-				c.selected->takenAction = 0;
-				free(pA);
-				pA = NULL;
+				menuOptions.length = menuOptions.store_length;
 			}
 			else if (keyCode = 0x49) /* I */
 			{
@@ -1216,14 +1220,16 @@ void keyPressed()
 			} /* U */
 			else if (keyCode == 0x55)
 			{
-				if (c.selected != 0)
+				if (c.selected != NULL)
 				{
 					if (unitLastX == 255)
 					{
 						c.selected = 0;
 						c.x = c.storex;
+						m.left_view = m.store_left_view;
 						c.storex = -1;
 						c.y = c.storey;
+						m.top_view = m.store_top_view;
 						c.storey = -1;
 					}
 					else
@@ -1251,6 +1257,8 @@ void keyPressed()
 					{
 						c.storex = c.x;
 						c.storey = c.y;
+						m.store_left_view = m.left_view;
+						m.store_top_view = m.top_view;
 					}
 				}
 				else
@@ -1324,7 +1332,7 @@ void loadPalette()
 {
 	unsigned char i;
 
-	POKE(0x9F20, 00);
+	POKE(0x9F20, 0);
 	POKE(0x9F21, 0xFA);
 	POKE(0x9F22, 0x11);
 	i = 0;

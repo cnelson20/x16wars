@@ -55,6 +55,8 @@ typedef struct Cursor {
 
 typedef struct Map {
   unsigned char top_view, left_view, oldtop_view, oldleft_view;
+	unsigned char store_top_view, store_left_view;
+	
   unsigned char whoseTurn;
   unsigned char boardWidth, boardHeight;
   unsigned short boardArea;
@@ -68,6 +70,8 @@ typedef struct possibleAttacks {
 
 typedef struct Menu {
   unsigned char length;
+	unsigned char store_length;
+	
   unsigned char selected;
   unsigned char options[4];
 };
