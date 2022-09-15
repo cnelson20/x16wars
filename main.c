@@ -703,7 +703,7 @@ void drawUI() {
 	if (unitPointer == NULL) {
 		unitPointer = c.selected;
 	}
-	if (pA != NULL) {
+	if (pA != NULL && menuOptions.length == 0) {
 		unitPointer = attackCursor.selected;
 	}
 
@@ -773,11 +773,11 @@ void drawUI() {
 			}
 			POKE(0x9F23, 186 + (unitPointer->y % 10));
 			
-			/*POKE(0x9F23, 28);
+			POKE(0x9F23, 28);
 			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 12) & 0xF));
 			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 8) & 0xF));
 			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 4) & 0xF));
-			POKE(0x9F23, SCREENBYTE((unsigned short)unitPointer & 0xF));*/
+			POKE(0x9F23, SCREENBYTE((unsigned short)unitPointer & 0xF));
 			if (unitPointer->health <= 99) {
 				POKE(0x9F23, 28);
 				POKE(0x9F23, 167);
@@ -925,6 +925,7 @@ void keyPressed()
 			if (pA != NULL)
 			{
 				free(pA);
+				pA = NULL;
 			}
 		}
 		else if (keyCode == 0x49) /* I */
@@ -944,6 +945,11 @@ void keyPressed()
 				POKE(0x9F25, 0x80);
 				__asm__("jmp ($FFFC)");
 			case OPTION_WAIT:
+				if (pA != NULL) {
+					free(pA);
+					pA = NULL;
+					attackCursor.selected = NULL;
+				}
 				c.selected->takenAction = 1;
 				wait_code:
 				unitLastX = 255;

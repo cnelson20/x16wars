@@ -846,23 +846,27 @@ unsigned char canAttack(struct Unit *a, struct Unit *b) {
 	}
 }
 
+unsigned char randByte() {
+	static unsigned char val;
+	__asm__ ("jsr $FECF"); /* Call entropy_get kernal routine */
+	__asm__ ("stx %v", val);
+	__asm__ ("eor %v", val);
+	__asm__ ("sty %v", val);
+	__asm__ ("eor %v", val);
+	__asm__ ("sta %v", val);
+	return val;
+}
+
 unsigned char damagePreview(struct Unit *a, struct Unit *b) {
-	return canAttack(a,b) * a->health / 100;
+	unsigned char temp = canAttack(a,b) * a->health / 100;
+	temp -= temp * (b->health * m.board[b->y * m.boardWidth + b->x].t->defense) / 100;
+	return temp;
+	
 }
 
 unsigned char calcPower(struct Unit *a, struct Unit *b) {
-	static unsigned char temp, randValue;
-
-	temp = canAttack(a,b) * a->health / 100;
-	if (temp != 0) {
-		__asm__ ("jsr $FECF"); /* Call entropy_get kernal routine */
-		__asm__ ("stx %v", randValue);
-		__asm__ ("eor %v", randValue);
-		__asm__ ("sty %v", randValue);
-		__asm__ ("eor %v", randValue);
-		__asm__ ("sta %v", randValue);
-		temp += randValue % 8;
-	}
+	unsigned char temp = canAttack(a,b) * a->health / 100 + randByte() % ((a->health + 9) / 10);
+	temp -= temp * (b->health * m.board[b->y * m.boardWidth + b->x].t->defense) / 100;
 	return temp;
 }
 
