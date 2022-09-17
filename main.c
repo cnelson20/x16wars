@@ -9,8 +9,6 @@
 #include "waitforjiffy.h"
 #include "fastroutines.h"
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
 /* global variables */
 /*
 char testMapData[] = {19,12,// height and width
@@ -60,13 +58,14 @@ unsigned char mouseButtons;
 
 void main() {
 	setup();
-	__asm__ ("lda #10");
+	__asm__ ("lda #1");
 	__asm__ ("sta $00");
-	_heapadd((void *)0xA000, 0x2000);
+	_heapadd((void *)0xA000, 0x2000);//*/
 	
 	while (1)	{
-		//__asm__ ("stp");
 		menu();
+		__asm__ ("lda #1");
+		__asm__ ("sta $00");
 		game_start();
 		returnToMenu = 0;
 		while (!returnToMenu)	{
@@ -448,6 +447,7 @@ void game_start()
 #define TILE_CHR_FILELEN 1410
 #define SPRITE_CHR_FILELEN 1602
 #define LETTER_CHR_FILELEN 4738
+#define EXPL_CHR_FILELEN 4608
 
 unsigned char *load_address;
 
@@ -548,6 +548,15 @@ void setup()
 	POKEW(0x6, SPRITE_CHR_FILELEN);
 	__asm__ ("jsr $FEE7");
 
+	cbm_k_setnam("expl.chr");
+	cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
+	cbm_k_load(0, (unsigned short)load_address);
+	POKE(0x9F20, 0x00);
+	POKE(0x9F21, 0x08);
+	POKE(0x9F22, 0x11);
+	POKEW(0x6, EXPL_CHR_FILELEN);
+	__asm__ ("jsr $FEE7");
+	
 	free(load_address);
 	loadPalette();
 }
@@ -773,11 +782,13 @@ void drawUI() {
 			}
 			POKE(0x9F23, 186 + (unitPointer->y % 10));
 			
-			POKE(0x9F23, 28);
+			/* Show mem address */
+			/*POKE(0x9F23, 28);
 			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 12) & 0xF));
 			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 8) & 0xF));
 			POKE(0x9F23, SCREENBYTE(((unsigned short)unitPointer >> 4) & 0xF));
 			POKE(0x9F23, SCREENBYTE((unsigned short)unitPointer & 0xF));
+			*/
 			if (unitPointer->health <= 99) {
 				POKE(0x9F23, 28);
 				POKE(0x9F23, 167);
@@ -798,32 +809,37 @@ void drawUI() {
 			clearRestOfLine();
 			
 			if (pA != NULL && menuOptions.options[0] == OPTION_ATTACK && attackCursor.selected != NULL) {
-				static unsigned char oldDamagePreviewNum = 0;
 				static unsigned char damageHundredsDigit;
 				static unsigned char damageModTen;
 				static unsigned char damageDivTen;
-
-				unsigned char damagePreviewNum = damagePreview(c.selected, attackCursor.selected);
-
-				if (damagePreviewNum != oldDamagePreviewNum) {
+				static struct Unit *cs = NULL; 
+				static struct Unit *acs = NULL;
+				
+				if (c.selected != cs || attackCursor.selected != acs) {
+					unsigned char damagePreviewNum;
+					
+					cs = c.selected;
+					acs = attackCursor.selected;
+					
+					damagePreviewNum = damagePreview(c.selected, attackCursor.selected);
 					damageHundredsDigit = 186 + (damagePreviewNum / 100);
 					damageDivTen = 186 + ((damagePreviewNum / 10) % 10);
 					damageModTen = 186 + (damagePreviewNum % 10);
+					//POKE(0x08, damageModTen);
+					//POKE(0x09, damageDivTen);
+					//POKE(0x0A, damageHundredsDigit);
 				}
-
 				drawText(damageString, sizeof(damageString), 1, 13, 1);
 				
 				POKE(0x9F20, 2 * 5);
 				POKE(0x9F21, 0x40 + 13);
 				POKE(0x9F22, 0x20);
-				if (damagePreviewNum >= 100) {
+				if (damageHundredsDigit != 186 /* A zero */) {
 					POKE(0x9F23, damageHundredsDigit);
 				}
 				POKE(0x9F23, damageDivTen);
 				POKE(0x9F23, damageModTen);
 				clearRestOfLine();
-
-				oldDamagePreviewNum = damagePreviewNum;
 			}
 			clearOtherLines();
 		} else {

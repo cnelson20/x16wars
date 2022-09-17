@@ -28,11 +28,14 @@ void renderMap();
 void initCursor();
 void renderCursor(unsigned char incFrame);
 
+void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_camera);
+
 void checkOldUnits();
 void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsigned char index, unsigned char team);
 void newTurnUnit(struct Unit *u, unsigned short i);
 void renderUnit(struct Unit *u);
 void removeRenderUnit(struct Unit *u);
+void clearUnitFromScreen(unsigned char x, unsigned char y);
 
 /* Unit vars */
 extern unsigned char unitLastX;

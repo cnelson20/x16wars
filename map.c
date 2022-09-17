@@ -321,9 +321,12 @@ void nextTurn() {
 		++daycount;
 	}
 	
-  for (; i < m.boardArea; ++i) {
-    if ((m.board[i].occupying) != NULL) {newTurnUnit(m.board[i].occupying,i);}
-  }
+	if (daycount > 0) {
+		renderMap();
+		for (; i < m.boardArea; ++i) {
+			if ((m.board[i].occupying) != NULL) {newTurnUnit(m.board[i].occupying,i);}
+		}
+	}
 }
 
 #define TILE_REEF 0
@@ -563,6 +566,100 @@ void capture(struct Unit *u, struct Captureable *c) {
   }
 }
 
+unsigned char explosionSpriteOffsets[] = {
+	25, 28,
+	18, 19,
+	14, 14,
+	15, 12,
+	11, 8,
+	10, 6,
+	10, 5,
+	9, 2,
+	8, 2,
+};
+
+void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_camera) {
+	unsigned char i;
+	unsigned short temp;	
+	unsigned char tx = m.left_view;
+	unsigned char ty = m.top_view;
+	
+	if (move_camera) {
+		tx = m.left_view;
+		ty = m.top_view;
+		
+		if (x < m.left_view) {
+			m.left_view = x;
+			if (m.left_view != 0) { m.left_view--; }
+		} else if (x >= m.left_view + 14) {
+			m.left_view = x - 13;
+		}
+		if (y < m.top_view) {
+			m.top_view = y;
+			if (m.top_view != 0) { m.top_view--; }
+		} else if (y >= m.top_view + 9) {
+			m.top_view = y - 8;
+		}
+		c.x = x - m.left_view;
+		c.y = y - m.top_view;
+	}
+	renderMap();
+	POKE(0x9F21, 0x4A);
+	clearOtherLines();
+	
+	x = (x - m.left_view) << 4;
+	y = (y - m.top_view) << 4;
+	
+	POKE(0x9F20, 8 + 6);
+	POKE(0x9F21, 0xFC);
+	POKE(0x9F22, 0x41);
+	for (i = 0; i < 4; ++i) {
+		__asm__ ("stz $9F23");
+	}
+	
+	POKE(0x9F22, 0x11);
+	for (i = 0; i <= 8; ++i) {
+		POKEW(0x9F20, 0xFE00); // halfway through sprite table 
+		
+		POKE(0x9F23, 16 * i + 64);
+		POKE(0x9F23, 0x08);
+		temp = x - 16 + explosionSpriteOffsets[i * 2];
+		POKE(0x9F23, temp);
+		POKE(0x9F23, temp >> 8);
+		temp = y - 32 + explosionSpriteOffsets[i * 2 + 1];
+		POKE(0x9F23, temp);
+		POKE(0x9F23, temp >> 8);
+		POKE(0x9F23, 0xC);
+		POKE(0x9F23, 0xAF);
+		
+		waitforjiffy();
+		waitforjiffy();
+		waitforjiffy();
+		waitforjiffy();
+		waitforjiffy();
+		waitforjiffy();
+		waitforjiffy();
+		waitforjiffy();
+	}
+	
+	POKEW(0x9F20, 0xFE00);
+	__asm__ ("stz $9F23");
+	__asm__ ("stz $9F23");
+	__asm__ ("stz $9F23");
+	__asm__ ("stz $9F23");
+	
+	__asm__ ("stz $9F23");
+	__asm__ ("stz $9F23");
+	__asm__ ("stz $9F23");
+	__asm__ ("stz $9F23");
+	
+	/*if (move_camera) {
+		m.left_view = tx;
+		m.top_view = ty;
+	}*/
+}
+
+
 //Unit methods
 unsigned char mvmtRanges[] = {
   6,8,2,3, /* APC  Recon  Mech  Infantry */
@@ -673,12 +770,14 @@ void newTurnUnit(struct Unit *u, unsigned short i) {
 		; /* semicolon so compiler says a-ok */	
 		if (u->index >= UNIT_TRANSPORT) {
 			unsigned char fuel_cost = u->airborne ? fuelSustainCostsArray[u->index - FUEL_SUSTAIN_OFFSET] : 1;
-			if (u->fuel  >= fuel_cost) {
+			if (u->fuel > fuel_cost) {
 				u->fuel -= fuel_cost;
 			} else {
 				// Destroy unit
 				m.board[i].occupying = NULL;
 				if (u->carrying) { free(u->carrying); }
+				clearUnitFromScreen(u->x, u->y);
+				renderUnitExplosion(u->x, u->y, 1);
 				free(u);
 			}
 		}
@@ -691,6 +790,15 @@ void renderUnit(struct Unit *u) {
 	POKE(0x9F21,u->y - m.top_view +0x40);
 	POKE(0x9F23,(u->team << 5)+u->index);
 	POKE(0x9F23,(u->takenAction ? 0x90 : 0x00) + (u->team << 4)+ ((u->team != player1team) << 2));
+}
+
+void clearUnitFromScreen(unsigned char x, unsigned char y) {
+	if (x >= m.left_view && x < m.left_view + 15 && y >= m.top_view && y < m.top_view < 10) {
+		POKE(0x9F22, 0x10);
+		POKE(0x9F20, (x - m.left_view) << 1);
+		POKE(0x9F21, y - m.top_view + 0x40);
+		POKE(0x9F23, 28);
+	}
 }
 
 void removeRenderUnit(struct Unit *u) {
@@ -859,14 +967,15 @@ unsigned char randByte() {
 
 unsigned char damagePreview(struct Unit *a, struct Unit *b) {
 	unsigned char temp = canAttack(a,b) * a->health / 100;
-	temp -= temp * (b->health * m.board[b->y * m.boardWidth + b->x].t->defense) / 100;
+	POKE(0xF, m.board[b->y * m.boardWidth + b->x].t->defense);
+	if (!b->airborne) { temp -= temp * (b->health * m.board[b->y * m.boardWidth + b->x].t->defense) / 1000; }
 	return temp;
 	
 }
 
 unsigned char calcPower(struct Unit *a, struct Unit *b) {
 	unsigned char temp = canAttack(a,b) * a->health / 100 + randByte() % ((a->health + 9) / 10);
-	temp -= temp * (b->health * m.board[b->y * m.boardWidth + b->x].t->defense) / 100;
+	if (!b->airborne) { temp -= temp * (b->health * m.board[b->y * m.boardWidth + b->x].t->defense) / 1000; }
 	return temp;
 }
 
@@ -893,14 +1002,16 @@ void attack(struct Unit *attacker, struct Unit *defender) {
       __asm__ ("sta $9F22");
       __asm__ ("lda #28");
       __asm__ ("sta $9F23");
-	  if (attacker->carrying != NULL) {free(attacker->carrying);}
-	  else if (m.board[attacker->y*m.boardWidth + attacker->x].base != NULL) {
-	    m.board[attacker->y*m.boardWidth + attacker->x].base->health = 20;
-	  }
+			if (attacker->carrying != NULL) {free(attacker->carrying);}
+			else if (m.board[attacker->y*m.boardWidth + attacker->x].base != NULL) {
+				m.board[attacker->y*m.boardWidth + attacker->x].base->health = 20;
+			}
+			clearUnitFromScreen(attacker->x, attacker->y);
+			renderUnitExplosion(attacker->x, attacker->y, 0);
       free(attacker);
       ++unitsdeadthisturn;
     }
-  } else {
+  } else {		
     m.board[m.boardWidth*defender->y+defender->x].occupying = NULL;
     POKE(0x9F20,(defender->x - m.left_view) * 2);
     POKE(0x9F21,defender->y - m.top_view + 0x40);
@@ -909,11 +1020,14 @@ void attack(struct Unit *attacker, struct Unit *defender) {
     __asm__ ("lda #28");
     __asm__ ("sta $9F23");
     ++unitsdeadthisturn;
-	if (defender->carrying != NULL) {free(defender->carrying);}
-	else if (m.board[defender->y*m.boardWidth + defender->x].base != NULL) {
-	  m.board[defender->y*m.boardWidth + defender->x].base->health = 20;
-	}
-    free(defender);
+		if (defender->carrying != NULL) {free(defender->carrying);}
+		else if (m.board[defender->y*m.boardWidth + defender->x].base != NULL) {
+			m.board[defender->y*m.boardWidth + defender->x].base->health = 20;
+		}
+		
+		clearUnitFromScreen(defender->x, defender->y);
+		renderUnitExplosion(defender->x, defender->y, 0);
+		free(defender);
   }
 }
 
