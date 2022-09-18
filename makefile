@@ -3,8 +3,8 @@ EMU_LOCATION = /mnt/d/x16emu-r41/
 
 all: wars.prg
 
-wars.prg: main.c main.h map.c map.h palette.c structs.h waitforjiffy.s waitforjiffy.h fastroutines.s fastroutines.h
-	$(CC) -o wars.prg -t cx16 -Ois --codesize 100 map.c main.c palette.c waitforjiffy.s fastroutines.s
+wars.prg: main.c main.h map.c map.h palette.c structs.h waitforjiffy.s waitforjiffy.h fastroutines.s fastroutines.h render_horse.s
+	$(CC) -o wars.prg -t cx16 -Ois --codesize 100 map.c main.c palette.c waitforjiffy.s fastroutines.s render_horse.s
 
 copy:
 	cp WARS.PRG $(EMU_LOCATION)WARS.PRG;

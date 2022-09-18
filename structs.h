@@ -5,6 +5,9 @@ struct Unit;
 struct Cursor;
 struct Captureable;
 
+/* 
+	Reminder to change definitions in render_horse.s 
+*/
 typedef struct Unit {
   unsigned char index;
   unsigned char health;
@@ -31,7 +34,7 @@ typedef struct Terrain {
   unsigned char tileIndex;
   unsigned char paletteOffset;
   unsigned char defense;
-  unsigned char mvmtCosts[6];
+  unsigned char *mvmtCosts;
 };
 
 typedef struct Tile {
@@ -41,8 +44,8 @@ typedef struct Tile {
 };
 
 typedef struct Captureable {
-  unsigned char team:6;
-  unsigned char type:2;
+  unsigned char team;
+  unsigned char type;
   unsigned char health;
   unsigned char critical;
 };

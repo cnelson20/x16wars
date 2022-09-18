@@ -16,7 +16,8 @@
 extern struct Map m;
 extern struct Cursor c;
 extern struct Cursor attackCursor;
-extern struct possibleAttacks * pA;
+extern struct possibleAttacks useaspossibleAttacks;
+extern struct possibleAttacks *pA;
 
 unsigned char returnToMenu;
 unsigned char player1team = 0;
@@ -29,6 +30,46 @@ unsigned char oldbases;
 unsigned char currentunitsprites = 0;
 unsigned char oldunitsprites;
 
+#define GAME_MAX_UNITS 100
+#define GAME_MAX_BASES 32
+
+// Malloc but not broken
+struct Unit unitArray[GAME_MAX_UNITS];
+unsigned char unitArrayUses[GAME_MAX_UNITS];
+
+struct Captureable captureableArray[GAME_MAX_BASES];
+unsigned char captureableArrayUses[GAME_MAX_BASES];
+
+void setup_mem() {
+	//memset(unitArray, 0, sizeof(unitArray));
+	memset(unitArrayUses, 0, GAME_MAX_UNITS);
+	//memset(captureable, 0, sizeof(captureableArray));
+	memset(captureableArrayUses, 0, sizeof(captureableArrayUses));
+}
+
+struct Unit *malloc_unit() {
+	static unsigned char i;
+	for (i = 0; i < GAME_MAX_UNITS; ++i) {
+		if (!unitArrayUses[i]) {
+			unitArrayUses[i] = 1;
+			return &(unitArray[i]);
+		}
+	}
+}
+void free_unit(struct Unit *u) {
+	unitArrayUses[(u - unitArray) / sizeof(struct Unit)] = 0;
+}
+
+struct Captureable *malloc_captureable() {
+	static unsigned char i;
+	for (i = 0; i < GAME_MAX_BASES; ++i) {
+		if (!captureableArrayUses[i]) {
+			captureableArrayUses[i] = 1;
+			return &(captureableArray[i]);
+		}
+	}
+}
+
 // Map methods
 void initMap() {
   m.whoseTurn = player1team;
@@ -39,18 +80,15 @@ void initMap() {
   m.oldtop_view = 0;
   m.left_view = 0;
   m.oldleft_view = 0;
-  /* This line caused a memory leak; leaving it here in rememberance */
-  //m.board = malloc(m.boardWidth * m.boardHeight * sizeof(struct Tile));
 }
 void initMapData(char data[]) {
   unsigned short i, mapI, temp;
 
   initMap();
-  free(m.board);
   m.boardWidth = data[0];
   m.boardHeight = data[1];
   m.boardArea = m.boardWidth * m.boardHeight;
-  m.board = malloc(m.boardArea * sizeof(struct Tile));
+	m.board = (void *)0xA000;
 
   for (i = 2; data[i] != 0xFF; i += 3) {}
   i++;
@@ -63,14 +101,14 @@ void initMapData(char data[]) {
   for (i = 2; data[i] != 0xFF; i += 3) {
 
     temp = data[i] + m.boardWidth * data[i + 1];
-    m.board[temp].occupying = malloc(sizeof(struct Unit));
+    m.board[temp].occupying = malloc_unit();
 
     initUnit(m.board[temp].occupying, data[i], data[i + 1], data[i + 2], player1team);
   }
   i++;
   for (; data[i] != 0xFF; i += 3) {
     temp = data[i] + m.boardWidth * data[i + 1];
-    m.board[temp].occupying = malloc(sizeof(struct Unit));
+    m.board[temp].occupying = malloc_unit();
     initUnit(m.board[temp].occupying, data[i], data[i + 1], data[i + 2], player2team);
   }
   i++;
@@ -82,93 +120,20 @@ unsigned char captureableSpriteOffsets[][] = {
 	{18, 26, 18, 26, 26},
 	{34, 42, 34, 42, 42}};
 
+extern void render_tiles();
+extern void render_unit_sprites();
+extern void __fastcall__ renderUnit(struct Unit *u);
+extern void __fastcall__ removeRenderUnit(struct Unit *u);
+
 void renderMap() {
   static unsigned char x, y;
-  static unsigned short i, temp;
+  static unsigned short i;
+	
+	checkOldUnits();
+	render_tiles();
 
-  checkOldUnits();
-
-  POKE(0x9F20, 0);
-  POKE(0x9F21, 0);
-  POKE(0x9F22, 0x10);
-  x = 0;
-  y = 0;
-  i = m.left_view + m.top_view * m.boardWidth;
-  while (y < 10) {
-    POKE(0x9F23, m.board[i].t->tileIndex);
-    POKE(0x9F23, m.board[i].t->paletteOffset);
-    if (m.board[i].occupying != NULL) {
-      renderUnit(m.board[i].occupying);
-
-      POKE(0x9F20, (x + 1) * 2);
-      POKE(0x9F21, y);
-    }
-
-    ++x;
-    if (x >= 15) {
-      i += m.boardWidth - 15;
-
-      ++y;
-      x = 0;
-      __asm__("inc $9F21");
-      POKE(0x9F20, 0);
-    }
-    ++i;
-  }
-
-  oldunitsprites = currentunitsprites;
-  currentunitsprites = 0;
-  POKE(0x9F20, 40);
-  POKE(0x9F21, 0xFC);
-  POKE(0x9F22, 0x11);
-  for (i = m.top_view * m.boardWidth + m.left_view; i < m.boardArea; ++i) {
-    struct Unit * tu = m.board[i].occupying;
-    if (tu == NULL) {
-      continue;
-    }
-    if (tu->x < m.left_view || tu->x >= m.left_view + 15 || tu->y < m.top_view || tu->y >= m.top_view + 10) {
-      continue;
-    }
-    if (tu->carrying != NULL) {
-      ++currentunitsprites;
-      POKE(0x9F23, 16);
-      POKE(0x9F23, 8);
-      temp = (tu->x - m.left_view) << 4;
-      POKE(0x9F23, temp);
-      POKE(0x9F23, temp >> 8);
-      temp = ((tu->y - m.top_view) << 4) + 8;
-      POKE(0x9F23, temp);
-      POKE(0x9F23, temp >> 8);
-      POKE(0x9F23, 0xC);
-      POKE(0x9F23, (tu->takenAction ? 9 : 0) + tu->team);
-    } else if (m.board[i].base != NULL && m.board[i].base->health < 20) {
-      ++currentunitsprites;
-      POKE(0x9F23, 17);
-      POKE(0x9F23, 8);
-      temp = (tu->x - m.left_view) << 4;
-      POKE(0x9F23, temp);
-      POKE(0x9F23, temp >> 8);
-      temp = ((tu->y - m.top_view) << 4) + 8;
-      POKE(0x9F23, temp);
-      POKE(0x9F23, temp >> 8);
-      POKE(0x9F23, 0xC);
-      POKE(0x9F23, (tu->takenAction ? 9 : 0) + tu->team);
-    }
-    if (tu->health <= 90) {
-      ++currentunitsprites;
-      POKE(0x9F23, 6 + ((tu->health + 9) / 10));
-      POKE(0x9F23, 8);
-      temp = ((tu->x - m.left_view) << 4) + 8;
-      POKE(0x9F23, temp);
-      POKE(0x9F23, temp >> 8);
-      temp = ((tu->y - m.top_view) << 4) + 8;
-      POKE(0x9F23, temp);
-      POKE(0x9F23, temp >> 8);
-      POKE(0x9F23, 0xC);
-      POKE(0x9F23, 0x08);
-    }
-  }
-  while (oldunitsprites > currentunitsprites) {
+	render_unit_sprites();
+	while (oldunitsprites > currentunitsprites) {
     __asm__("stz $9F23");
     __asm__("stz $9F23");
     __asm__("stz $9F23");
@@ -257,12 +222,14 @@ void renderMap() {
 void checkOldUnits() {
   unsigned short i;
   unsigned char units_exist[4];
+	unsigned char removeRenderUnitFlag = (m.left_view != m.oldleft_view) || (m.top_view != m.oldtop_view);
+	
   units_exist[player1team] = 0;
   units_exist[player2team] = 0;
 
   for (i = 0; i < m.boardArea; ++i) {
     if (m.board[i].occupying != NULL) {
-      removeRenderUnit(m.board[i].occupying);
+      if (removeRenderUnitFlag) { removeRenderUnit(m.board[i].occupying); }
       units_exist[m.board[i].occupying->team] = 1;
     }
   }
@@ -305,8 +272,6 @@ void win(unsigned char team) {
   POKE(0x9F23, 0xb2); // s
   POKE(0x9F23, 0x80);
 
-  returnToMenu = 1;
-  returnToMenu = 1;
   i = 300;
   while (i != 0) {
     waitforjiffy();
@@ -352,7 +317,6 @@ void nextTurn() {
 
 //Tile methods
 void initTile(struct Tile * t, unsigned char index) {
-  //t->t = malloc(sizeof(struct Terrain));
   initTerrain( & (t->t), index >= 0x40 ? TILE_CITY : index);
   t->base = NULL;
   t->occupying = NULL;
@@ -360,7 +324,7 @@ void initTile(struct Tile * t, unsigned char index) {
   if (index >> 4 == 0x04) { // 0x40 <= index <= 0x4F
     unsigned char team = (index % 4 == 0 ? player1team : (index % 4 == 1 ? player2team : 4));
 
-    t->base = malloc(sizeof(struct Captureable));
+    t->base = malloc_captureable();
     initCaptureable(t->base, team, (index & 0x0F) >> 2);
     t->t->tileIndex = 0x85;
     t->t->paletteOffset = 0x60;
@@ -400,25 +364,22 @@ unsigned char terrainMvmtCostsArray[][6] = {
 // mvmtCosts[4] = mech
 // mvmtCosts[5] = lander
 
-struct Terrain * terrainArray[LEN_TERRAIN_ARRAY];
+unsigned char terrainIsSet[LEN_TERRAIN_ARRAY];
+struct Terrain terrainArray[LEN_TERRAIN_ARRAY];
 
-void initTerrain(struct Terrain ** t_pointer, unsigned char index) {
-  unsigned char i;
-
-  if (terrainArray[index] != NULL) {
-    * t_pointer = terrainArray[index];
+void initTerrain(struct Terrain **t_pointer, unsigned char index) {
+  if (terrainIsSet[index]) {
+    *t_pointer = &(terrainArray[index]);
   } else {
-    struct Terrain * t = malloc(sizeof(struct Terrain));
-    terrainArray[index] = t;
-    * t_pointer = t;
+    struct Terrain *t = &(terrainArray[index]);
+    *t_pointer = t;
 
     t->tileIndex = index + 0x80;
     t->paletteOffset = terrainPaletteOffsetArray[index];
     t->defense = terrainDefenseArray[index];
-
-    for (i = 0; i < 6; ++i) {
-      t->mvmtCosts[i] = terrainMvmtCostsArray[index][i];
-    }
+    t->mvmtCosts = terrainMvmtCostsArray[index];
+		
+		terrainIsSet[index] = 1;
   }
 }
 
@@ -786,22 +747,14 @@ void newTurnUnit(struct Unit * u, unsigned short i) {
         // Destroy unit
         m.board[i].occupying = NULL;
         if (u->carrying) {
-          free(u->carrying);
+          free_unit(u->carrying);
         }
         clearUnitFromScreen(u->x, u->y);
         renderUnitExplosion(u->x, u->y, 1);
-        free(u);
+        free_unit(u);
       }
     }
   }
-}
-
-void renderUnit(struct Unit * u) {
-  POKE(0x9F22, 0x10);
-  POKE(0x9F20, (u->x - m.left_view) << 1);
-  POKE(0x9F21, u->y - m.top_view + 0x40);
-  POKE(0x9F23, (u->team << 5) + u->index);
-  POKE(0x9F23, (u->takenAction ? 0x90 : 0x00) + (u->team << 4) + ((u->team != player1team) << 2));
 }
 
 void clearUnitFromScreen(unsigned char x, unsigned char y) {
@@ -809,15 +762,6 @@ void clearUnitFromScreen(unsigned char x, unsigned char y) {
     POKE(0x9F22, 0x10);
     POKE(0x9F20, (x - m.left_view) << 1);
     POKE(0x9F21, y - m.top_view + 0x40);
-    POKE(0x9F23, 28);
-  }
-}
-
-void removeRenderUnit(struct Unit * u) {
-  if (m.oldleft_view != m.left_view || m.oldtop_view != m.top_view) {
-    POKE(0x9F22, 0x10);
-    POKE(0x9F20, (u->x - m.oldleft_view) << 1);
-    POKE(0x9F21, u->y - m.oldtop_view + 0x40);
     POKE(0x9F23, 28);
   }
 }
@@ -1040,13 +984,13 @@ void attack(struct Unit * attacker, struct Unit * defender) {
       __asm__("lda #28");
       __asm__("sta $9F23");
       if (attacker->carrying != NULL) {
-        free(attacker->carrying);
+        free_unit(attacker->carrying);
       } else if (m.board[attacker->y * m.boardWidth + attacker->x].base != NULL) {
         m.board[attacker->y * m.boardWidth + attacker->x].base->health = 20;
       }
       clearUnitFromScreen(attacker->x, attacker->y);
       renderUnitExplosion(attacker->x, attacker->y, 0);
-      free(attacker);
+      free_unit(attacker);
       ++unitsdeadthisturn;
     }
   } else {
@@ -1059,14 +1003,14 @@ void attack(struct Unit * attacker, struct Unit * defender) {
     __asm__("sta $9F23");
     ++unitsdeadthisturn;
     if (defender->carrying != NULL) {
-      free(defender->carrying);
+      free_unit(defender->carrying);
     } else if (m.board[defender->y * m.boardWidth + defender->x].base != NULL) {
       m.board[defender->y * m.boardWidth + defender->x].base->health = 20;
     }
 
     clearUnitFromScreen(defender->x, defender->y);
     renderUnitExplosion(defender->x, defender->y, 0);
-    free(defender);
+    free_unit(defender);
   }
 }
 
@@ -1187,11 +1131,10 @@ void getPossibleDrops(struct possibleAttacks * pA, struct Unit * u) {
 
 unsigned char sizeofGetPossibleDrops(struct Unit * u) {
   unsigned char size;
-  struct possibleAttacks * pA = malloc(sizeof(struct possibleAttacks));
+  struct possibleAttacks *pA = &useaspossibleAttacks;
 
   getPossibleDrops(pA, u);
   size = pA->length;
-  free(pA);
   return size;
 }
 
@@ -1234,11 +1177,10 @@ void getPossibleJoins(struct possibleAttacks * pA, struct Unit * u) {
 
 unsigned char sizeofGetPossibleJoins(struct Unit * u) {
   unsigned char size;
-  struct possibleAttacks * pA = malloc(sizeof(struct possibleAttacks));
+  struct possibleAttacks *pA = &useaspossibleAttacks;
 
   getPossibleJoins(pA, u);
   size = pA->length;
-  free(pA);
   return size;
 }
 

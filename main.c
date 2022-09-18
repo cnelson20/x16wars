@@ -40,7 +40,7 @@ extern unsigned char customPalette[];
 extern unsigned char player1team;
 extern unsigned char player2team;
 extern unsigned char returnToMenu;
-extern struct Terrain * terrainArray[];
+extern struct Terrain terrainArray[];
 
 unsigned char keyCode;
 struct Map m;
@@ -48,7 +48,8 @@ struct Cursor c;
 struct Cursor attackCursor;
 unsigned char actionNo;
 unsigned char selIndex;
-struct possibleAttacks * pA = NULL;
+struct possibleAttacks useaspossibleAttacks;
+struct possibleAttacks *pA = NULL;
 struct Menu menuOptions;
 
 unsigned char mouseEnabled;
@@ -56,11 +57,12 @@ unsigned short mouseX;
 unsigned short mouseY;
 unsigned char mouseButtons;
 
+extern unsigned char cbm_k_chrin();
+
 void main() {
   setup();
   __asm__("lda #1");
   __asm__("sta $00");
-  _heapadd((void * ) 0xA000, 0x2000); //*/
 
   while (1) {
     menu();
@@ -76,24 +78,13 @@ void main() {
       draw();
     }
     /* Free memory */
-    free_game_mem();
+    //free_game_mem();
   }
 }
 
 char wars_string[] = "wars.prg";
 
 void free_game_mem() {
-  unsigned short i;
-
-  for (i = 0; i < m.boardArea; ++i) {
-    free(m.board[i].occupying->carrying);
-    free(m.board[i].occupying);
-    free(m.board[i].base);
-  }
-  free(m.board);
-  for (i = 0; i < LEN_TERRAIN_ARRAY; ++i) {
-    free(terrainArray[i]);
-  }
 }
 
 char **menu_files_array;
@@ -371,14 +362,18 @@ extern unsigned char currentbases;
 extern unsigned char oldbases;
 extern unsigned char currentunitsprites;
 extern unsigned char oldunitsprites;
-extern struct Terrain *terrainArray[16];
+
+extern unsigned char terrainIsSet[LEN_TERRAIN_ARRAY];
 
 void game_start() {
   /* Reset some game variables */
-  memset( & c, 0, sizeof(c));
-  memset( & attackCursor, 0, sizeof(attackCursor));
-  memset( & menuOptions, 0, sizeof(menuOptions));
-  memset( & terrainArray, 0, 16 * sizeof(void * ));
+  memset( &c, 0, sizeof(c));
+  memset( &attackCursor, 0, sizeof(attackCursor));
+  memset( &menuOptions, 0, sizeof(menuOptions));
+  memset( &terrainIsSet, 0, LEN_TERRAIN_ARRAY);
+	
+	setup_mem();
+	
   unitLastX = 255;
   unitLastX = 255;
   unitLastFuel = 255;
@@ -434,8 +429,10 @@ void setup() {
   POKE(0x9F38, 0);
   POKE(0x9F33, 0);
   POKE(0x9F3A, 0);
-
-  load_address = malloc(LETTER_CHR_FILELEN); // 128 more than 4,736 (size of letter.c, biggest one)
+	
+	__asm__ ("lda #1");
+	__asm__ ("sta $00");
+  load_address = (void *)0xA000; // 128 more than 4,736 (size of letter.c, biggest one)
 
   cbm_k_setnam("red.chr");
   cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
@@ -873,7 +870,6 @@ void keyPressed() {
         undoMove(c.selected);
       }
       if (pA != NULL) {
-        free(pA);
         pA = NULL;
       }
     } else if (keyCode == 0x49) /* I */ {
@@ -892,7 +888,6 @@ void keyPressed() {
         __asm__("jmp ($FFFC)");
       case OPTION_WAIT:
         if (pA != NULL) {
-          free(pA);
           pA = NULL;
           attackCursor.selected = NULL;
         }
@@ -908,7 +903,8 @@ void keyPressed() {
         break;
       case OPTION_CAPTURE:
         capture(c.selected, m.board[c.selected->x + m.boardWidth * c.selected->y].base);
-
+				c.selected->takenAction = 1;
+				
         goto wait_code;
         /*unitLastX = 255;
         unitLastY = 255;
@@ -930,8 +926,7 @@ void keyPressed() {
       case OPTION_DROP:
         // Code for dropping off units
         menuOptions.length = 0;
-        free(pA);
-        pA = malloc(sizeof(struct possibleAttacks));
+        pA = &useaspossibleAttacks;
         getPossibleDrops(pA, c.selected);
         actionNo = 1;
         selIndex = 1;
@@ -1043,7 +1038,6 @@ void keyPressed() {
           unitLastFuel = 255;
           c.selected->takenAction = 1;
           c.selected = NULL;
-          free(pA);
           pA = NULL;
           break;
         case 1:
@@ -1059,7 +1053,6 @@ void keyPressed() {
           unitLastFuel = 255;
           c.selected->takenAction = 1;
           c.selected = NULL;
-          free(pA);
           pA = NULL;
           break;
         }
@@ -1165,8 +1158,7 @@ void keyPressed() {
                   menuOptions.options[0] = OPTION_LOAD;
                 }
               } else {
-                free(pA);
-                pA = malloc(sizeof(struct possibleAttacks));
+                pA = &useaspossibleAttacks;
                 getPossibleAttacks(pA, c.x + m.left_view, c.y + m.top_view, c.selected->attackRangeMax);
                 menuOptions.selected = 0;
                 menuOptions.length = 0;
@@ -1174,7 +1166,6 @@ void keyPressed() {
                   menuOptions.options[menuOptions.length] = OPTION_ATTACK;
                   ++menuOptions.length;
                 } else {
-                  free(pA);
                   pA = NULL;
                 }
                 if (c.selected->carrying != NULL && sizeofGetPossibleDrops(c.selected) != 0) {

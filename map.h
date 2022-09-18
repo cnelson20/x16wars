@@ -21,6 +21,8 @@
 
 #define LEN_TERRAIN_ARRAY 12
 
+void setup_mem();
+
 void initMap();
 void initMapData(char data[]);
 void renderMap();
@@ -33,8 +35,7 @@ void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_ca
 void checkOldUnits();
 void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsigned char index, unsigned char team);
 void newTurnUnit(struct Unit *u, unsigned short i);
-void renderUnit(struct Unit *u);
-void removeRenderUnit(struct Unit *u);
+
 void clearUnitFromScreen(unsigned char x, unsigned char y);
 
 /* Unit vars */
@@ -44,7 +45,7 @@ extern unsigned char unitLastFuel;
 extern unsigned char baseLastHP;
 extern unsigned char unitsdeadthisturn;
 
-extern struct Terrain *terrainArray[];
+extern struct Terrain terrainArray[];
 
 extern unsigned char maxFuel[];
 
