@@ -207,10 +207,12 @@ extern char change_filename[];
 
 #define DEVICE_NUM 8
 
+char map_space[768];
+
 void menu() {
   static unsigned char already_loaded_dir = 0;
   unsigned short i;
-  char *map_space;
+  
   setup_menu();
   change_directory("maps");
   if (!already_loaded_dir) {
@@ -308,10 +310,8 @@ void menu() {
   }
   cbm_k_setnam(menu_files_array[c.x]);
   cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
-  map_space = malloc(768);
   i = cbm_k_load(0, (unsigned short) map_space);
   initMapData(map_space);
-  free(map_space);
   change_directory("..");
   return;
 }
