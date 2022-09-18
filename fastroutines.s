@@ -34,3 +34,36 @@ dex
 bne @loop
 
 rts
+
+;
+; void __fastcall__ clear_sprite_table(unsigned char from_index);
+;
+.export _clear_sprite_table
+_clear_sprite_table:
+	stz $9F21
+	
+	tay
+	asl A 
+	rol $9F21
+	asl A
+	rol $9F21
+	asl A 
+	rol $9F21
+	clc ; i dont think this is necessary, carry should be clear
+	adc #6
+	sta $9F20
+	lda $9F21
+	adc #$FC
+	sta $9F21
+	
+	lda #$41
+	sta $9F22
+	:
+	stz $9F23
+	
+	iny
+	bne :-
+	
+	rts 
+	
+	
