@@ -4,7 +4,6 @@ RDTIM = $FFDE
 
 .export _waitforjiffy
 _waitforjiffy:
-
 jsr RDTIM
 sta @byte
 :

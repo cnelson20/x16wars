@@ -7,6 +7,9 @@
 #define SHRTCIRCUIT_AND(a, b)((a) ? (b) : 0)
 #define SHRTCIRCUIT_OR(a, b)((a) ? 1 : (b))
 
+#include "zsound/pcmplayer.h"
+#include "zsound/zsmplayer.h"
+
 #include "structs.h"
 #include "map.h"
 #include "waitforjiffy.h"
@@ -21,9 +24,10 @@ extern struct possibleAttacks *pA;
 
 unsigned char returnToMenu;
 unsigned char player1team = 0;
+unsigned char player1co = 0;
 unsigned char player2team = 2;
+unsigned char player2co = 0;
 unsigned short turncounter;
-unsigned short daycount;
 unsigned char unitsdeadthisturn = 0;
 unsigned char currentbases = 0;
 unsigned char oldbases;
@@ -74,7 +78,6 @@ struct Captureable *malloc_captureable() {
 void initMap() {
   m.whoseTurn = player1team;
   turncounter = 0;
-  daycount = 0;
 
   m.top_view = 0;
   m.oldtop_view = 0;
@@ -146,7 +149,7 @@ void renderMap() {
     --oldunitsprites;
   }
 
-  oldbases = currentbases;
+  /*oldbases = currentbases;
   currentbases = 0;
 
   POKE(0x9F20, 0xFF);
@@ -160,7 +163,7 @@ void renderMap() {
     if (base != NULL) {
       ++currentbases;
       if (y == 0) {
-        POKE(0x9F23, 0x50 + captureablePaletteOffsets[base->team]); /* 32 x 16 sprite */
+        POKE(0x9F23, 0x50 + captureablePaletteOffsets[base->team]); // 32 x 16 sprite
         POKE(0x9F23, 0x08); // Z-depth (b/w layers 0 & 1)
         POKE(0x9F23, y >> 4);
         POKE(0x9F23, y << 4);
@@ -169,7 +172,7 @@ void renderMap() {
         POKE(0x9F23, 8);
         POKE(0x9F23, captureableSpriteOffsets[base->type][base->team] + 4);
       } else {
-        POKE(0x9F23, 0x90 + captureablePaletteOffsets[base->team]); /* 32 x 32 sprite */
+        POKE(0x9F23, 0x90 + captureablePaletteOffsets[base->team]); // 32 x 32 sprite
         POKE(0x9F23, 0x08); // Z-depth (b/w layers 0 & 1)
         POKE(0x9F23, (y - 1) >> 4);
         POKE(0x9F23, (y - 1) << 4);
@@ -199,7 +202,7 @@ void renderMap() {
     __asm__("stz $9F23");
     __asm__("stz $9F23");
     --oldbases;
-  }
+  }*/
 
   m.oldtop_view = m.top_view;
   m.oldleft_view = m.left_view;
@@ -243,6 +246,18 @@ void checkOldUnits() {
   }
 }
 
+char co_names_array[][8] = {
+	"andy",  /* Andy */
+	"sami",  /* Sami */
+	"nell",  /* Nell */
+	"grit",  /* Grit */
+	"drake",  /* Drake */
+	"eagle",	 /* Eagle */
+};
+//#define CO_NAMES_ARRAY_LEN 6
+// max was too OP
+
+
 unsigned char colorstrings[4][7] = 
   {{0xb1, 0xa4, 0xa3, 0, 0, 0, 0}, /* red */
    {0xa6, 0xb1, 0xa4, 0xa4, 0xad, 0, 0}, /* green */
@@ -250,8 +265,10 @@ unsigned char colorstrings[4][7] =
    {0xb8, 0xa4, 0xab, 0xab, 0xae, 0xb6, 0}}; /* yellow */
 unsigned char colorstringlengths[4] = {3,5,4,6};
 
+extern void __fastcall__ clear_sprite_table(unsigned char from);
+
 void win(unsigned char team) {
-  unsigned char i;
+  unsigned short i;
 
   POKE(0x9F20, (7 - (colorstringlengths[team] >> 1)) << 1);
   POKE(0x9F21, 0x44);
@@ -272,26 +289,38 @@ void win(unsigned char team) {
   POKE(0x9F23, 0xb2); // s
   POKE(0x9F23, 0x80);
 
-  i = 300;
+	//clear_sprite_table(0);
+	POKE(0x9F29, 0x31);
+
+	zsm_stopmusic();
+	pcm_trigger_digi(MISSION_SUCCESS_MUSIC_BANK, HIRAM_START);
+
+  i = 60 * 8;
   while (i != 0) {
+		pcm_play();
+		zsm_play();
     waitforjiffy();
     --i;
   }
+	POKE(0x00, MAP_HIRAM_BANK);
   returnToMenu = 1;
 }
 
 void nextTurn() {
   unsigned short i = 0;
 
-  //__asm__ ("stp");
+  zsm_stopmusic();
+  if (m.whoseTurn == player2team) {
+		m.whoseTurn = player1team;
+		zsm_startmusic(CO_MUSIC_BANK, HIRAM_START);
+    ++turncounter;
+  } else {
+		m.whoseTurn = player2team;
+		zsm_startmusic(CO2_MUSIC_BANK, HIRAM_START);
+	}
+	
 
-  m.whoseTurn = (m.whoseTurn == player1team) ? player2team : player1team;
-  ++turncounter;
-  if (m.whoseTurn == player1team) {
-    ++daycount;
-  }
-
-  if (daycount > 0) {
+  if (turncounter > 0) {
     renderMap();
     for (; i < m.boardArea; ++i) {
       if ((m.board[i].occupying) != NULL) {
@@ -606,10 +635,12 @@ void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_ca
     POKE(0x9F23, 0xC);
     POKE(0x9F23, 0xAF);
 
-    waitforjiffy();
-    waitforjiffy();
-    waitforjiffy();
-    waitforjiffy();
+		for (temp = 0; temp < 4; ++temp) {
+			waitforjiffy();
+			pcm_play();
+			zsm_play();
+		}
+		POKE(0x00, MAP_HIRAM_BANK);
   }
 
   POKEW(0x9F20, 0xFE00);
@@ -750,6 +781,7 @@ void newTurnUnit(struct Unit * u, unsigned short i) {
           free_unit(u->carrying);
         }
         clearUnitFromScreen(u->x, u->y);
+				pcm_trigger_digi(UNIT_EXPLODING_BANK, HIRAM_START);
         renderUnitExplosion(u->x, u->y, 1);
         free_unit(u);
       }
@@ -989,6 +1021,7 @@ void attack(struct Unit * attacker, struct Unit * defender) {
         m.board[attacker->y * m.boardWidth + attacker->x].base->health = 20;
       }
       clearUnitFromScreen(attacker->x, attacker->y);
+			pcm_trigger_digi(UNIT_EXPLODING_BANK, HIRAM_START);
       renderUnitExplosion(attacker->x, attacker->y, 0);
       free_unit(attacker);
       ++unitsdeadthisturn;
@@ -1009,6 +1042,7 @@ void attack(struct Unit * attacker, struct Unit * defender) {
     }
 
     clearUnitFromScreen(defender->x, defender->y);
+		pcm_trigger_digi(UNIT_EXPLODING_BANK, HIRAM_START);
     renderUnitExplosion(defender->x, defender->y, 0);
     free_unit(defender);
   }

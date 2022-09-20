@@ -75,3 +75,16 @@ unsigned char sizeofGetPossibleJoins(struct Unit *u);
 
 unsigned char canSupply(struct Unit *u);
 void supplyUnits(struct Unit *u);
+
+extern unsigned char player1co;
+extern unsigned char player2co;
+
+extern char co_names_array[][8];
+#define CO_NAMES_ARRAY_LEN 6
+
+#define CO_ANDY 0
+#define CO_SAMI 1
+#define CO_NELL 2
+#define CO_GRIT 3
+#define CO_DRAKE 4
+#define CO_EAGLE 5

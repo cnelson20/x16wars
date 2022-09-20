@@ -40,20 +40,9 @@ rts
 ;
 .export _clear_sprite_table
 _clear_sprite_table:
-	stz $9F21
-	
-	tay
-	asl A 
-	rol $9F21
-	asl A
-	rol $9F21
-	asl A 
-	rol $9F21
-	clc ; i dont think this is necessary, carry should be clear
-	adc #6
+	lda #$06
 	sta $9F20
-	lda $9F21
-	adc #$FC
+	lda #$FC
 	sta $9F21
 	
 	lda #$41
