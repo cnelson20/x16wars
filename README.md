@@ -6,4 +6,5 @@ missing:
 - \>2 player support
 - fog of war
 - cpu
+- CO powers / abilities
 - graphics for factories/seaports/airports & ability to build on them
