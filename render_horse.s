@@ -2,8 +2,7 @@
 
 .import _m
 .import _player1team
-
-.import _checkOldUnits
+.import _player2team
 
 .struct Map
 	top_view .byte
@@ -285,11 +284,11 @@ rts
 ; x offset in tmp1
 ; y offset in tmp2
 store_x_y_sprite_offsets:
+@x = $10
+@y = $11
 @temp = $14
-ldy #Unit::xx
-lda (ptr2), Y
-sec 
-sbc _m + Map::left_view
+
+lda @x
 stz @temp
 asl A
 rol @temp
@@ -306,10 +305,7 @@ lda @temp
 adc #0
 sta $9F23
 
-ldy #Unit::yy
-lda (ptr2), Y
-sec 
-sbc _m + Map::top_view
+lda @y
 stz @temp
 asl A
 rol @temp
@@ -328,10 +324,18 @@ sta $9F23
 rts 
 	
 	
+
+
 	
 .import _oldunitsprites
 .import _currentunitsprites
 
+.import _captureablePaletteOffsets
+.import _captureableSpriteOffsets
+
+; 
+; void __fastcall__ render_unit_sprites();
+;
 .export _render_unit_sprites
 _render_unit_sprites:
 @x = $10
@@ -340,6 +344,9 @@ _render_unit_sprites:
 lda _currentunitsprites
 sta _oldunitsprites
 stz _currentunitsprites
+	
+stz @x
+stz @y	
 	
 lda #$40
 sta $9F20 
@@ -398,24 +405,16 @@ bne @unit_pointer_not_null
 lda ptr2
 bne @unit_pointer_not_null
 @check_offscreen_jmp_inc_vars:
-jmp @inc_vars
+jmp @no_unit_present
 @unit_pointer_not_null:
 
 @check_offscreen:
-; if unit off screen continue ;
-ldy #Unit::xx
-lda (ptr2), Y
-sec 
-sbc _m + Map::left_view
-bcc @check_offscreen_jmp_inc_vars
-cmp #15
-bcs @check_offscreen_jmp_inc_vars
- 
-ldy #Unit::yy
-lda (ptr2), Y
+; if unit off bottom of screen continue ;
+;ldy #Unit::yy
+;lda (ptr2), Y
+lda @y
 sec 
 sbc _m + Map::top_view
-bcc @check_offscreen_jmp_inc_vars
 cmp #10
 bcs @check_offscreen_jmp_inc_vars
 
@@ -521,6 +520,7 @@ sta $9F23
 lda #8
 sta $9F23
 
+lda #8
 sta tmp1 
 sta tmp2
 jsr store_x_y_sprite_offsets
@@ -531,6 +531,77 @@ lda #8
 sta $9F23
 
 @end_display_health_sprites:
+@no_unit_present:
+
+ldy #Tile::base
+lda (ptr1), Y
+sta ptr2 
+tax 
+iny 
+lda (ptr1), Y
+sta ptr2 + 1
+
+bne @render_base_sprite
+cpx #0
+bne @render_base_sprite
+jmp @base_is_null
+
+@render_base_sprite:
+inc _currentunitsprites
+nop
+
+ldy #Captureable::team
+lda (ptr2), Y
+pha
+asl 
+asl ; * 4
+ldy #Captureable::type
+ora (ptr2), Y
+tax 
+lda _captureableSpriteOffsets, X
+
+; if y == 0, add 4 to point to lower half of sprite ;
+ldy @y
+cpy #0
+bne :+
+clc 
+adc #4
+:
+
+sta $9F23
+lda #8
+sta $9F23
+
+stz tmp1 
+stz tmp2 
+lda @y
+beq :+
+
+dec @y 
+jsr store_x_y_sprite_offsets
+inc @y
+bra :++
+:
+jsr store_x_y_sprite_offsets
+:
+lda #$8 ; z-depth
+sta $9F23 
+
+plx 
+lda _captureablePaletteOffsets, X
+ldy @y
+beq :+
+cpy #10
+beq :+
+
+ora #$90 ; if y != 0 use 32 px tall sprite 
+bra :++
+:
+ora #$50 ; if y = 0 use 16 px tall sprite
+:
+sta $9F23
+
+@base_is_null:
 
 @inc_vars:
 inc @i
@@ -546,7 +617,160 @@ lda ptr1 + 1
 adc #0
 sta ptr1 + 1
 
+lda @x
+inc A 
+sta @x
+cmp #15
+bcc @dont_inc_y
+
+clc ; Add map boardWidth to i, then subtract 15
+lda @i
+adc _m + Map::boardWidth
+sta @i
+lda @i + 1
+adc #0
+sta @i + 1
+sec 
+lda @i
+sbc #15
+sta @i 
+lda @i + 1
+sbc #0
+sta @i + 1
+
+lda @y
+inc A
+sta @y
+cmp #11
+bcs @end
+
+stz @x
+
+@recalc_pointer:
+lda @i
+ldx @i + 1
+jsr mulax6
+clc 
+adc _m + Map::board
+sta ptr1
+txa 
+adc _m + Map::board + 1
+sta ptr1 + 1
+@dont_inc_y:
+
 jmp @check_loop
 @end:
-	rts
+rts
 	
+.import _win
+;
+; void __fastcall__ checkOldUnits();
+;
+.export _checkOldUnits
+_checkOldUnits:
+@i = $10 ; word size 
+@remove_render_flag = $12
+ldx _player1team
+stz @units_exist_array, X
+ldx _player2team
+stz @units_exist_array, X
+	
+lda #0
+ldx _m + Map::left_view
+cpx _m + Map::oldleft_view
+beq :+
+lda #1
+bra :+
+:
+ldx _m + Map::top_view
+cpx _m + Map::oldtop_view
+beq :+
+lda #1
+:
+sta @remove_render_flag
+
+lda _m + Map::board
+sta ptr1
+lda _m + Map::board + 1
+sta ptr1 + 1
+	
+@main_loop:	
+lda @i + 1
+cmp _m + Map::boardArea + 1
+bcc @body_loop
+
+lda @i
+cmp _m + Map::boardArea
+bcs @end_loop
+@body_loop:
+
+ldy #Tile::occupying
+lda (ptr1), Y
+sta ptr2
+iny
+lda (ptr1), Y
+sta ptr2 + 1
+bne @do_unit_stuff
+lda ptr2
+beq @tile_occupying_null
+@do_unit_stuff:
+
+; set unit team array ; 
+ldy #Unit::team
+lda (ptr2), Y
+tax 
+lda #1
+sta @units_exist_array, X 
+
+lda ptr1
+pha
+lda ptr1 + 1
+pha 
+
+lda @remove_render_flag
+beq :+
+lda ptr2
+ldx ptr2 + 1
+jsr _removeRenderUnit
+:
+
+pla 
+sta ptr1 + 1
+pla 
+sta ptr1
+
+
+@tile_occupying_null:
+inc @i
+bne :+
+inc @i + 1
+:
+
+clc
+lda ptr1
+adc #6
+sta ptr1 
+lda ptr1 + 1
+adc #0
+sta ptr1 + 1
+
+jmp @main_loop
+
+@end_loop:
+
+ldx _player1team
+lda @units_exist_array
+bne :+
+lda _player2team ; If player 1 has no units, player 2 wins 
+jmp _win ; when win() returns, it will return to caller of this function
+:
+ldx _player2team
+lda @units_exist_array
+bne :+
+lda _player1team ; vice versa from above 
+jmp _win
+:
+rts
+	
+@units_exist_array:
+	.res 4, 0

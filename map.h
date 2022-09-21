@@ -32,7 +32,7 @@ void renderCursor(unsigned char incFrame);
 
 void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_camera);
 
-void checkOldUnits();
+//void checkOldUnits();
 void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsigned char index, unsigned char team);
 void newTurnUnit(struct Unit *u, unsigned short i);
 

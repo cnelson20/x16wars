@@ -401,6 +401,7 @@ void load_co_music() {
 		strcat(co_load_filename, ".zsm");
 		POKE(0x9F20, 20); 
 		print_ascii_str(co_load_filename, 0);
+		clearRestOfLine();
 		
 		cbm_k_setnam(co_load_filename);
 		cbm_k_setlfs(0, DEVICE_NUM, 2);
@@ -1027,6 +1028,8 @@ void keyPressed() {
         break;
       case OPTION_QUIT:
         menuOptions.length = 0;
+				zsm_stopmusic();
+				pcm_stop();
         POKE(0x9F25, 0x80);
         __asm__("jmp ($FFFC)");
       case OPTION_WAIT:

@@ -119,19 +119,26 @@ void initMapData(char data[]) {
 
 extern struct Menu menuOptions;
 unsigned char captureablePaletteOffsets[] = {0xd, 0xd, 0xe, 0xe, 0x8};
-unsigned char captureableSpriteOffsets[][] = {
+/*unsigned char captureableSpriteOffsets[][] = {
 	{18, 26, 18, 26, 26},
-	{34, 42, 34, 42, 42}};
+	{34, 42, 34, 42, 42}
+};*/
+unsigned char captureableSpriteOffsets[] = {
+	18, 34, 0, 0, // Red
+	26, 42, 0, 0, // Green
+	18, 34, 0, 0, // Blue
+	26, 42, 0, 0, // Yellow
+	26, 42, 0, 0, // Neutral
+};
 
 extern void render_tiles();
 extern void render_unit_sprites();
+extern void checkOldUnits();
 extern void __fastcall__ renderUnit(struct Unit *u);
 extern void __fastcall__ removeRenderUnit(struct Unit *u);
 
 void renderMap() {
-  static unsigned char x, y;
-  static unsigned short i;
-	
+
 	checkOldUnits();
 	render_tiles();
 
@@ -148,62 +155,6 @@ void renderMap() {
     __asm__("stz $9F23");
     --oldunitsprites;
   }
-
-  /*oldbases = currentbases;
-  currentbases = 0;
-
-  POKE(0x9F20, 0xFF);
-  POKE(0x9F21, 0xFF);
-  POKE(0x9F22, 0x19);
-  x = 0;
-  y = 0;
-  i = m.left_view + m.top_view * m.boardWidth;
-  while (y < 10) {
-    struct Captureable * base = m.board[i].base;
-    if (base != NULL) {
-      ++currentbases;
-      if (y == 0) {
-        POKE(0x9F23, 0x50 + captureablePaletteOffsets[base->team]); // 32 x 16 sprite
-        POKE(0x9F23, 0x08); // Z-depth (b/w layers 0 & 1)
-        POKE(0x9F23, y >> 4);
-        POKE(0x9F23, y << 4);
-        POKE(0x9F23, x >> 4);
-        POKE(0x9F23, x << 4);
-        POKE(0x9F23, 8);
-        POKE(0x9F23, captureableSpriteOffsets[base->type][base->team] + 4);
-      } else {
-        POKE(0x9F23, 0x90 + captureablePaletteOffsets[base->team]); // 32 x 32 sprite
-        POKE(0x9F23, 0x08); // Z-depth (b/w layers 0 & 1)
-        POKE(0x9F23, (y - 1) >> 4);
-        POKE(0x9F23, (y - 1) << 4);
-        POKE(0x9F23, x >> 4);
-        POKE(0x9F23, x << 4);
-        POKE(0x9F23, 8);
-        POKE(0x9F23, captureableSpriteOffsets[base->type][base->team]);
-      }
-    }
-
-    ++x;
-    if (x >= 15) {
-      i += m.boardWidth - 15;
-      ++y;
-      x = 0;
-    }
-    ++i;
-  }
-  while (oldbases > currentbases) {
-    __asm__("stz $9F23");
-    __asm__("stz $9F23");
-    __asm__("stz $9F23");
-    __asm__("stz $9F23");
-
-    __asm__("stz $9F23");
-    __asm__("stz $9F23");
-    __asm__("stz $9F23");
-    __asm__("stz $9F23");
-    --oldbases;
-  }*/
-
   m.oldtop_view = m.top_view;
   m.oldleft_view = m.left_view;
 
@@ -220,30 +171,6 @@ void renderMap() {
 
   m.oldtop_view = m.top_view;
   m.oldleft_view = m.left_view;
-}
-
-void checkOldUnits() {
-  unsigned short i;
-  unsigned char units_exist[4];
-	unsigned char removeRenderUnitFlag = (m.left_view != m.oldleft_view) || (m.top_view != m.oldtop_view);
-	
-  units_exist[player1team] = 0;
-  units_exist[player2team] = 0;
-
-  for (i = 0; i < m.boardArea; ++i) {
-    if (m.board[i].occupying != NULL) {
-      if (removeRenderUnitFlag) { removeRenderUnit(m.board[i].occupying); }
-      units_exist[m.board[i].occupying->team] = 1;
-    }
-  }
-
-  if (units_exist[player2team] == 0) {
-    //player 1 wins
-    win(player1team);
-  } else if (units_exist[player1team] == 0) {
-    //player 2 wins 
-    win(player2team);
-  }
 }
 
 char co_names_array[][8] = {
@@ -267,7 +194,7 @@ unsigned char colorstringlengths[4] = {3,5,4,6};
 
 extern void __fastcall__ clear_sprite_table(unsigned char from);
 
-void win(unsigned char team) {
+void __fastcall__ win(unsigned char team) {
   unsigned short i;
 
   POKE(0x9F20, (7 - (colorstringlengths[team] >> 1)) << 1);
@@ -322,7 +249,7 @@ void nextTurn() {
 
   if (turncounter > 0) {
     renderMap();
-    for (; i < m.boardArea; ++i) {
+    for (i = 0; i < m.boardArea; ++i) {
       if ((m.board[i].occupying) != NULL) {
         newTurnUnit(m.board[i].occupying, i);
       }
@@ -425,8 +352,10 @@ unsigned char cursoroffsets[] = {0, 1, 2, 1};
 extern struct Menu menuOptions;
 
 void renderCursor(unsigned char incFrame) {
-  unsigned short tempx, tempy;
-  unsigned char coff = cursoroffsets[c.frame >> 3];
+  static unsigned short tempx, tempy;
+  static unsigned char coff;
+
+	coff = cursoroffsets[c.frame >> 3];
   if (pA == NULL || menuOptions.length != 0) {
 
     POKE(0x9F20, 0x08);
@@ -642,7 +571,8 @@ void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_ca
 		}
 		POKE(0x00, MAP_HIRAM_BANK);
   }
-
+	
+	POKE(0x9F22, 0x11);
   POKEW(0x9F20, 0xFE00);
   __asm__("stz $9F23");
   __asm__("stz $9F23");
