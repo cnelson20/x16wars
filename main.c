@@ -1381,11 +1381,6 @@ void keyPressed() {
 					if (c.x + m.left_view != c.selected->x || c.y + m.top_view != c.selected->y) {
 						actually_move = 0;
 						for (i = 0; 1; ++i) {
-							POKE(0xBFFC, c.selected->x);
-							POKE(0xBFFD, c.selected->y);
-							POKE(0xBFFE, c.x + m.left_view);
-							POKE(0xBFFF, c.y + m.top_view);
-							//__asm__ ("stp");
 							if (0 == move(c.selected, c.x + m.left_view, c.y + m.top_view)) { break; }
 							++mvmtNegFactor;
 						}

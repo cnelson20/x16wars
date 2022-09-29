@@ -364,6 +364,7 @@ void renderCursor(unsigned char incFrame) {
     POKE(0x9F22, 0x11);
 
     // Part 0
+		if (menuOptions.length == 0) {
     POKE(0x9F23, 0);
     POKE(0x9F23, 8);
     tempx = (c.x << 4) - 3 + coff;
@@ -396,6 +397,7 @@ void renderCursor(unsigned char incFrame) {
     POKE(0x9F23, tempy >> 8);
     POKE(0x9F23, 12);
     POKE(0x9F23, 0x08);
+		}
     // Part 3
     POKE(0x9F23, 3);
     POKE(0x9F23, 8);
@@ -940,20 +942,30 @@ unsigned char move(struct Unit * u, unsigned char x, unsigned char y) {
 			} else if (u->airborne) {
 				unsigned char i = 0;
 				
-				__asm__ ("stp");
-				
+				while (x != u->x && y != u->y) {
+					path_array_x[i] = x;
+					path_array_y[i] = y;
+					if (x > u->x) { --x; } else { ++x; }
+					++i;
+					path_array_x[i] = x;
+					path_array_y[i] = y;
+					if (y > u->y) { --y; } else { ++y; }
+					++i;
+				}
 				while (y != u->y) {
 					path_array_x[i] = x;
-					path_array_x[i] = y;
+					path_array_y[i] = y;
 					if (y > u->y) { --y; } else { ++y; }
 					++i;
 				}
 				while (x != u->x) {
 					path_array_x[i] = x;
-					path_array_x[i] = y;
+					path_array_y[i] = y;
 					if (x > u->x) { --x; } else { ++x; }
 					++i;
 				}
+				path_array_x[i] = x;
+				path_array_y[i] = y;
 			}
       return 1;
     }
