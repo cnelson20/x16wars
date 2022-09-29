@@ -245,6 +245,7 @@ void nextTurn() {
 		m.whoseTurn = player2team;
 		zsm_startmusic(CO2_MUSIC_BANK, HIRAM_START);
 	}
+	zsm_forceloop(0);
 	
 
   if (turncounter > 0) {
@@ -509,8 +510,8 @@ unsigned char explosionSpriteOffsets[] = {
 void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_camera) {
   unsigned char i;
   unsigned short temp;
-  unsigned char tx = m.left_view;
-  unsigned char ty = m.top_view;
+  unsigned char tx;
+  unsigned char ty;
 
   if (move_camera) {
     tx = m.left_view;
@@ -551,7 +552,7 @@ void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_ca
 
   POKE(0x9F22, 0x11);
   for (i = 0; i <= 8; ++i) {
-    POKEW(0x9F20, 0xFE00); // halfway through sprite table 
+    POKEW(0x9F20, 0xFC00); // halfway through sprite table 
 
     POKE(0x9F23, 16 * i + 64);
     POKE(0x9F23, 0x08);
@@ -573,7 +574,7 @@ void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_ca
   }
 	
 	POKE(0x9F22, 0x11);
-  POKEW(0x9F20, 0xFE00);
+  POKEW(0x9F20, 0xFC00);
   __asm__("stz $9F23");
   __asm__("stz $9F23");
   __asm__("stz $9F23");
@@ -583,13 +584,89 @@ void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_ca
   __asm__("stz $9F23");
   __asm__("stz $9F23");
   __asm__("stz $9F23");
-
-  /*if (move_camera) {
-  	m.left_view = tx;
-  	m.top_view = ty;
-  }*/
+	
 }
 
+#define ARROW_STRAIGHT_INDEX_TD 128
+#define ARROW_STRAIGHT_INDEX_LR 132
+
+#define ARROW_HEAD_INDEX_D 136
+#define ARROW_HEAD_INDEX_U 164
+#define ARROW_HEAD_INDEX_R 140
+#define ARROW_HEAD_INDEX_L 160
+
+#define ARROW_CURVE_INDEX_SE 144
+#define ARROW_CURVE_INDEX_NE 148
+#define ARROW_CURVE_INDEX_SW 152
+#define ARROW_CURVE_INDEX_NW 156
+
+#define VFLIP 2
+#define HFLIP 1
+
+extern unsigned char path_array_x[];
+extern unsigned char path_array_y[];
+
+void drawMvmtArrow(unsigned char arr_len) {
+	unsigned char i;
+	unsigned char v_hflip = 0;
+	unsigned short temp;
+	
+	POKEW(0x9F20, 0xFC28);
+	POKE(0x9F22, 0x11);
+	for (i = arr_len - 1; i != 0xFF; --i) {
+		if (i == 0) {
+			if (path_array_x[1] == path_array_x[0]) {
+				if (path_array_y[0] > path_array_y[1]) {
+					POKE(0x9F23, ARROW_HEAD_INDEX_D);
+				} else {
+					POKE(0x9F23, ARROW_HEAD_INDEX_U);
+				}
+			} else {
+				if (path_array_x[0] > path_array_x[1]) {
+					POKE(0x9F23, ARROW_HEAD_INDEX_R);
+				} else {
+					POKE(0x9F23, ARROW_HEAD_INDEX_L);
+				}
+			}
+		} else if (i == arr_len - 1) {
+			if (path_array_x[i - 1] == path_array_x[i]) {
+				POKE(0x9F23, ARROW_STRAIGHT_INDEX_TD);
+			} else {
+				POKE(0x9F23, ARROW_STRAIGHT_INDEX_LR);
+			}
+		} else {
+			if (path_array_x[i-1] == path_array_x[i+1] || path_array_y[i-1] == path_array_y[i+1]) {
+				if (path_array_x[i] == path_array_x[i+1]) {
+					POKE(0x9F23, ARROW_STRAIGHT_INDEX_TD);
+				} else {
+					POKE(0x9F23, ARROW_STRAIGHT_INDEX_LR);
+				}
+			} else {
+				if (path_array_x[i + 1] > path_array_x[i]) {
+					POKE(0x9F23, (path_array_y[i] > path_array_y[i - 1]) ? ARROW_CURVE_INDEX_NE : ARROW_CURVE_INDEX_SE);
+				} else if (path_array_x[i + 1] < path_array_x[i]) {
+					POKE(0x9F23, (path_array_y[i] > path_array_y[i - 1]) ? ARROW_CURVE_INDEX_NW : ARROW_CURVE_INDEX_SW);
+				}	else {
+					if (path_array_x[i - 1] > path_array_x[i]) {
+						POKE(0x9F23, (path_array_y[i] > path_array_y[i + 1]) ? ARROW_CURVE_INDEX_NE : ARROW_CURVE_INDEX_SE);
+					} else /*if (path_array_x[i - 1] < path_array_x[i])*/ {
+						POKE(0x9F23, (path_array_y[i] > path_array_y[i + 1]) ? ARROW_CURVE_INDEX_NW : ARROW_CURVE_INDEX_SW);
+					}
+				}					
+			}
+		}
+		
+		POKE(0x9F23, 8);
+		temp = path_array_x[i] - m.left_view;
+		POKE(0x9F23, temp << 4);
+		POKE(0x9F23, temp >> 4);
+		temp = path_array_y[i] - m.top_view;
+		POKE(0x9F23, temp << 4);
+		POKE(0x9F23, temp >> 4);
+		POKE(0x9F23, ((i == arr_len - 1) ? 0x8 : 0xC) | v_hflip);
+		POKE(0x9F23, 0x50);
+	}
+}
 
 //Unit methods
 unsigned char mvmtRanges[] = {
@@ -728,10 +805,6 @@ void clearUnitFromScreen(unsigned char x, unsigned char y) {
   }
 }
 
-unsigned char maxSteps;
-struct Unit * checkU;
-struct Tile tempT;
-
 unsigned char canCarryUnit(unsigned char carrier_index, unsigned char carried_index) {
   if ((carrier_index == UNIT_APC || carrier_index == UNIT_TRANSPORT) && carried_index >= UNIT_MECH && carried_index <= UNIT_INFANTRY) {
     return 1;
@@ -742,12 +815,27 @@ unsigned char canCarryUnit(unsigned char carrier_index, unsigned char carried_in
   }
   return 0;
 }
+unsigned char maxSteps;
+struct Unit * checkU;
+struct Tile tempT;
+
+unsigned char actually_move = 1;
+unsigned char mvmtNegFactor;
+unsigned char recurs_depth;
+
+unsigned char path_array_x[16];
+unsigned char path_array_y[16];
 
 unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned char steps) {
   if (tx >= m.boardWidth || ty >= m.boardHeight) {
     return 0;
   }
+	if (SABS(checkU->x, tx) + SABS(checkU->y, ty) > maxSteps - steps) {
+		return 0;
+	}
   if (tx == checkU->x && ty == checkU->y) {
+		path_array_x[recurs_depth] = tx;
+		path_array_y[recurs_depth] = ty;
     return 1;
   }
   tempT = m.board[ty * m.boardWidth + tx];
@@ -761,22 +849,37 @@ unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned
       return 0;
     }
     steps += tempT.t->mvmtCosts[checkU->mvmtType];
-    /*if (tempT.t->mvmtCosts[checkU->mvmtType] >= 2 && steps > maxSteps) {
-    	--steps;
-    }*/
   }
   if (steps > maxSteps) {
     return 0;
   }
 
   /* recursive calls */
+	++recurs_depth;
   if (SHRTCIRCUIT_AND(tx != 0, checkSpaceInMvmtRange(tx - 1, ty, steps))) {
-    return 1;
-  }
+    --recurs_depth;
+		path_array_x[recurs_depth] = tx;
+		path_array_y[recurs_depth] = ty;
+		return 1;
+  } /*else {
+		--depth;
+	}
+	++depth;*/
   if (SHRTCIRCUIT_AND(ty != 0, checkSpaceInMvmtRange(tx, ty - 1, steps))) {
+		--recurs_depth;
+		path_array_x[recurs_depth] = tx;
+		path_array_y[recurs_depth] = ty;
     return 1;
   }
-  return checkSpaceInMvmtRange(tx + 1, ty, steps) || checkSpaceInMvmtRange(tx, ty + 1, steps);
+  if (checkSpaceInMvmtRange(tx + 1, ty, steps) || checkSpaceInMvmtRange(tx, ty + 1, steps)) {
+		--recurs_depth;
+		path_array_x[recurs_depth] = tx;
+		path_array_y[recurs_depth] = ty;
+		return 1;
+	} else {
+		--recurs_depth;
+		return 0;
+	}
 }
 
 unsigned char unitLastX = 255;
@@ -803,32 +906,55 @@ unsigned char move(struct Unit * u, unsigned char x, unsigned char y) {
     if (u->fuel < SABS(u->x, x) + SABS(u->y, y)) {
       return 0;
     }
-    maxSteps = u->mvmtRange;
-    checkU = u;
-    if ((u->airborne) ? (SABS(u->x, x) + SABS(u->y, y) <= u->mvmtRange) : checkSpaceInMvmtRange(x, y, 0)) {
-      checkU = NULL;
-      maxSteps = 0;
-      unitLastX = u->x;
-      unitLastY = u->y;
-      unitLastFuel = u->fuel;
-      if (m.board[unitLastY * m.boardWidth + unitLastX].base != NULL && (unitLastX != x || unitLastY != y)) {
-        baseLastHP = m.board[unitLastY * m.boardWidth + unitLastX].base->health;
-        m.board[unitLastY * m.boardWidth + unitLastX].base->health = 20;
-      }
-      if (u->x >= m.left_view && u->x < m.left_view + 15 && u->y >= m.top_view && u->y < m.top_view + 10) {
-        POKE(0x9F20, (unitLastX - m.left_view) << 1);
-        POKE(0x9F21, 0x40 + unitLastY - m.top_view);
-        POKE(0x9F22, 0x00);
-        POKE(0x9F23, 28);
-      }
-      m.board[unitLastY * m.boardWidth + unitLastX].occupying = NULL;
-      u->fuel -= SABS(u->x, x) + SABS(u->y, y);
+		maxSteps = u->mvmtRange;
+    if (actually_move == 0) {
+			maxSteps -= mvmtNegFactor;
+		}
+		checkU = u;
+		recurs_depth = 0;
+    if ((u->airborne) ? (SABS(u->x, x) + SABS(u->y, y) <= maxSteps) : checkSpaceInMvmtRange(x, y, 0)) {
+			if (actually_move) {
+				checkU = NULL;
+				maxSteps = 0;
+				unitLastX = u->x;
+				unitLastY = u->y;
+				unitLastFuel = u->fuel;
+				if (m.board[unitLastY * m.boardWidth + unitLastX].base != NULL && (unitLastX != x || unitLastY != y)) {
+					baseLastHP = m.board[unitLastY * m.boardWidth + unitLastX].base->health;
+					m.board[unitLastY * m.boardWidth + unitLastX].base->health = 20;
+				}
+				if (u->x >= m.left_view && u->x < m.left_view + 15 && u->y >= m.top_view && u->y < m.top_view + 10) {
+					POKE(0x9F20, (unitLastX - m.left_view) << 1);
+					POKE(0x9F21, 0x40 + unitLastY - m.top_view);
+					POKE(0x9F22, 0x00);
+					POKE(0x9F23, 28);
+				}
+				m.board[unitLastY * m.boardWidth + unitLastX].occupying = NULL;
+				u->fuel -= SABS(u->x, x) + SABS(u->y, y);
 
-      unitChangedPosition = (u->x != x || u->y != y);
-      u->x = x;
-      u->y = y;
-      attackCursor.selected = m.board[y * m.boardWidth + x].occupying;
-      m.board[y * m.boardWidth + x].occupying = u;
+				unitChangedPosition = (u->x != x || u->y != y);
+				u->x = x;
+				u->y = y;
+				attackCursor.selected = m.board[y * m.boardWidth + x].occupying;
+				m.board[y * m.boardWidth + x].occupying = u;
+			} else if (u->airborne) {
+				unsigned char i = 0;
+				
+				__asm__ ("stp");
+				
+				while (y != u->y) {
+					path_array_x[i] = x;
+					path_array_x[i] = y;
+					if (y > u->y) { --y; } else { ++y; }
+					++i;
+				}
+				while (x != u->x) {
+					path_array_x[i] = x;
+					path_array_x[i] = y;
+					if (x > u->x) { --x; } else { ++x; }
+					++i;
+				}
+			}
       return 1;
     }
   }

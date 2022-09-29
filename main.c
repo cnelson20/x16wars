@@ -456,6 +456,9 @@ extern unsigned char oldunitsprites;
 
 extern unsigned char terrainIsSet[LEN_TERRAIN_ARRAY];
 
+extern unsigned char path_array_x[16];
+extern unsigned char path_array_y[16];
+
 void game_start() {
   /* Reset some game variables */
   memset( &c, 0, sizeof(c));
@@ -478,6 +481,7 @@ void game_start() {
   initCursor();
 	
 	zsm_startmusic(CO_MUSIC_BANK, HIRAM_START);
+	zsm_forceloop(0);
 }
 
 #define UNIT_CHR_FILELEN 4096
@@ -485,6 +489,8 @@ void game_start() {
 #define SPRITE_CHR_FILELEN 1602
 #define LETTER_CHR_FILELEN 4738
 #define EXPL_CHR_FILELEN 4608
+
+#define ARROW_CHR_FILELEN 2048
 
 /* load_address = 0xA000, start of hiram */
 #define LOAD_ADDRESS 0xA000
@@ -512,7 +518,7 @@ void setup() {
   POKE(0x9F2F, 0x43); // tile base addr 0x8000
 
   POKE(0x9F34, 0x62); // default map height & width, 4 bpp tiles
-  POKE(0x9F35, 0x20); // map based at vram addr 0x8000 (0x40 * 512)
+  POKE(0x9F35, 0x20); // map based at vram addr 0x4000 (0x20 * 512)
   POKE(0x9F36, 0x43); // tile base addr 0x8000
 
   POKE(0x9F30, 0); // Scroll
@@ -591,6 +597,15 @@ void setup() {
   POKEW(0x6, EXPL_CHR_FILELEN);
   __asm__("jsr $FEE7");
 
+	cbm_k_setnam("arrow.chr");
+	cbm_k_setlfs(0xFF, DEVICE_NUM, 2);
+	cbm_k_load(0, LOAD_ADDRESS);
+	POKE(0x9F20, 0x00);
+  POKE(0x9F21, 0x10);
+  POKE(0x9F22, 0x11);
+	POKEW(0x6, ARROW_CHR_FILELEN);
+	__asm__("jsr $FEE7");
+	
 	change_directory("sound");
 	
 	/* Load sound effects */
@@ -969,6 +984,14 @@ void clearUI() {
   }
 }
 
+extern unsigned char maxSteps;
+extern struct Unit * checkU;
+extern struct Tile tempT;
+
+extern unsigned char actually_move;
+extern unsigned char mvmtNegFactor;
+extern unsigned char recurs_depth;
+
 unsigned char dropOffsetsX[] = {
   0, 1, 2, 1
 };
@@ -1250,6 +1273,8 @@ void keyPressed() {
       else if (keyCode == 0x55) {
         if (c.selected != NULL) {
           if (unitLastX == 255) {
+						unsigned char i;
+						
 						pcm_trigger_digi(UNSELECT_BANK, HIRAM_START);
             c.selected = NULL;
             c.x = c.storex;
@@ -1258,6 +1283,12 @@ void keyPressed() {
             c.y = c.storey;
             m.top_view = m.store_top_view;
             c.storey = -1;
+						
+						POKEW(0x9F20, 0xFC28);
+						POKE(0x9F22, 0x11);
+						for (i = 120; i > 0; --i) {
+							__asm__ ("stz $9F23");
+						}
           } else {
             undoMove(c.selected);
           }
@@ -1266,6 +1297,7 @@ void keyPressed() {
       else if (keyCode == 0x49) {
         if (c.selected == NULL) {
           c.selected = m.board[c.x + m.left_view + m.boardWidth * (c.y + m.top_view)].occupying;
+					if (c.selected->takenAction) { c.selected = NULL; }
           if (c.selected == NULL) {
 						pcm_trigger_digi(SELECT_NO_UNIT_BANK, HIRAM_START);
             menuOptions.length = 3;
@@ -1284,7 +1316,15 @@ void keyPressed() {
           }
         } else {
           if (unitLastX == 255) {
+						actually_move = 1;
             if (c.selected->team == m.whoseTurn && !c.selected->takenAction && move(c.selected, c.x + m.left_view, c.y + m.top_view)) {
+							unsigned char i;
+							POKEW(0x9F20, 0xFC28);
+							POKE(0x9F22, 0x11);
+							for (i = 120; i > 0; --i) {
+								__asm__ ("stz $9F23");
+							}
+							
               if (attackCursor.selected != NULL) {
                 menuOptions.length = 1;
                 menuOptions.selected = 0;
@@ -1329,6 +1369,40 @@ void keyPressed() {
       }
 			if (cursorHasMoved) {
 				pcm_trigger_digi(MAP_CURSOR_MOVE_BANK, HIRAM_START);
+				if (c.selected != NULL) {
+					unsigned char i;
+					
+					POKEW(0x9F20, 0xFC28);
+					POKE(0x9F22, 0x11);
+					for (i = 120; i > 0; --i) {
+						__asm__ ("stz $9F23");
+					}
+					mvmtNegFactor = 0;
+					if (c.x + m.left_view != c.selected->x || c.y + m.top_view != c.selected->y) {
+						actually_move = 0;
+						for (i = 0; 1; ++i) {
+							POKE(0xBFFC, c.selected->x);
+							POKE(0xBFFD, c.selected->y);
+							POKE(0xBFFE, c.x + m.left_view);
+							POKE(0xBFFF, c.y + m.top_view);
+							//__asm__ ("stp");
+							if (0 == move(c.selected, c.x + m.left_view, c.y + m.top_view)) { break; }
+							++mvmtNegFactor;
+						}
+					}
+					if (mvmtNegFactor != 0) {
+						--mvmtNegFactor;
+						
+						memset(path_array_x, 0xFF, 16);
+						memset(path_array_y, 0xFF, 16);
+					
+						move(c.selected, c.x + m.left_view, c.y + m.top_view);
+						mvmtNegFactor = 0;
+						for (i = 0; path_array_x[i] != 0xFF; ++i) {}
+						drawMvmtArrow(i);
+					}
+					actually_move = 1;
+				}
 			}				
     }
   }

@@ -348,7 +348,7 @@ stz _currentunitsprites
 stz @x
 stz @y	
 	
-lda #$40
+lda #$A0
 sta $9F20 
 lda #$FC 
 sta $9F21

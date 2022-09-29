@@ -58,6 +58,8 @@ void capture(struct Unit *u, struct Captureable *c);
 void win(unsigned char team);
 void nextTurn();
 
+void drawMvmtArrow(unsigned char arr_len);
+
 unsigned char move(struct Unit *u, unsigned char x, unsigned char y);
 void undoMove(struct Unit *u);
 
