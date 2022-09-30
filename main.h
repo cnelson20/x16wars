@@ -18,6 +18,8 @@ void free_game_mem();
 void clearRestOfLine();
 void clearOtherLines();
 
+void calculate_unit_path();
+
 void clear_layer1();
 
 void load_co_music();

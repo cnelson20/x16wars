@@ -3,7 +3,7 @@
 #include <peekpoke.h>
 #include <string.h>
 
-#define SABS(a, b)((a > b) ? (a - b) : (b - a))
+#define SABS(a, b)((a >= b) ? (a - b) : (b - a))
 #define SHRTCIRCUIT_AND(a, b)((a) ? (b) : 0)
 #define SHRTCIRCUIT_OR(a, b)((a) ? 1 : (b))
 
@@ -96,7 +96,7 @@ void initMapData(char data[]) {
   for (i = 2; data[i] != 0xFF; i += 3) {}
   i++;
   for (; data[i] != 0xFF; i += 3) {}
-  i++;
+  for (; data[i] == 0xFF; ++i) {} // Allow excess $FF values to make map easier to edit in hxd
   for (mapI = 0; mapI < m.boardArea; ++mapI) {
     initTile( & (m.board[mapI]), data[i]);
     ++i;
@@ -115,6 +115,44 @@ void initMapData(char data[]) {
     initUnit(m.board[temp].occupying, data[i], data[i + 1], data[i + 2], player2team);
   }
   i++;
+}
+
+unsigned char vera_scroll_array[][2] = {
+	{13, 80},
+	{17, 96},
+	{22, 112},
+	{25, 128},
+};
+
+extern unsigned char screen_width;
+extern unsigned char screen_height;
+
+extern unsigned char game_width;
+extern unsigned char game_height;
+extern unsigned char gui_vera_offset;
+
+void mapData_setScreenRegisters() {
+	unsigned char tx, ty;
+	unsigned char i;
+	tx = 15;
+	ty = 10;
+	for (i = 0; i < 4; ++i) {
+		if (m.boardHeight < vera_scroll_array[i][0] || m.boardWidth < vera_scroll_array[i][0]) {
+			break;
+		}
+		tx = (vera_scroll_array[i][0] * 3) >> 1;
+		ty = vera_scroll_array[i][0];
+	}
+	--i;
+	POKE(0x9F2A, vera_scroll_array[i][1]);
+	POKE(0x9F2B, PEEK(0x9F2A));
+	
+	screen_height = 6 + ty;
+	screen_width = 6 + tx;
+	
+	game_width = tx;
+	game_height = ty;
+	gui_vera_offset = 0x40 + game_height;
 }
 
 extern struct Menu menuOptions;
@@ -197,15 +235,15 @@ extern void __fastcall__ clear_sprite_table(unsigned char from);
 void __fastcall__ win(unsigned char team) {
   unsigned short i;
 
-  POKE(0x9F20, (7 - (colorstringlengths[team] >> 1)) << 1);
-  POKE(0x9F21, 0x44);
+  POKE(0x9F20, ((game_width >> 1) - (colorstringlengths[team] >> 1)) << 1);
+  POKE(0x9F21, 0x40 + (game_height >> 1));
   POKE(0x9F22, 0x10);
   for (i = 0; i < colorstringlengths[team]; ++i) {
     POKE(0x9F23, colorstrings[team][i]);
     POKE(0x9F23, 0x80);
   }
-  POKE(0x9F20, 10);
-  POKE(0x9F21, 0x45);
+  POKE(0x9F20, 2 * ((game_width >> 1) - 2));
+  POKE(0x9F21, 0x41 + (game_height >> 1));
 
   POKE(0x9F23, 0xb6); // w
   POKE(0x9F23, 0x80);
@@ -216,8 +254,21 @@ void __fastcall__ win(unsigned char team) {
   POKE(0x9F23, 0xb2); // s
   POKE(0x9F23, 0x80);
 
-	//clear_sprite_table(0);
-	POKE(0x9F29, 0x31);
+	POKEW(0x9F20, 0xFC00);
+	POKE(0x9F22, 0x11);
+	i = 5;
+	while (i != 0) {
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		__asm__ ("stz $9F23");
+		--i;
+	}
 
 	zsm_stopmusic();
 	pcm_trigger_digi(MISSION_SUCCESS_MUSIC_BANK, HIRAM_START);
@@ -229,6 +280,7 @@ void __fastcall__ win(unsigned char team) {
     waitforjiffy();
     --i;
   }
+	POKE(0x9F29, 0x31);
 	POKE(0x00, MAP_HIRAM_BANK);
   returnToMenu = 1;
 }
@@ -510,7 +562,7 @@ unsigned char explosionSpriteOffsets[] = {
 
 
 void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_camera) {
-  unsigned char i;
+  static unsigned char i;
   unsigned short temp;
   unsigned char tx;
   unsigned char ty;
@@ -612,6 +664,8 @@ void drawMvmtArrow(unsigned char arr_len) {
 	unsigned char i;
 	unsigned char v_hflip = 0;
 	unsigned short temp;
+	
+	if (arr_len == 0) { return; }
 	
 	POKEW(0x9F20, 0xFC28);
 	POKE(0x9F22, 0x11);
@@ -799,7 +853,7 @@ void newTurnUnit(struct Unit * u, unsigned short i) {
 }
 
 void clearUnitFromScreen(unsigned char x, unsigned char y) {
-  if (x >= m.left_view && x < m.left_view + 15 && y >= m.top_view && y < m.top_view < 10) {
+  if (x >= m.left_view && x < m.left_view + game_width && y >= m.top_view && y < m.top_view < game_height) {
     POKE(0x9F22, 0x10);
     POKE(0x9F20, (x - m.left_view) << 1);
     POKE(0x9F21, y - m.top_view + 0x40);
@@ -819,64 +873,85 @@ unsigned char canCarryUnit(unsigned char carrier_index, unsigned char carried_in
 }
 unsigned char maxSteps;
 struct Unit * checkU;
-struct Tile tempT;
+struct Tile * tempT;
 
 unsigned char actually_move = 1;
 unsigned char mvmtNegFactor;
 unsigned char recurs_depth;
 
+unsigned char asm_tx;
+unsigned char asm_ty;
+unsigned char asm_steps;
+
+struct Unit *asm_tempt_occupying;
+unsigned char *asm_temp_t_mvmtcosts;
+
 unsigned char path_array_x[16];
 unsigned char path_array_y[16];
 
+extern unsigned char __fastcall__ sabs(unsigned char a, unsigned char b);
+extern unsigned char __fastcall__ test_check_space();
+extern unsigned char __fastcall__ test_check_unit();
+
 unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned char steps) {
-  if (tx >= m.boardWidth || ty >= m.boardHeight) {
-    return 0;
-  }
-	if (SABS(checkU->x, tx) + SABS(checkU->y, ty) > maxSteps - steps) {
-		return 0;
-	}
-  if (tx == checkU->x && ty == checkU->y) {
+	asm_tx = tx;
+	asm_ty = ty;
+	asm_steps = steps;
+
+	asm_tx = test_check_space();
+	if (asm_tx == 0) { return 0; }
+	if (asm_tx == 1) { 
 		path_array_x[recurs_depth] = tx;
 		path_array_y[recurs_depth] = ty;
     return 1;
-  }
-  tempT = m.board[ty * m.boardWidth + tx];
+	}	
+  tempT = &(m.board[ty * m.boardWidth + tx]);
+	asm_tempt_occupying = tempT->occupying;
+	asm_temp_t_mvmtcosts = tempT->t->mvmtCosts;
+	
+	if (test_check_unit() == 0) { return 0; }
+	steps = asm_steps;
+	/*
   if (checkU->airborne) {
     ++steps;
   } else {
-    if (tempT.occupying != NULL && tempT.occupying->team != checkU->team) {
+    if (tempT->occupying != NULL && tempT->occupying->team != checkU->team && actually_move) {
       return 0;
     }
-    if (!tempT.t->mvmtCosts[checkU->mvmtType]) {
+    if (!tempT->t->mvmtCosts[checkU->mvmtType]) {
       return 0;
     }
-    steps += tempT.t->mvmtCosts[checkU->mvmtType];
+    steps += tempT->t->mvmtCosts[checkU->mvmtType];
   }
   if (steps > maxSteps) {
     return 0;
   }
+	*/
 
   /* recursive calls */
 	++recurs_depth;
   if (SHRTCIRCUIT_AND(tx != 0, checkSpaceInMvmtRange(tx - 1, ty, steps))) {
     --recurs_depth;
-		path_array_x[recurs_depth] = tx;
-		path_array_y[recurs_depth] = ty;
+		if (actually_move == 0) {
+			path_array_x[recurs_depth] = tx;
+			path_array_y[recurs_depth] = ty;
+		}
 		return 1;
-  } /*else {
-		--depth;
-	}
-	++depth;*/
+  }
   if (SHRTCIRCUIT_AND(ty != 0, checkSpaceInMvmtRange(tx, ty - 1, steps))) {
 		--recurs_depth;
-		path_array_x[recurs_depth] = tx;
-		path_array_y[recurs_depth] = ty;
+		if (actually_move == 0) {
+			path_array_x[recurs_depth] = tx;
+			path_array_y[recurs_depth] = ty;
+		}
     return 1;
   }
   if (checkSpaceInMvmtRange(tx + 1, ty, steps) || checkSpaceInMvmtRange(tx, ty + 1, steps)) {
 		--recurs_depth;
-		path_array_x[recurs_depth] = tx;
-		path_array_y[recurs_depth] = ty;
+		if (actually_move == 0) {
+			path_array_x[recurs_depth] = tx;
+			path_array_y[recurs_depth] = ty;
+		}
 		return 1;
 	} else {
 		--recurs_depth;
@@ -891,6 +966,7 @@ unsigned char baseLastHP = 255;
 
 unsigned char unitChangedPosition;
 
+
 unsigned char move(struct Unit * u, unsigned char x, unsigned char y) {
   if (!u->takenAction && x < m.boardWidth && y < m.boardHeight) {
     if (m.board[y * m.boardWidth + x].occupying != NULL && m.board[y * m.boardWidth + x].occupying != u) {
@@ -900,7 +976,8 @@ unsigned char move(struct Unit * u, unsigned char x, unsigned char y) {
       } else if (!canCarryUnit(m.board[y * m.boardWidth + x].occupying->index, u->index) || m.board[y * m.boardWidth + x].occupying->carrying != NULL) {
         /* Check if units can be joined together. if yes continue to main part */
         if (m.board[y * m.boardWidth + x].occupying->index != u->index || m.board[y * m.boardWidth + x].occupying->health == 100 || u->health == 100) {
-          return 0;
+					// Allows arrow to overlap units on same team 
+          if (actually_move) { return 0; } 
         }
       }
     }
@@ -925,7 +1002,7 @@ unsigned char move(struct Unit * u, unsigned char x, unsigned char y) {
 					baseLastHP = m.board[unitLastY * m.boardWidth + unitLastX].base->health;
 					m.board[unitLastY * m.boardWidth + unitLastX].base->health = 20;
 				}
-				if (u->x >= m.left_view && u->x < m.left_view + 15 && u->y >= m.top_view && u->y < m.top_view + 10) {
+				if (u->x >= m.left_view && u->x < m.left_view + game_width && u->y >= m.top_view && u->y < m.top_view + game_height) {
 					POKE(0x9F20, (unitLastX - m.left_view) << 1);
 					POKE(0x9F21, 0x40 + unitLastY - m.top_view);
 					POKE(0x9F22, 0x00);
@@ -972,6 +1049,7 @@ unsigned char move(struct Unit * u, unsigned char x, unsigned char y) {
   }
   return 0;
 }
+
 void undoMove(struct Unit * u) {
   m.board[u->y * m.boardWidth + u->x].occupying = NULL;
   POKE(0x9F20, (u->x - m.left_view) * 2);

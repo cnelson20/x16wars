@@ -3,6 +3,8 @@
 .import _m
 .import _player1team
 .import _player2team
+.import _game_width
+.import _game_height
 
 .struct Map
 	top_view .byte
@@ -62,7 +64,7 @@
 	critical .byte
 .endstruct
 
-.import pushax, mulax6, tosmulax, tosaddax
+.import pushax, mulax6, tosmulax, tosaddax, popa
 .importzp ptr1, ptr2, ptr3
 .importzp tmp1, tmp2
 
@@ -101,7 +103,7 @@ stx @i + 1
 
 @draw_loop:
 lda @y
-cmp #10
+cmp _game_height
 bne :+
 jmp @end
 :
@@ -153,7 +155,7 @@ sta $9F21
 lda @x
 inc A 
 sta @x
-cmp #15
+cmp _game_width
 bcc @dont_inc_y
 
 clc ; Add map boardWidth to i, then subtract 15
@@ -165,7 +167,7 @@ adc #0
 sta @i + 1
 sec 
 lda @i
-sbc #15
+sbc _game_width
 sta @i 
 lda @i + 1
 sbc #0
@@ -415,7 +417,7 @@ jmp @no_unit_present
 lda @y
 sec 
 sbc _m + Map::top_view
-cmp #10
+cmp _game_height
 bcs @check_offscreen_jmp_inc_vars
 
 ldy #Unit::carrying
@@ -620,7 +622,7 @@ sta ptr1 + 1
 lda @x
 inc A 
 sta @x
-cmp #15
+cmp _game_width
 bcc @dont_inc_y
 
 clc ; Add map boardWidth to i, then subtract 15
@@ -632,7 +634,7 @@ adc #0
 sta @i + 1
 sec 
 lda @i
-sbc #15
+sbc _game_width
 sta @i 
 lda @i + 1
 sbc #0
@@ -641,7 +643,8 @@ sta @i + 1
 lda @y
 inc A
 sta @y
-cmp #11
+dec A ; sub 1
+cmp _game_height
 bcs @end
 
 stz @x
@@ -669,7 +672,7 @@ rts
 .export _checkOldUnits
 _checkOldUnits:
 @i = $10 ; word size 
-@remove_render_flag = $12
+@remove_render_flag = $08
 ldx _player1team
 stz @units_exist_array, X
 ldx _player2team
@@ -693,6 +696,9 @@ lda _m + Map::board
 sta ptr1
 lda _m + Map::board + 1
 sta ptr1 + 1
+
+stz @i
+stz @i + 1	
 	
 @main_loop:	
 lda @i + 1
@@ -703,7 +709,6 @@ lda @i
 cmp _m + Map::boardArea
 bcs @end_loop
 @body_loop:
-
 ldy #Tile::occupying
 lda (ptr1), Y
 sta ptr2
@@ -714,7 +719,7 @@ bne @do_unit_stuff
 lda ptr2
 beq @tile_occupying_null
 @do_unit_stuff:
-
+;stp
 ; set unit team array ; 
 ldy #Unit::team
 lda (ptr2), Y
@@ -723,20 +728,21 @@ lda #1
 sta @units_exist_array, X 
 
 lda ptr1
-pha
+sta ptr3
 lda ptr1 + 1
-pha 
+sta ptr3 + 1
 
 lda @remove_render_flag
 beq :+
+
 lda ptr2
 ldx ptr2 + 1
 jsr _removeRenderUnit
 :
 
-pla 
+lda ptr3 + 1
 sta ptr1 + 1
-pla 
+lda ptr3
 sta ptr1
 
 
@@ -771,6 +777,164 @@ lda _player1team ; vice versa from above
 jmp _win
 :
 rts
-	
 @units_exist_array:
 	.res 4, 0
+
+.import _checkU
+.import _maxSteps
+.import _tempT
+
+.import _actually_move
+.import _mvmtNegFactor
+.import _recurs_depth
+
+.import _path_array_x
+.import _path_array_y
+
+.import _asm_tx
+.import _asm_ty
+.import _asm_steps
+
+_sabs_use_ax:
+	stx _sabs_temp
+	jmp _sabs_entry
+
+.export _test_check_space
+_test_check_space:
+	lda _asm_tx
+	cmp _m + Map::boardWidth
+	bcs check_return_0
+	lda _asm_ty
+	cmp _m + Map::boardHeight
+	bcs check_return_0
+	
+	lda _checkU
+	sta ptr1 
+	lda _checkU + 1
+	sta ptr1 + 1
+	
+	ldy #Unit::xx
+	lda (ptr1), Y
+	sta tmp1
+	cmp _asm_tx 
+	bne :+
+	ldy #Unit::yy
+	lda (ptr1), Y
+	cmp _asm_ty
+	beq check_return_1
+	:
+	
+	ldy #Unit::xx
+	lda (ptr1), Y
+	ldx _asm_tx
+	jsr _sabs_use_ax
+	sta tmp2 
+	
+	ldy #Unit::yy
+	lda (ptr1), Y
+	ldx _asm_ty
+	jsr _sabs_use_ax
+	clc 
+	adc tmp2
+	adc _asm_steps
+	cmp _maxSteps 
+	beq :+
+	bcs check_return_0
+	:
+	
+	
+	lda #$FF
+	rts
+check_return_0:
+	lda #0
+	rts
+check_return_1:
+	lda #1
+	rts
+
+
+.import _asm_tempt_occupying
+.import _asm_temp_t_mvmtcosts
+;
+; void test_check_unit(); 
+;
+.export _test_check_unit
+_test_check_unit:
+	lda _checkU
+	sta ptr1 
+	lda _checkU + 1
+	sta ptr1 + 1
+	ldy #Unit::airborne
+	lda (ptr1), Y
+	bne @unit_is_airborne
+	
+	lda _asm_tempt_occupying
+	sta ptr2 
+	bne :+
+	lda _asm_tempt_occupying + 1
+	beq @past_overlap_check	
+	:
+	
+	lda _asm_tempt_occupying + 1
+	sta ptr2 + 1
+	ldy #Unit::team 
+	lda (ptr1), Y
+	cmp (ptr2), Y
+	beq :+
+	lda _actually_move
+	beq :+
+	jmp check_return_0
+	:
+@past_overlap_check:
+	lda _asm_temp_t_mvmtcosts
+	sta ptr3 
+	lda _asm_temp_t_mvmtcosts + 1
+	sta ptr3 + 1
+	
+	ldy #Unit::mvmtType
+	lda (ptr1), Y
+	tay 
+	lda (ptr3), Y
+	bne :+
+	jmp check_return_0
+	:
+	
+	clc 
+	adc _asm_steps
+	sta _asm_steps
+
+	bra @past_increments
+@unit_is_airborne:
+	inc _asm_steps
+@past_increments:
+	lda _asm_steps
+	dec A 
+	cmp _maxSteps
+	bcs check_return_0
+	
+	jmp check_return_1	
+	
+;
+; unsigned char __fastcall__ sabs(unsigned char a, unsigned char b);
+;
+.export _sabs
+_sabs:
+	sta _sabs_temp
+	jsr popa
+_sabs_entry:
+	cmp _sabs_temp
+	bcc :+
+	sec 
+	sbc _sabs_temp
+	rts
+	:
+	ldx _sabs_temp
+	sta _sabs_temp
+	txa
+	sec 
+	sbc _sabs_temp
+	rts
+	
+_sabs_temp:
+	.byte 0
+	

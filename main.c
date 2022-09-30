@@ -13,37 +13,19 @@
 #include "fastroutines.h"
 
 /* global variables */
-/*
-char testMapData[] = {19,12,// height and width
-0x00, 0x04, 0x0D, 0x00, 0x05, 0x0E, 0x01, 0x06, 0x01, 0x00, 0x07, 0x0C, 0x01, 0x07, 0x13, 0x03, 0x07, 0x0B,
-0x01, 0x08, 0x12, 0x03, 0x08, 0x0B, 0x04, 0x08, 0x0A, 0x00, 0x09, 0x09, 0x02, 0x09, 0x10, 0x03, 0x09, 0x03,
-0x01, 0x0A, 0x11, 0x03, 0x0A, 0x03, 0x04, 0x0A, 0x02, 0x02, 0x0B, 0x10, 0x03, 0x0B, 0x02, 255, // red units
-0x12, 0x04, 0x0C, 0x11, 0x05, 0x11, 0x11, 0x06, 0x01, 0x10, 0x07, 0x0B, 0x11, 0x07, 0x13, 0x0E, 0x08, 0x0A,
-0x10, 0x08, 0x0B, 0x11, 0x08, 0x13, 0x0E, 0x09, 0x02, 0x0F, 0x09, 0x03, 0x10, 0x09, 0x10, 0x12, 0x09, 0x09,
-0x0E, 0x0A, 0x03, 0x0F, 0x0A, 0x03, 0x11, 0x0A, 0x12, 0x0E, 0x0B, 0x02, 0x0F, 0x0B, 0x03, 255, // blue units
-
-  0x07,0x07,0x01,0x01,0x01,0x01,0x06,0x05,0x06,0x01,0x06,0x05,0x06,0x01,0x01,0x01,0x01,0x07,0x07,
-  0x07,0x05,0x06,0x01,0x01,0x01,0x05,0x44,0x05,0x01,0x05,0x45,0x05,0x01,0x01,0x01,0x06,0x05,0x07,
-  0x07,0x05,0x06,0x01,0x01,0x01,0x06,0x05,0x07,0x01,0x07,0x05,0x06,0x01,0x01,0x01,0x06,0x05,0x07,
-  0x43,0x05,0x05,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x05,0x05,0x43,
-  0x05,0x43,0x07,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x07,0x43,0x05,
-  0x05,0x05,0x06,0x05,0x05,0x05,0x05,0x06,0x05,0x05,0x05,0x06,0x05,0x05,0x05,0x05,0x06,0x05,0x05,
-  0x03,0x03,0x03,0x03,0x03,0x03,0x06,0x43,0x06,0x03,0x06,0x43,0x06,0x03,0x03,0x03,0x03,0x03,0x03,
-  0x05,0x02,0x05,0x05,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x05,0x05,0x02,0x05,
-  0x07,0x02,0x06,0x05,0x05,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x05,0x05,0x06,0x02,0x07,
-  0x05,0x02,0x05,0x05,0x05,0x06,0x07,0x05,0x06,0x01,0x06,0x05,0x07,0x06,0x05,0x05,0x05,0x02,0x05,
-  0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,
-  0x05,0x06,0x05,0x05,0x06,0x05,0x05,0x43,0x05,0x01,0x05,0x43,0x05,0x05,0x05,0x06,0x05,0x05,0x06,
-  // tiles
-};
-char *testMap = testMapData;
-*/
-
 extern unsigned char customPalette[];
 extern unsigned char player1team;
 extern unsigned char player2team;
 extern unsigned char returnToMenu;
 extern struct Terrain terrainArray[];
+
+unsigned char screen_width = 20;
+unsigned char screen_height = 15;
+
+unsigned char game_width = 15;
+unsigned char game_height = 10;
+
+unsigned char gui_vera_offset = 0x4A;
 
 unsigned char keyCode;
 struct Map m;
@@ -193,8 +175,10 @@ void print_ascii_str(char *string, unsigned char break_on_period) {
 }
 
 void print_converted_str(unsigned char *string) {
+	POKE(0x9F22, 0x10);
 	while (*string) {
 		POKE(0x9F23, *string);
+		POKE(0x9F23, 0x80);
 		++string;
 	}
 }
@@ -292,7 +276,7 @@ void menu() {
       /* redraw cursor showing selected map */
       POKE(0x9F20, 2);
       POKE(0x9F22, 0);
-      for (i = 6; i < 15; ++i) {
+      for (i = 6; i < screen_height; ++i) {
         POKE(0x9F21, 0x40 + i);
         POKE(0x9F23, 0x88);
       }
@@ -432,6 +416,9 @@ void setup_menu() {
 	
   POKE(0x9F25, 0);
   POKE(0x9F29, 0x31);
+	POKE(0x9F2A, 64); // hscale
+	POKE(0x9F2B, 64); // vscale 
+	
 
   POKE(0x9F20, 0);
   POKE(0x9F21, 0);
@@ -459,6 +446,8 @@ extern unsigned char terrainIsSet[LEN_TERRAIN_ARRAY];
 extern unsigned char path_array_x[16];
 extern unsigned char path_array_y[16];
 
+extern void mapData_setScreenRegisters();
+
 void game_start() {
   /* Reset some game variables */
   memset( &c, 0, sizeof(c));
@@ -468,11 +457,13 @@ void game_start() {
 	
 	setup_mem();
 	
+	mapData_setScreenRegisters();
+	
   unitLastX = 255;
   unitLastX = 255;
   unitLastFuel = 255;
   baseLastHP = 255;
-
+	
   POKE(0x9F25, 0);
   POKE(0x9F29, 0x71);
   clearScreen();
@@ -498,10 +489,10 @@ void game_start() {
 void setup() {
 
   POKE(0x9F29, 0x71);
-  __asm__("lda #$40");
-  __asm__("sta $9F2A");
-  __asm__("sta $9F2B");
-
+  
+	POKE(0x9F2A, 64); // hscale
+	POKE(0x9F2B, 64); // vscale 
+  
   __asm__("stz $9F25");
 
   __asm__("stz $9F30");
@@ -772,6 +763,7 @@ unsigned char damageString[] = {0xa3, 0xac, 0xa6};
 
 void clearRestOfLine() {
   POKE(0x9F22, 0x20);
+	POKE(0x9F20, PEEK(0x9F20) & 0xFE);
   while (PEEK(0x9F20) < 40) {
     POKE(0x9F23, 28);
   }
@@ -779,7 +771,7 @@ void clearRestOfLine() {
 
 void clearOtherLines() {
   __asm__("inc $9F21");
-  while (PEEK(0x9F21) < 0x4F) {
+  while (PEEK(0x9F21) < screen_height + 0x40) {
     __asm__("stz $9F20");
     clearRestOfLine();
     __asm__("inc $9F21");
@@ -795,7 +787,7 @@ void drawUI() {
 
   //clearUI();
 
-  POKE(0x9F20, 16 * 2);
+  POKE(0x9F20, (game_width + 1) * 2);
   POKE(0x9F21, 0x41);
   POKE(0x9F22, 0x10);
 
@@ -814,7 +806,7 @@ void drawUI() {
 
   if (menuOptions.length != 0) {
     // display menu options
-    POKE(0x9F21, 0x40 + 11);
+    POKE(0x9F21, gui_vera_offset + 1);
     POKE(0x9F22, 0x20);
     for (dummy = 0; dummy < menuOptions.length; dummy++) {
       POKE(0x9F20, 2);
@@ -828,7 +820,7 @@ void drawUI() {
   } else {
     if (m.board[c.x + m.left_view + m.boardWidth * (c.y + m.top_view)].base != NULL && (unitPointer == NULL || c.selected != NULL)) {
       struct Captureable *capt = m.board[c.x + m.left_view + m.boardWidth * (c.y + m.top_view)].base;
-      drawText(baseTypes[capt->type], baseTypeStringLengths[capt->type], 1, 11, 1);
+      drawText(baseTypes[capt->type], baseTypeStringLengths[capt->type], 1, gui_vera_offset - 0x40 + 1, 1);
       POKE(0x9F20, (baseTypeStringLengths[capt->type] + 1) << 1);
       POKE(0x9F22, 0x10);
 
@@ -845,7 +837,7 @@ void drawUI() {
       }
       clearRestOfLine();
 
-      POKE(0x9F21, 0x40 + 12);
+      POKE(0x9F21, gui_vera_offset + 2);
       POKE(0x9F20, 2);
       POKE(0x9F22, 0x20);
       POKE(0x9F23, 'H' - 'A' + 160);
@@ -857,11 +849,11 @@ void drawUI() {
       clearOtherLines();
     } else if (unitPointer != NULL) {
       dummy = unitIndexes[unitPointer->index];
-      drawText(unitNames[dummy], unitNameLengths[dummy], 1, 11, 1);
+      drawText(unitNames[dummy], unitNameLengths[dummy], 1, gui_vera_offset - 0x40 + 1, 1);
       clearRestOfLine();
 
       POKE(0x9F20, 2);
-      POKE(0x9F21, 0x40 + 12);
+      POKE(0x9F21, gui_vera_offset + 2);
       POKE(0x9F22, 0x20);
       POKE(0x9F23, 183); // X
       if (unitPointer->x >= 10) {
@@ -926,7 +918,7 @@ void drawUI() {
         drawText(damageString, sizeof(damageString), 1, 13, 1);
 
         POKE(0x9F20, 2 * 5);
-        POKE(0x9F21, 0x40 + 13);
+        POKE(0x9F21,gui_vera_offset + 3);
         POKE(0x9F22, 0x20);
         if (damageHundredsDigit != 186 /* A zero */ ) {
           POKE(0x9F23, damageHundredsDigit);
@@ -968,7 +960,7 @@ void clearUI() {
   }
 
   POKE(0x9F21, 0x4A);
-  while (PEEK(0x9F21) < 0x54) {
+  while (PEEK(0x9F21) < 0x40 + screen_height) {
     POKE(0x9F20, 0);
     __asm__("lda #28");
     __asm__("ldx #$80");
@@ -1031,6 +1023,7 @@ void keyPressed() {
       if (c.selected != NULL) {
 				pcm_trigger_digi(UNSELECT_BANK, HIRAM_START);
         undoMove(c.selected);
+				calculate_unit_path();
 				typemenu = 0;
       }
       if (pA != NULL) {
@@ -1243,11 +1236,11 @@ void keyPressed() {
         }
       } /* S */
       else if (keyCode == 0x53) {
-        if (c.y >= 7 /* 9 - 2 */) {
-          if (m.boardHeight - m.top_view >= 11 /*10 + 1*/ ) {
+        if (c.y >= game_height - 3 /* eg. 10 - 3 */) {
+          if (m.boardHeight - m.top_view >= game_height + 1 /* eg. 10 + 1 */ ) {
             ++m.top_view;
 						cursorHasMoved = 1;
-          } else if (c.y < 9) {
+          } else if (c.y < game_height - 1) {
 						++c.y;
 						cursorHasMoved = 1;
 					}
@@ -1257,11 +1250,11 @@ void keyPressed() {
         }
       } /* D */
       else if (keyCode == 0x44) {
-        if (c.x >= 12 /* 14 - 2 */) {
-          if (m.boardWidth - m.left_view >= 16 /*15 + 1*/ ) {
+        if (c.x >= game_width - 3 /* eg. 15 - 3 */) {
+          if (m.boardWidth - m.left_view >= game_width + 1 /* eg. 15 + 1 */ ) {
             ++m.left_view;
 						cursorHasMoved = 1;
-          } else if (c.x < 14) {
+          } else if (c.x < game_width - 1) {
 						++c.x;
 						cursorHasMoved = 1;
 					}
@@ -1272,9 +1265,9 @@ void keyPressed() {
       } /* U */
       else if (keyCode == 0x55) {
         if (c.selected != NULL) {
-          if (unitLastX == 255) {
-						unsigned char i;
-						
+					unsigned char i;
+          
+					if (unitLastX == 255) {
 						pcm_trigger_digi(UNSELECT_BANK, HIRAM_START);
             c.selected = NULL;
             c.x = c.storex;
@@ -1290,7 +1283,9 @@ void keyPressed() {
 							__asm__ ("stz $9F23");
 						}
           } else {
-            undoMove(c.selected);
+            // This shouldn't happen i think 
+						undoMove(c.selected);
+						//calculate_unit_path();
           }
         }
       } /* I */
@@ -1313,6 +1308,9 @@ void keyPressed() {
             c.storey = c.y;
             m.store_left_view = m.left_view;
             m.store_top_view = m.top_view;
+						
+						path_array_x[0] = 0xFF;
+						//path_array_y[1] = 0xFF;
           }
         } else {
           if (unitLastX == 255) {
@@ -1370,39 +1368,52 @@ void keyPressed() {
 			if (cursorHasMoved) {
 				pcm_trigger_digi(MAP_CURSOR_MOVE_BANK, HIRAM_START);
 				if (c.selected != NULL) {
-					unsigned char i;
-					
-					POKEW(0x9F20, 0xFC28);
-					POKE(0x9F22, 0x11);
-					for (i = 120; i > 0; --i) {
-						__asm__ ("stz $9F23");
-					}
-					mvmtNegFactor = 0;
-					if (c.x + m.left_view != c.selected->x || c.y + m.top_view != c.selected->y) {
-						actually_move = 0;
-						for (i = 0; 1; ++i) {
-							if (0 == move(c.selected, c.x + m.left_view, c.y + m.top_view)) { break; }
-							++mvmtNegFactor;
-						}
-					}
-					if (mvmtNegFactor != 0) {
-						--mvmtNegFactor;
-						
-						memset(path_array_x, 0xFF, 16);
-						memset(path_array_y, 0xFF, 16);
-					
-						move(c.selected, c.x + m.left_view, c.y + m.top_view);
-						mvmtNegFactor = 0;
-						for (i = 0; path_array_x[i] != 0xFF; ++i) {}
-						drawMvmtArrow(i);
-					}
-					actually_move = 1;
+					calculate_unit_path();
 				}
 			}				
     }
   }
   return;
 }
+
+void calculate_unit_path() {
+	unsigned char i;
+					
+	mvmtNegFactor = 0;
+	if (c.x + m.left_view != c.selected->x || c.y + m.top_view != c.selected->y) {
+		actually_move = 0;
+		for (i = 0; 1; ++i) {
+			if (0 == move(c.selected, c.x + m.left_view, c.y + m.top_view)) { break; }
+			++mvmtNegFactor;
+		}		
+		if (mvmtNegFactor != 0) {
+			--mvmtNegFactor;
+			
+			POKEW(0x9F20, 0xFC28);
+			POKE(0x9F22, 0x11);
+			for (i = 120; i > 0; --i) {
+				__asm__ ("stz $9F23");
+			}
+			memset(path_array_x, 0xFF, 16);
+			memset(path_array_y, 0xFF, 16);
+				
+			move(c.selected, c.x + m.left_view, c.y + m.top_view);
+			mvmtNegFactor = 0;
+			//for (i = 0; path_array_x[i] != 0xFF; ++i) {}
+			//drawMvmtArrow(i);
+		}
+		for (i = 0; path_array_x[i] != 0xFF; ++i) {}
+		drawMvmtArrow(i);
+		actually_move = 1;
+	} else {
+		POKEW(0x9F20, 0xFC28);
+		POKE(0x9F22, 0x11);
+		for (i = 120; i > 0; --i) {
+			__asm__ ("stz $9F23");
+		}
+	}
+}
+
 
 void loadPalette() {
   unsigned char i;
@@ -1428,29 +1439,28 @@ void clearScreen() {
   POKE(0x9F20, 0);
   POKE(0x9F21, 0);
   POKE(0x9F22, 0x10);
-  while (PEEK(0x9F21) < 15) {
-    if (PEEK(0x9F20) >= 30 || PEEK(0x9F21) >= 10) {
-      if (PEEK(0x9F20) >= 40) {
-        POKE(0x9F20, 0);
-        __asm__("inc $9F21");
-      } else {
-        POKE(0x9F23, 0x88);
-        POKE(0x9F23, 0x80);
-      }
-    } else {
-      POKE(0x9F23, 28);
-      POKE(0x9F23, 0);
-    }
+  while (PEEK(0x9F21) < game_height) {
+		if (PEEK(0x9F20) >= (screen_width << 1)) {
+			__asm__ ("stz $9F20");
+			__asm__ ("inc $9F21");
+			continue;
+		} else if (PEEK(0x9F20) < (game_width << 1)) {
+			POKE(0x9F23, 28);
+		} else {
+			POKE(0x9F23, 0x88);
+		}
+		POKE(0x9F23, 0x80);
+	}
+	while (PEEK(0x9F21) < screen_height) {
+    POKE(0x9F23, 0x88);
+    POKE(0x9F23, 0x80);
   }
+	
   POKE(0x9F20, 0);
   POKE(0x9F21, 0x40);
-  while (PEEK(0x9F21) < 0x4F) {
+  while (PEEK(0x9F21) < 0x40 + screen_height) {
     POKE(0x9F23, 28);
     POKE(0x9F23, 0);
-    if (PEEK(0x9F20) >= 40) {
-      POKE(0x9F20, 0);
-      __asm__("inc $9F21");
-    }
   }
 
   return;
