@@ -1,7 +1,8 @@
 void main();
 void setup();
 void loadGraphics();
-void loadPalette();
+
+void load_file(unsigned char sa);
 
 void game_start();
 

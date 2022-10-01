@@ -34,6 +34,11 @@ unsigned char oldbases;
 unsigned char currentunitsprites = 0;
 unsigned char oldunitsprites;
 
+unsigned char playerFunds[4];
+unsigned char playerUnitCounts[4];
+unsigned char playerFactoryCounts[4];
+unsigned char moneyMatters;
+
 #define GAME_MAX_UNITS 100
 #define GAME_MAX_BASES 32
 
@@ -61,6 +66,7 @@ struct Unit *malloc_unit() {
 	}
 }
 void free_unit(struct Unit *u) {
+	--playerUnitCounts[u->team];
 	unitArrayUses[(u - unitArray) / sizeof(struct Unit)] = 0;
 }
 
@@ -74,6 +80,13 @@ struct Captureable *malloc_captureable() {
 	}
 }
 
+extern unsigned char screen_width;
+extern unsigned char screen_height;
+
+extern unsigned char game_width;
+extern unsigned char game_height;
+extern unsigned char gui_vera_offset;
+
 // Map methods
 void initMap() {
   m.whoseTurn = player1team;
@@ -83,6 +96,19 @@ void initMap() {
   m.oldtop_view = 0;
   m.left_view = 0;
   m.oldleft_view = 0;
+	
+	screen_width = 20;
+	screen_height = 15;
+	game_width = 15;
+	game_height = 10;
+	gui_vera_offset = 0x4A;
+	
+	moneyMatters = 0;
+	
+	playerUnitCounts[player1team] = 0;
+	playerUnitCounts[player2team] = 0;
+	playerFunds[player1team] = 10;
+	playerFunds[player2team] = 10;
 }
 void initMapData(char data[]) {
   unsigned short i, mapI, temp;
@@ -92,7 +118,8 @@ void initMapData(char data[]) {
   m.boardHeight = data[1];
   m.boardArea = m.boardWidth * m.boardHeight;
 	m.board = (void *)0xA000;
-
+	POKE(0x00, MAP_HIRAM_BANK);
+	
   for (i = 2; data[i] != 0xFF; i += 3) {}
   i++;
   for (; data[i] != 0xFF; i += 3) {}
@@ -107,36 +134,31 @@ void initMapData(char data[]) {
     m.board[temp].occupying = malloc_unit();
 
     initUnit(m.board[temp].occupying, data[i], data[i + 1], data[i + 2], player1team);
+		++playerUnitCounts[player1team];
   }
   i++;
   for (; data[i] != 0xFF; i += 3) {
     temp = data[i] + m.boardWidth * data[i + 1];
     m.board[temp].occupying = malloc_unit();
     initUnit(m.board[temp].occupying, data[i], data[i + 1], data[i + 2], player2team);
+		++playerUnitCounts[player2team];
   }
   i++;
 }
 
 unsigned char vera_scroll_array[][2] = {
-	{13, 80},
-	{17, 96},
-	{22, 112},
+	{0, 64},
+	{14, 85},
 	{25, 128},
 };
-
-extern unsigned char screen_width;
-extern unsigned char screen_height;
-
-extern unsigned char game_width;
-extern unsigned char game_height;
-extern unsigned char gui_vera_offset;
+#define VERA_SCROLL_ARRAY_LEN 3
 
 void mapData_setScreenRegisters() {
 	unsigned char tx, ty;
 	unsigned char i;
 	tx = 15;
 	ty = 10;
-	for (i = 0; i < 4; ++i) {
+	for (i = 1; i < VERA_SCROLL_ARRAY_LEN; ++i) {
 		if (m.boardHeight < vera_scroll_array[i][0] || m.boardWidth < vera_scroll_array[i][0]) {
 			break;
 		}
@@ -162,11 +184,11 @@ unsigned char captureablePaletteOffsets[] = {0xd, 0xd, 0xe, 0xe, 0x8};
 	{34, 42, 34, 42, 42}
 };*/
 unsigned char captureableSpriteOffsets[] = {
-	18, 34, 0, 0, // Red
-	26, 42, 0, 0, // Green
-	18, 34, 0, 0, // Blue
-	26, 42, 0, 0, // Yellow
-	26, 42, 0, 0, // Neutral
+	18, 34, 50, 0, // Red
+	26, 42, 58, 0, // Green
+	18, 34, 50, 0, // Blue
+	26, 42, 58, 0, // Yellow
+	26, 42, 58, 0, // Neutral
 };
 
 extern void render_tiles();
@@ -301,12 +323,17 @@ void nextTurn() {
 	
 
   if (turncounter > 0) {
-    renderMap();
     for (i = 0; i < m.boardArea; ++i) {
-      if ((m.board[i].occupying) != NULL) {
+      if (m.board[i].occupying != NULL) {
         newTurnUnit(m.board[i].occupying, i);
       }
+			if (m.board[i].base != NULL && m.board[i].base->team == m.whoseTurn) {
+				playerFunds[m.whoseTurn] += 1;
+			}
     }
+		if (playerFunds[m.whoseTurn] > 99) {
+			playerFunds[m.whoseTurn] = 99;
+		}
   }
 }
 
@@ -330,7 +357,7 @@ void initTile(struct Tile * t, unsigned char index) {
   t->base = NULL;
   t->occupying = NULL;
 
-  if (index >> 4 == 0x04) { // 0x40 <= index <= 0x4F
+  if (index >= 0x40 && index < 0x54) {
     unsigned char team = (index % 4 == 0 ? player1team : (index % 4 == 1 ? player2team : 4));
 
     t->base = malloc_captureable();
@@ -521,6 +548,10 @@ void renderCursor(unsigned char incFrame) {
 void initCaptureable(struct Captureable * c, unsigned char init_team, unsigned char init_type) {
   c->team = init_team;
   c->type = init_type;
+	if (init_type >= CAPTUREABLE_FACTORY) {
+		++playerFactoryCounts[init_team];
+		moneyMatters = 1;
+	}
   c->critical = init_type == 1;
   c->health = 20;
   /* 
@@ -530,15 +561,46 @@ void initCaptureable(struct Captureable * c, unsigned char init_team, unsigned c
   */
 }
 
+unsigned char unitsCanBuild[][10] = {
+	{0, 1, 2, 3, 9, 0xa, 0xb, 0xc, 0xd, 0xe},
+	{0x10, 0x11, 0x12, 0x13}, 
+	{0x18, 0x19, 0x1a, 0x1b},
+};
+
+unsigned char sizeOfUnitsBuildListMinus1[] = {9, 3, 3};
+unsigned char unitsCost[] = {
+	5,
+	4,
+	3,
+	1,
+	8,
+	16,
+	7,
+	12,
+	15,
+	6,
+	5,
+	9,
+	22,
+	20,
+	12,
+	20,
+	18,
+	28
+};
+
 void capture(struct Unit * u, struct Captureable * c) {
   unsigned char i;
 
   if (u->team != c->team) {
     i = (u->health + 9) / 10;
     if (i >= c->health) {
-      c->team = u->team;
-      c->health = 20;
-      ++unitsdeadthisturn;
+      if (c->type >= CAPTUREABLE_FACTORY) {
+				++playerFactoryCounts[m.whoseTurn];
+				--playerFactoryCounts[c->team];
+			}
+			c->team = u->team;
+			c->health = 20;
       if (c->critical) {
         win(m.whoseTurn);
       }
@@ -1190,7 +1252,7 @@ void attack(struct Unit * attacker, struct Unit * defender) {
     clearUnitFromScreen(defender->x, defender->y);
 		pcm_trigger_digi(UNIT_EXPLODING_BANK, HIRAM_START);
     renderUnitExplosion(defender->x, defender->y, 0);
-    free_unit(defender);
+		free_unit(defender);
   }
 }
 

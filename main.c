@@ -13,7 +13,6 @@
 #include "fastroutines.h"
 
 /* global variables */
-extern unsigned char customPalette[];
 extern unsigned char player1team;
 extern unsigned char player2team;
 extern unsigned char returnToMenu;
@@ -26,6 +25,8 @@ unsigned char game_width = 15;
 unsigned char game_height = 10;
 
 unsigned char gui_vera_offset = 0x4A;
+
+unsigned char build_mode;
 
 unsigned char keyCode;
 struct Map m;
@@ -190,7 +191,7 @@ extern char change_filename[];
 
 #define DEVICE_NUM 8
 
-char map_space[768];
+char *map_space = (char *)0xB800;
 
 void menu() {
   static unsigned char already_loaded_dir = 0;
@@ -294,7 +295,15 @@ void menu() {
       POKE(0x9F23, (player2team << 4) | 0x4);
     }
   }
-	strcpy(map_space, menu_files_array[c.x]);
+	i = 0;
+	j = 1;
+	while (j != 0) {
+		POKE(0x00, FILENAMES_BANK);
+		j = menu_files_array[c.x][i];
+		POKE(0x00, MAP_HIRAM_BANK);
+		map_space[i] = j;
+		++i;
+	}
   cbm_k_setnam(map_space);
   cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
 	POKE(0x00, MAP_HIRAM_BANK);
@@ -354,12 +363,11 @@ void menu() {
 	} else {
 		player2co = c.x;
 	}
-	load_co_music();
-	
+	load_co_music();	
   return;
 }
 
-char change_filename[32] = "cd:";
+char change_filename[10] = "cd:";
 void change_directory(char *s) {
   strcpy(change_filename + 3, s);
   cbm_k_setnam(change_filename);
@@ -443,8 +451,8 @@ extern unsigned char oldunitsprites;
 
 extern unsigned char terrainIsSet[LEN_TERRAIN_ARRAY];
 
-extern unsigned char path_array_x[16];
-extern unsigned char path_array_y[16];
+extern unsigned char path_array_x[12];
+extern unsigned char path_array_y[12];
 
 extern void mapData_setScreenRegisters();
 
@@ -464,6 +472,8 @@ void game_start() {
   unitLastFuel = 255;
   baseLastHP = 255;
 	
+	build_mode = 0;
+	
   POKE(0x9F25, 0);
   POKE(0x9F29, 0x71);
   clearScreen();
@@ -477,7 +487,7 @@ void game_start() {
 
 #define UNIT_CHR_FILELEN 4096
 #define TILE_CHR_FILELEN 1410
-#define SPRITE_CHR_FILELEN 1602
+#define SPRITE_CHR_FILELEN 2112
 #define LETTER_CHR_FILELEN 4738
 #define EXPL_CHR_FILELEN 4608
 
@@ -521,8 +531,7 @@ void setup() {
 	
 	POKE(0x00, MAP_HIRAM_BANK);
   cbm_k_setnam("red.chr");
-  cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
-  cbm_k_load(0, LOAD_ADDRESS);
+  load_file(0);
   POKE(0x9F20, 0x00);
   POKE(0x9F21, 0x80);
   POKE(0x9F22, 0x10);
@@ -532,8 +541,7 @@ void setup() {
   __asm__("jsr $FEE7");
 
   cbm_k_setnam("green.chr");
-  cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
-  cbm_k_load(0, LOAD_ADDRESS);
+  load_file(0);
   POKE(0x9F20, 0x00);
   POKE(0x9F21, 0x90);
   __asm__("jsr $FEE7");
@@ -546,15 +554,13 @@ void setup() {
   __asm__("jsr $FEE7");
 
   cbm_k_setnam("yellow.chr");
-  cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
-  cbm_k_load(0, LOAD_ADDRESS);
+  load_file(0);
   POKE(0x9F20, 0x00);
   POKE(0x9F21, 0xB0);
   __asm__("jsr $FEE7");
 
   cbm_k_setnam("tile.chr");
-  cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
-  cbm_k_load(0, LOAD_ADDRESS);
+  load_file(0);
   POKE(0x9F20, 0x00);
   POKE(0x9F21, 0xC0);
   //POKEW(0x2, (unsigned short)load_address);
@@ -563,16 +569,14 @@ void setup() {
   __asm__("jsr $FEE7");
 
   cbm_k_setnam("letter.chr");
-  cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
-  cbm_k_load(0, LOAD_ADDRESS);
+  load_file(0);
   POKE(0x9F20, 0x00);
   POKE(0x9F21, 0xD0);
   POKEW(0x6, LETTER_CHR_FILELEN);
   __asm__("jsr $FEE7");
 
   cbm_k_setnam("sprites.chr");
-  cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
-  cbm_k_load(0, LOAD_ADDRESS);
+  load_file(0);
   POKE(0x9F20, 0x00);
   POKE(0x9F21, 0x00);
   POKE(0x9F22, 0x11);
@@ -580,65 +584,63 @@ void setup() {
   __asm__("jsr $FEE7");
 
   cbm_k_setnam("expl.chr");
-  cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
-  cbm_k_load(0, LOAD_ADDRESS);
+  load_file(0);
   POKE(0x9F20, 0x00);
   POKE(0x9F21, 0x08);
-  POKE(0x9F22, 0x11);
+  //POKE(0x9F22, 0x11);
   POKEW(0x6, EXPL_CHR_FILELEN);
   __asm__("jsr $FEE7");
 
 	cbm_k_setnam("arrow.chr");
-	cbm_k_setlfs(0xFF, DEVICE_NUM, 2);
-	cbm_k_load(0, LOAD_ADDRESS);
+	load_file(2);
 	POKE(0x9F20, 0x00);
   POKE(0x9F21, 0x10);
-  POKE(0x9F22, 0x11);
+  //POKE(0x9F22, 0x11);
 	POKEW(0x6, ARROW_CHR_FILELEN);
+	__asm__("jsr $FEE7");
+	
+	cbm_k_setnam("palette.bin");
+	load_file(2);
+	POKE(0x9F20, 0x00);
+  POKE(0x9F21, 0xFA);
+	POKE(0x9F22, 0x11);
+	POKEW(0x6, 512);
 	__asm__("jsr $FEE7");
 	
 	change_directory("sound");
 	
 	/* Load sound effects */
 	cbm_k_setnam("expling.zcm");
-	cbm_k_setlfs(0, DEVICE_NUM, 2); // Header-less loading
 	POKE(0x00, UNIT_EXPLODING_BANK);
-	cbm_k_load(0, LOAD_ADDRESS);
+	load_file(0); // Header-less loading 
 	
 	cbm_k_setnam("mvcursor1.zcm");
-	cbm_k_setlfs(0, DEVICE_NUM, 2);
 	POKE(0x00, MAP_CURSOR_MOVE_BANK);
-	cbm_k_load(0, LOAD_ADDRESS);
+	load_file(2);
 	
 	cbm_k_setnam("mvcursor2.zcm");
-	cbm_k_setlfs(0, DEVICE_NUM, 2);
 	POKE(0x00, MENU_CURSOR_MOVE_BANK);
-	cbm_k_load(0, LOAD_ADDRESS);
+	load_file(2);
 	
 	cbm_k_setnam("selnounit.zcm");
-	cbm_k_setlfs(0, DEVICE_NUM, 2);
 	POKE(0x00, SELECT_NO_UNIT_BANK);
-	cbm_k_load(0, LOAD_ADDRESS);
+	load_file(2);
 	
 	cbm_k_setnam("selunit.zcm");
-	cbm_k_setlfs(0, DEVICE_NUM, 2);
 	POKE(0x00, SELECT_UNIT_BANK);
-	cbm_k_load(0, LOAD_ADDRESS);
+	load_file(2);
 	
 	cbm_k_setnam("unselect.zcm");
-	cbm_k_setlfs(0, DEVICE_NUM, 2);
 	POKE(0x00, UNSELECT_BANK);
-	cbm_k_load(0, LOAD_ADDRESS);
+	load_file(2);
 	
 	cbm_k_setnam("inaction.zcm");
-	cbm_k_setlfs(0, DEVICE_NUM, 2);
 	POKE(0x00, INVALID_ACTION_BANK);
-	cbm_k_load(0, LOAD_ADDRESS);
+	load_file(2);
 	
 	cbm_k_setnam("missuccess.zcm");
-	cbm_k_setlfs(0, DEVICE_NUM, 2);
 	POKE(0x00, MISSION_SUCCESS_MUSIC_BANK);
-	cbm_k_load(0, LOAD_ADDRESS);
+	load_file(2);
 	
 	/* 
 	Leaving this here for now:
@@ -646,8 +648,13 @@ void setup() {
 	*/
 	
 	change_directory("..");
-  loadPalette();
 }
+
+void __fastcall__ load_file(unsigned char sa) {
+	cbm_k_setlfs(0, DEVICE_NUM, sa);
+	cbm_k_load(0, LOAD_ADDRESS);
+}
+
 
 void draw() {
   renderMap();
@@ -757,7 +764,7 @@ unsigned char baseTypes[][9] = {
   {0xa7, 0xb0, 0x00},
   {0xa5, 0xa0, 0xa2, 0xb3, 0xae, 0xb1, 0xb8, 0x00},
 };
-unsigned char baseTypeStringLengths[] = {4, 2, 8};
+unsigned char baseTypeStringLengths[] = {4, 2, 7};
 
 unsigned char damageString[] = {0xa3, 0xac, 0xa6};
 
@@ -778,14 +785,22 @@ void clearOtherLines() {
   }
 }
 
+extern unsigned char unitsCanBuild[][10];
+extern unsigned char sizeOfUnitsBuildListMinus1[];
+extern unsigned char unitsCost[];
+extern unsigned char playerFunds[];
+extern unsigned char playerUnitCounts[];
+extern unsigned char moneyMatters;
+
 #define SCREENBYTE(a)((a) >= 10 ? 150 + (a) : 186 + (a))
 
 void drawUI() {
+	static unsigned char old_player_funds = 0xFF;
+	static unsigned char funds_tens_digit;
+	static unsigned char funds_ones_digit;
   struct Unit *unitPointer;
   void *test = NULL;
   unsigned char dummy;
-
-  //clearUI();
 
   POKE(0x9F20, (game_width + 1) * 2);
   POKE(0x9F21, 0x41);
@@ -795,7 +810,31 @@ void drawUI() {
   POKE(0x9F23, 0x80);
   POKE(0x9F23, 0x03 + (m.whoseTurn << 5)); // Infantry with color of current player's team
   POKE(0x9F23, m.whoseTurn << 4);
-
+	if (moneyMatters) {
+		__asm__ ("inc $9F21");
+		__asm__ ("inc $9F21");
+		POKE(0x9F20, (game_width + 1) * 2);
+		POKE(0x9F23, 0xA0 + 'g' - 'a');
+	
+		__asm__ ("inc $9F21");
+		POKE(0x9F20, game_width * 2);
+		POKE(0x9F22, 0x20);
+		if (playerFunds[m.whoseTurn] != old_player_funds) {
+			funds_tens_digit = 186 + playerFunds[m.whoseTurn] / 10;
+			funds_ones_digit = 186 + playerFunds[m.whoseTurn] % 10;
+			
+			old_player_funds = playerFunds[m.whoseTurn];
+		}
+		if (funds_tens_digit != 186) {
+			POKE(0x9F23, funds_tens_digit);
+		}
+		POKE(0x9F23, funds_ones_digit);
+		POKE(0x9F23, 186);
+		POKE(0x9F23, 186);
+		POKE(0x9F23, 186);
+		POKE(0x9F23, 28);
+	}
+	
   unitPointer = m.board[(c.y + m.top_view) * m.boardWidth + c.x + m.left_view].occupying;
   if (unitPointer == NULL) {
     unitPointer = c.selected;
@@ -803,8 +842,54 @@ void drawUI() {
   if (pA != NULL && menuOptions.length == 0) {
     unitPointer = attackCursor.selected;
   }
-
-  if (menuOptions.length != 0) {
+	
+	if (build_mode != 0) {
+		static unsigned char lastindex = 0xFF;
+		static unsigned char lasttens;
+		static unsigned char lastones;
+		unsigned char scroll = attackCursor.x;
+		unsigned char index;
+		
+		if (attackCursor.x == 0) {
+			scroll = 0;
+		} else if (attackCursor.x == sizeOfUnitsBuildListMinus1[build_mode - 2]) {
+			scroll = attackCursor.x - 2;
+		} else {
+			scroll = attackCursor.x - 1;	
+		}
+		
+		for (dummy = scroll; dummy < scroll + 3 && dummy <= sizeOfUnitsBuildListMinus1[build_mode - 2]; ++dummy) {
+			index = unitIndexes[ unitsCanBuild[build_mode - 2][dummy] ];
+			drawText(unitNames[index], unitNameLengths[index], 2, gui_vera_offset - 0x40 + 2 + dummy - scroll, 1);
+			clearRestOfLine();
+			
+			POKE(0x9F22, 0x20);
+			POKE(0x9F20, 28);
+			
+			if (index != lastindex) {
+				lastindex = index;
+				
+				lasttens = 186 + unitsCost[index] / 10;
+				lastones = 186 + unitsCost[index] % 10;
+			}
+			if (lasttens != 186) { POKE(0x9F23, lasttens); }
+			POKE(0x9F23, lastones);
+			
+			POKE(0x9F23, 186); // 000 
+			POKE(0x9F23, 186);
+			POKE(0x9F23, 186);
+			clearRestOfLine();
+			
+		}
+		clearOtherLines();
+		POKE(0x9F21, gui_vera_offset + 2);
+		for (dummy = scroll; dummy < scroll + 3; ++dummy) {
+			POKE(0x9F20, 2);
+			POKE(0x9F23, attackCursor.x == dummy ? 196 : 28);
+			__asm__ ("inc $9F21");
+		}
+		
+	} else if (menuOptions.length != 0) {
     // display menu options
     POKE(0x9F21, gui_vera_offset + 1);
     POKE(0x9F22, 0x20);
@@ -888,7 +973,7 @@ void drawUI() {
       }
       if (unitPointer->fuel < maxFuel[unitPointer->index]) {
         POKE(0x9F23, 28);
-        POKE(0x9F23, 0xA5);
+        POKE(0x9F23, 0xa5); // F
         POKE(0x9F23, 186 + (unitPointer->fuel / 10));
         POKE(0x9F23, 186 + (unitPointer->fuel % 10));
       }
@@ -911,14 +996,11 @@ void drawUI() {
           damageHundredsDigit = 186 + (damagePreviewNum / 100);
           damageDivTen = 186 + ((damagePreviewNum / 10) % 10);
           damageModTen = 186 + (damagePreviewNum % 10);
-          //POKE(0x08, damageModTen);
-          //POKE(0x09, damageDivTen);
-          //POKE(0x0A, damageHundredsDigit);
         }
         drawText(damageString, sizeof(damageString), 1, 13, 1);
 
         POKE(0x9F20, 2 * 5);
-        POKE(0x9F21,gui_vera_offset + 3);
+        POKE(0x9F21, gui_vera_offset + 3);
         POKE(0x9F22, 0x20);
         if (damageHundredsDigit != 186 /* A zero */ ) {
           POKE(0x9F23, damageHundredsDigit);
@@ -930,7 +1012,7 @@ void drawUI() {
       clearOtherLines();
     } else {
       POKE(0x9F22, 0x20);
-      POKE(0x9F21, 0x49);
+      POKE(0x9F21, gui_vera_offset);
       clearOtherLines();
     }
   }
@@ -940,7 +1022,7 @@ void clearUI() {
   POKE(0x9F20, 0x30);
   POKE(0x9F21, 0x40);
   POKE(0x9F22, 0x10);
-  while (PEEK(0x9F21) < 0x44) {
+  while (PEEK(0x9F21) < 0x46) {
     __asm__("lda #28");
     __asm__("ldx #$80");
 
@@ -955,16 +1037,16 @@ void clearUI() {
     __asm__("sta $9F23");
     __asm__("stx $9F23");
 
-    POKE(0x9F20, 30);
+    POKE(0x9F20, game_width << 1);
     __asm__("inc $9F21");
   }
 
-  POKE(0x9F21, 0x4A);
+  POKE(0x9F21, 0x40 + game_height);
   while (PEEK(0x9F21) < 0x40 + screen_height) {
     POKE(0x9F20, 0);
     __asm__("lda #28");
     __asm__("ldx #$80");
-    __asm__("ldy #20");
+    __asm__("ldy #40");
 
     clearUILoop:
       __asm__("sta $9F23"); // 20 times (width of screen)
@@ -994,18 +1076,45 @@ unsigned char dropOffsetsY[] = {
 void keyPressed() {
   if (keyCode == 0x91) {
     keyCode = 0x41 + 'w' - 'a';
-  }
-  if (keyCode == 0x9D) {
+  } else if (keyCode == 0x9D) {
     keyCode = 0x41;
-  }
-  if (keyCode == 0x11) {
+  } else if (keyCode == 0x11) {
     keyCode = 0x41 + 's' - 'a';
-  }
-  if (keyCode == 0x1D) {
+  } else if (keyCode == 0x1D) {
     keyCode = 0x41 + 'd' - 'a';
   }
-
-  if (menuOptions.length != 0) {
+	
+	if (build_mode != 0) {
+		if (keyCode == 0x57 /* W */) {
+			if (attackCursor.x != 0) {
+				--attackCursor.x;
+			}
+			
+		} else if (keyCode == 0x53 /* S */) {
+			if (attackCursor.x < sizeOfUnitsBuildListMinus1[build_mode - 2]) {
+				++attackCursor.x;
+			}
+			
+		} else if (keyCode == 0x55) /* U */ {
+			build_mode = 0;
+			
+		} else if (keyCode == 0x49) /* I */ {
+			unsigned char index = unitsCanBuild[build_mode - 2][attackCursor.x];
+			unsigned char cost = unitsCost[unitIndexes[index]];
+			if (playerFunds[m.whoseTurn] >= cost && playerUnitCounts[m.whoseTurn] < 50) {
+				struct Unit *new_unit = malloc_unit();
+				
+				playerFunds[m.whoseTurn] -= cost;
+				// build 
+				initUnit(new_unit, c.x + m.left_view, c.y + m.top_view, index, m.whoseTurn);
+				new_unit->takenAction = 1;
+				build_mode = 0;
+			} else {
+				pcm_trigger_digi(INVALID_ACTION_BANK, HIRAM_START);
+			}
+		}
+		
+	} else if (menuOptions.length != 0) {
     if (keyCode == 0x57) /* W */ {
       if (menuOptions.selected != 0) {
         menuOptions.selected--;
@@ -1291,17 +1400,22 @@ void keyPressed() {
       } /* I */
       else if (keyCode == 0x49) {
         if (c.selected == NULL) {
-          c.selected = m.board[c.x + m.left_view + m.boardWidth * (c.y + m.top_view)].occupying;
-					if (c.selected->takenAction) { c.selected = NULL; }
+					struct Tile *tempT = &(m.board[c.x + m.left_view + m.boardWidth * (c.y + m.top_view)]);
+          c.selected = tempT->occupying;
+					if (c.selected->takenAction) { c.selected = NULL; goto cannot_select_base; }
           if (c.selected == NULL) {
-						pcm_trigger_digi(SELECT_NO_UNIT_BANK, HIRAM_START);
-            menuOptions.length = 3;
-            menuOptions.selected = 0;
-            menuOptions.options[0] = OPTION_END;
-            menuOptions.options[1] = OPTION_QUIT;
-            menuOptions.options[2] = OPTION_CONCEDE;
-            // menuOptions.options[3] = OPTION_MOUSETOGGLE;
-            //++menuOptions.length;
+						if (tempT->base != NULL && tempT->base->team == m.whoseTurn && tempT->base->type >= CAPTUREABLE_FACTORY) {
+							build_mode = tempT->base->type;
+							attackCursor.x = 0;
+						} else {
+							cannot_select_base:
+							pcm_trigger_digi(SELECT_NO_UNIT_BANK, HIRAM_START);
+							menuOptions.length = 3;
+							menuOptions.selected = 0;
+							menuOptions.options[0] = OPTION_END;
+							menuOptions.options[1] = OPTION_QUIT;
+							menuOptions.options[2] = OPTION_CONCEDE;
+						}
           } else {
 						pcm_trigger_digi(SELECT_UNIT_BANK, HIRAM_START);
 						c.storex = c.x;
@@ -1412,25 +1526,6 @@ void calculate_unit_path() {
 			__asm__ ("stz $9F23");
 		}
 	}
-}
-
-
-void loadPalette() {
-  unsigned char i;
-
-  POKE(0x9F20, 0);
-  POKE(0x9F21, 0xFA);
-  POKE(0x9F22, 0x11);
-  i = 0;
-  do {
-    POKE(0x9F23, customPalette[i]);
-    ++i;
-  } while (i != 0);
-  do {
-    POKE(0x9F23, customPalette[256 + i]);
-    ++i;
-  } while (i != 0);
-  return;
 }
 
 void clearScreen() {

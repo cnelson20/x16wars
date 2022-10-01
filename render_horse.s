@@ -65,7 +65,7 @@
 .endstruct
 
 .import pushax, mulax6, tosmulax, tosaddax, popa
-.importzp ptr1, ptr2, ptr3
+.importzp ptr1, ptr2, ptr3, ptr4
 .importzp tmp1, tmp2
 
 ;
@@ -96,10 +96,16 @@ jsr pushax
 ldx #0
 lda _m + Map::boardWidth
 jsr tosmulax ; multiply top_view * board_width
-jsr tosaddax
 
-sta @i
-stx @i + 1
+jsr tosaddax
+jsr mulax6
+
+clc
+adc _m + Map::board
+sta ptr4
+txa 
+adc _m + Map::board + 1
+sta ptr4 + 1
 
 @draw_loop:
 lda @y
@@ -108,21 +114,11 @@ bne :+
 jmp @end
 :
 
-lda @i
-ldx @i + 1
-jsr mulax6
-clc 
-adc _m + Map::board
-sta ptr1
-txa 
-adc _m + Map::board + 1
-sta ptr1 + 1
-
 ldy #Tile::t
-lda (ptr1), Y
+lda (ptr4), Y
 sta ptr2
 iny
-lda (ptr1), Y
+lda (ptr4), Y
 sta ptr2 + 1 ; load terrain pointer into ptr2
 
 ldy #Terrain::tileIndex
@@ -133,10 +129,10 @@ lda (ptr2), Y
 sta $9F23
 
 ldy #Tile::occupying + 1
-lda (ptr1), Y
+lda (ptr4), Y
 tax
 ldy #Tile::occupying
-lda (ptr1), Y
+lda (ptr4), Y
 
 bne @render_unit ; if low byte != 0 render unit 
 cpx #0 
@@ -158,32 +154,37 @@ sta @x
 cmp _game_width
 bcc @dont_inc_y
 
-clc ; Add map boardWidth to i, then subtract 15
-lda @i
-adc _m + Map::boardWidth
-sta @i
-lda @i + 1
-adc #0
-sta @i + 1
+lda _m + Map::boardWidth
 sec 
-lda @i
 sbc _game_width
-sta @i 
-lda @i + 1
-sbc #0
-sta @i + 1
+inc A ; Increment A here to add the extra 6 we would anyway for the next iteration
+
+asl A ; Multiply by 6
+sta tmp1 
+asl A 
+clc 
+adc tmp1
+
+adc ptr4 
+sta ptr4 
+lda ptr4 + 1
+adc #0
+sta ptr4 + 1
 
 inc @y
 inc $9F21
 stz @x
 stz $9F20
 
+jmp @draw_loop
 @dont_inc_y:
-
-inc @i 
-bne :+
-inc @i + 1
-:
+lda ptr4 
+clc 
+adc #6
+sta ptr4 
+lda ptr4 + 1
+adc #0
+sta ptr4 + 1
 
 jmp @draw_loop
 @end:
@@ -593,7 +594,7 @@ plx
 lda _captureablePaletteOffsets, X
 ldy @y
 beq :+
-cpy #10
+cpy _game_height
 beq :+
 
 ora #$90 ; if y != 0 use 32 px tall sprite 
@@ -666,31 +667,24 @@ jmp @check_loop
 rts
 	
 .import _win
+.import _playerUnitCounts
+.import _playerFactoryCounts
 ;
 ; void __fastcall__ checkOldUnits();
 ;
 .export _checkOldUnits
 _checkOldUnits:
 @i = $10 ; word size 
-@remove_render_flag = $08
-ldx _player1team
-stz @units_exist_array, X
-ldx _player2team
-stz @units_exist_array, X
 	
 lda #0
 ldx _m + Map::left_view
 cpx _m + Map::oldleft_view
-beq :+
-lda #1
-bra :+
-:
+bne :+
 ldx _m + Map::top_view
 cpx _m + Map::oldtop_view
-beq :+
-lda #1
+bne :+
+jmp @end_loop
 :
-sta @remove_render_flag
 
 lda _m + Map::board
 sta ptr1
@@ -719,26 +713,15 @@ bne @do_unit_stuff
 lda ptr2
 beq @tile_occupying_null
 @do_unit_stuff:
-;stp
 ; set unit team array ; 
-ldy #Unit::team
-lda (ptr2), Y
-tax 
-lda #1
-sta @units_exist_array, X 
-
 lda ptr1
 sta ptr3
 lda ptr1 + 1
 sta ptr3 + 1
 
-lda @remove_render_flag
-beq :+
-
 lda ptr2
 ldx ptr2 + 1
 jsr _removeRenderUnit
-:
 
 lda ptr3 + 1
 sta ptr1 + 1
@@ -765,20 +748,22 @@ jmp @main_loop
 @end_loop:
 
 ldx _player1team
-lda @units_exist_array
+lda _playerUnitCounts, X
+bne :+
+lda _playerFactoryCounts, X
 bne :+
 lda _player2team ; If player 1 has no units, player 2 wins 
 jmp _win ; when win() returns, it will return to caller of this function
 :
 ldx _player2team
-lda @units_exist_array
+lda _playerUnitCounts, X
+bne :+
+lda _playerFactoryCounts, X
 bne :+
 lda _player1team ; vice versa from above 
 jmp _win
 :
 rts
-@units_exist_array:
-	.res 4, 0
 
 .import _checkU
 .import _maxSteps
@@ -937,4 +922,3 @@ _sabs_entry:
 	
 _sabs_temp:
 	.byte 0
-	

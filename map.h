@@ -21,6 +21,13 @@
 
 #define LEN_TERRAIN_ARRAY 12
 
+#define CAPTUREABLE_CITY 0
+#define CAPTUREABLE_HQ 1
+#define CAPTUREABLE_FACTORY 2
+#define CAPTUREABLE_AIRPORT 3
+#define CAPTUREABLE_PORT 4
+
+
 void setup_mem();
 
 void initMap();
@@ -33,6 +40,9 @@ void renderCursor(unsigned char incFrame);
 void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_camera);
 
 //void checkOldUnits();
+struct Unit *malloc_unit();
+void free_unit(struct Unit *u);
+
 void initUnit(struct Unit *u, unsigned char init_x, unsigned char init_y, unsigned char index, unsigned char team);
 void newTurnUnit(struct Unit *u, unsigned short i);
 
