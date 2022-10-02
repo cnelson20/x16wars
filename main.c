@@ -28,6 +28,8 @@ unsigned char gui_vera_offset = 0x4A;
 
 unsigned char build_mode;
 
+unsigned char joystick_num;
+unsigned char joystickInput[2];
 unsigned char keyCode;
 struct Map m;
 struct Cursor c;
@@ -39,6 +41,8 @@ struct possibleAttacks *pA = NULL;
 struct Menu menuOptions;
 
 extern unsigned char cbm_k_chrin();
+extern void setup_joystick();
+extern void handle_joystick();
 
 void main() {
   setup();
@@ -58,6 +62,8 @@ void main() {
 			
       __asm__("jsr $FFE4");
       __asm__("sta %v", keyCode);
+			handle_joystick();
+			
       if (keyCode != 0) {
         keyPressed();
       }
@@ -189,6 +195,8 @@ char choose_co_string[] = "choose a co";
 
 extern char change_filename[];
 
+extern void reset_quit();
+
 #define DEVICE_NUM 8
 
 char *map_space = (char *)0xB800;
@@ -247,8 +255,10 @@ void menu() {
   while (keyCode != 0);
 
   while (1) {
+		waitforjiffy();
     __asm__("jsr $FFE4");
     __asm__("sta %v", keyCode);
+		handle_joystick();
 
     if (keyCode != 0) {
       if (keyCode == 0x57 /* W */ && c.x > 0) {
@@ -257,9 +267,8 @@ void menu() {
         ++c.x;
       } else if (keyCode == 0x0d /* Enter */ || keyCode == 0x49 /* I */ ) {
         break;
-      } else if (keyCode == 0x51 /* Q */ || keyCode == 0x58 /* X */ ) {
-        //__asm__ ("brk");
-        __asm__("jmp ($FFFC)");
+			} else if (keyCode == 'q') {
+				reset_quit();
       } else if (keyCode >= 0x31 && keyCode <= 0x38 /* Between 1 & 8 */ ) {
         unsigned char tempteam = (keyCode - 0x31) % 4;
         // change player 2 team
@@ -340,8 +349,11 @@ void menu() {
 	POKE(0x9F22, 0);
 	POKE(0x9F21, 0x45);
 	while (1) {
+		waitforjiffy();
     __asm__("jsr $FFE4");
     __asm__("sta %v", keyCode);
+		handle_joystick();
+		
     if (keyCode != 0) {
 			if (keyCode == 0x57 /* W */ && c.x > 0) {
         --c.x;
@@ -644,6 +656,7 @@ void setup() {
 	*/
 	
 	change_directory("..");
+	setup_joystick();
 }
 
 void __fastcall__ load_file(unsigned char sa) {
@@ -1076,16 +1089,9 @@ unsigned char dropOffsetsY[] = {
   1, 0, 1, 2
 };
 
+
+
 void keyPressed() {
-  if (keyCode == 0x91) {
-    keyCode = 0x41 + 'w' - 'a';
-  } else if (keyCode == 0x9D) {
-    keyCode = 0x41;
-  } else if (keyCode == 0x11) {
-    keyCode = 0x41 + 's' - 'a';
-  } else if (keyCode == 0x1D) {
-    keyCode = 0x41 + 'd' - 'a';
-  }
 	
 	if (build_mode != 0) {
 		if (keyCode == 0x57 /* W */) {
@@ -1158,8 +1164,7 @@ void keyPressed() {
         menuOptions.length = 0;
 				zsm_stopmusic();
 				pcm_stop();
-        POKE(0x9F25, 0x80);
-        __asm__("jmp ($FFFC)");
+        reset_quit();
       case OPTION_WAIT:
         if (pA != NULL) {
           pA = NULL;
