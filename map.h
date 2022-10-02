@@ -55,6 +55,7 @@ extern unsigned char unitLastFuel;
 extern unsigned char baseLastHP;
 extern unsigned char unitsdeadthisturn;
 
+extern unsigned char terrainIsSet[];
 extern struct Terrain terrainArray[];
 
 extern unsigned char maxFuel[];

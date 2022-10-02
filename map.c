@@ -6,6 +6,7 @@
 #define SABS(a, b)((a >= b) ? (a - b) : (b - a))
 #define SHRTCIRCUIT_AND(a, b)((a) ? (b) : 0)
 #define SHRTCIRCUIT_OR(a, b)((a) ? 1 : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 #include "zsound/pcmplayer.h"
 #include "zsound/zsmplayer.h"
@@ -21,6 +22,7 @@ extern struct Cursor c;
 extern struct Cursor attackCursor;
 extern struct possibleAttacks useaspossibleAttacks;
 extern struct possibleAttacks *pA;
+extern struct Menu menuOptions;
 
 unsigned char returnToMenu;
 unsigned char player1team = 0;
@@ -40,7 +42,7 @@ unsigned char playerFactoryCounts[4];
 unsigned char moneyMatters;
 
 #define GAME_MAX_UNITS 100
-#define GAME_MAX_BASES 32
+#define GAME_MAX_BASES 64
 
 // Malloc but not broken
 struct Unit unitArray[GAME_MAX_UNITS];
@@ -50,10 +52,12 @@ struct Captureable captureableArray[GAME_MAX_BASES];
 unsigned char captureableArrayUses[GAME_MAX_BASES];
 
 void setup_mem() {
-	//memset(unitArray, 0, sizeof(unitArray));
 	memset(unitArrayUses, 0, GAME_MAX_UNITS);
-	//memset(captureable, 0, sizeof(captureableArray));
 	memset(captureableArrayUses, 0, sizeof(captureableArrayUses));
+	
+	memset( &c, 0, sizeof(c));
+  memset( &attackCursor, 0, sizeof(attackCursor));
+  memset( &menuOptions, 0, sizeof(menuOptions));
 }
 
 struct Unit *malloc_unit() {
@@ -64,6 +68,7 @@ struct Unit *malloc_unit() {
 			return &(unitArray[i]);
 		}
 	}
+	return NULL;
 }
 void free_unit(struct Unit *u) {
 	--playerUnitCounts[u->team];
@@ -89,6 +94,9 @@ extern unsigned char gui_vera_offset;
 
 // Map methods
 void initMap() {
+	setup_mem();
+	memset( &terrainIsSet, 0, LEN_TERRAIN_ARRAY);
+	
   m.whoseTurn = player1team;
   turncounter = 0;
 
@@ -107,8 +115,8 @@ void initMap() {
 	
 	playerUnitCounts[player1team] = 0;
 	playerUnitCounts[player2team] = 0;
-	playerFunds[player1team] = 10;
-	playerFunds[player2team] = 10;
+	playerFunds[player1team] = 5;
+	playerFunds[player2team] = 5;
 }
 void initMapData(char data[]) {
   unsigned short i, mapI, temp;
@@ -124,29 +132,28 @@ void initMapData(char data[]) {
   i++;
   for (; data[i] != 0xFF; i += 3) {}
   for (; data[i] == 0xFF; ++i) {} // Allow excess $FF values to make map easier to edit in hxd
-  for (mapI = 0; mapI < m.boardArea; ++mapI) {
+	for (mapI = 0; mapI < m.boardArea; ++mapI) {
     initTile( & (m.board[mapI]), data[i]);
     ++i;
   }
   for (i = 2; data[i] != 0xFF; i += 3) {
-
     temp = data[i] + m.boardWidth * data[i + 1];
     m.board[temp].occupying = malloc_unit();
 
     initUnit(m.board[temp].occupying, data[i], data[i + 1], data[i + 2], player1team);
-		++playerUnitCounts[player1team];
+		++playerUnitCounts[player1team];		
   }
-  i++;
+  ++i;
   for (; data[i] != 0xFF; i += 3) {
     temp = data[i] + m.boardWidth * data[i + 1];
     m.board[temp].occupying = malloc_unit();
     initUnit(m.board[temp].occupying, data[i], data[i + 1], data[i + 2], player2team);
 		++playerUnitCounts[player2team];
   }
-  i++;
+  ++i;
 }
 
-unsigned char vera_scroll_array[][2] = {
+unsigned char vera_scroll_array[][] = {
 	{0, 64},
 	{14, 85},
 	{25, 128},
@@ -166,29 +173,26 @@ void mapData_setScreenRegisters() {
 		ty = vera_scroll_array[i][0];
 	}
 	--i;
+	
 	POKE(0x9F2A, vera_scroll_array[i][1]);
 	POKE(0x9F2B, PEEK(0x9F2A));
 	
 	screen_height = 6 + ty;
 	screen_width = 6 + tx;
 	
-	game_width = tx;
-	game_height = ty;
+	game_width = MIN(tx, m.boardWidth);
+	game_height = MIN(ty, m.boardHeight);
 	gui_vera_offset = 0x40 + game_height;
 }
 
 extern struct Menu menuOptions;
 unsigned char captureablePaletteOffsets[] = {0xd, 0xd, 0xe, 0xe, 0x8};
-/*unsigned char captureableSpriteOffsets[][] = {
-	{18, 26, 18, 26, 26},
-	{34, 42, 34, 42, 42}
-};*/
 unsigned char captureableSpriteOffsets[] = {
-	18, 34, 50, 0, // Red
-	26, 42, 58, 0, // Green
-	18, 34, 50, 0, // Blue
-	26, 42, 58, 0, // Yellow
-	26, 42, 58, 0, // Neutral
+	18, 34, 50, 66, 82, 0, 0, 0, // Red
+	26, 42, 58, 74, 90, 0, 0, 0, // Green
+	18, 34, 50, 66, 82, 0, 0, 0, // Blue
+	26, 42, 58, 74, 90, 0, 0, 0, // Yellow
+	26, 42, 58, 74, 90, 0, 0, 0, // Neutral
 };
 
 extern void render_tiles();
@@ -361,7 +365,7 @@ void initTile(struct Tile * t, unsigned char index) {
     unsigned char team = (index % 4 == 0 ? player1team : (index % 4 == 1 ? player2team : 4));
 
     t->base = malloc_captureable();
-    initCaptureable(t->base, team, (index & 0x0F) >> 2);
+    initCaptureable(t->base, team, (index & 0x1F) >> 2);
     t->t->tileIndex = 0x85;
     t->t->paletteOffset = 0x60;
   }
@@ -668,10 +672,12 @@ void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_ca
 
   POKE(0x9F22, 0x11);
   for (i = 0; i <= 8; ++i) {
-    POKEW(0x9F20, 0xFC00); // halfway through sprite table 
-
-    POKE(0x9F23, 16 * i + 64);
-    POKE(0x9F23, 0x08);
+		unsigned short addr = 16 * i + 128;
+		
+		POKEW(0x9F20, 0xFC00); // halfway through sprite table
+    
+		POKE(0x9F23, addr);
+    POKE(0x9F23, 0x08 + (addr >> 8));
     temp = x - 16 + explosionSpriteOffsets[i * 2];
     POKE(0x9F23, temp);
     POKE(0x9F23, temp >> 8);
@@ -703,18 +709,18 @@ void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_ca
 	
 }
 
-#define ARROW_STRAIGHT_INDEX_TD 128
-#define ARROW_STRAIGHT_INDEX_LR 132
+#define ARROW_STRAIGHT_INDEX_TD 64
+#define ARROW_STRAIGHT_INDEX_LR 68
 
-#define ARROW_HEAD_INDEX_D 136
-#define ARROW_HEAD_INDEX_U 164
-#define ARROW_HEAD_INDEX_R 140
-#define ARROW_HEAD_INDEX_L 160
+#define ARROW_HEAD_INDEX_D 72
+#define ARROW_HEAD_INDEX_U 100
+#define ARROW_HEAD_INDEX_R 76
+#define ARROW_HEAD_INDEX_L 96
 
-#define ARROW_CURVE_INDEX_SE 144
-#define ARROW_CURVE_INDEX_NE 148
-#define ARROW_CURVE_INDEX_SW 152
-#define ARROW_CURVE_INDEX_NW 156
+#define ARROW_CURVE_INDEX_SE 80
+#define ARROW_CURVE_INDEX_NE 84
+#define ARROW_CURVE_INDEX_SW 88
+#define ARROW_CURVE_INDEX_NW 92
 
 #define VFLIP 2
 #define HFLIP 1
@@ -774,7 +780,7 @@ void drawMvmtArrow(unsigned char arr_len) {
 			}
 		}
 		
-		POKE(0x9F23, 8);
+		POKE(0x9F23, 9);
 		temp = path_array_x[i] - m.left_view;
 		POKE(0x9F23, temp << 4);
 		POKE(0x9F23, temp >> 4);

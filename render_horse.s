@@ -356,7 +356,7 @@ sta $9F20
 lda #$FC 
 sta $9F21
 lda #$11
-sta $9F22 ; set vera to beginning of sprite table 
+sta $9F22 ; set vera to beginning of unit & captureable sprite table 
 	
 ldx #0
 lda _m + Map::left_view
@@ -557,7 +557,8 @@ ldy #Captureable::team
 lda (ptr2), Y
 pha
 asl 
-asl ; * 4
+asl
+asl ; * 8
 ldy #Captureable::type
 ora (ptr2), Y
 tax 
@@ -753,7 +754,7 @@ bne :+
 lda _playerFactoryCounts, X
 bne :+
 lda _player2team ; If player 1 has no units, player 2 wins 
-jmp _win ; when win() returns, it will return to caller of this function
+;jmp _win ; when win() returns, it will return to caller of this function
 :
 ldx _player2team
 lda _playerUnitCounts, X
@@ -761,7 +762,7 @@ bne :+
 lda _playerFactoryCounts, X
 bne :+
 lda _player1team ; vice versa from above 
-jmp _win
+;jmp _win
 :
 rts
 

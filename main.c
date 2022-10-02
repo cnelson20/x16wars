@@ -295,6 +295,9 @@ void menu() {
       POKE(0x9F23, (player2team << 4) | 0x4);
     }
   }
+	POKE(0x00, MAP_HIRAM_BANK);
+	memset((char *)HIRAM_START, 0, 0x2000);
+	
 	i = 0;
 	j = 1;
 	while (j != 0) {
@@ -458,14 +461,7 @@ extern void mapData_setScreenRegisters();
 
 void game_start() {
   /* Reset some game variables */
-  memset( &c, 0, sizeof(c));
-  memset( &attackCursor, 0, sizeof(attackCursor));
-  memset( &menuOptions, 0, sizeof(menuOptions));
-  memset( &terrainIsSet, 0, LEN_TERRAIN_ARRAY);
-	
-	setup_mem();
-	
-	mapData_setScreenRegisters();
+  mapData_setScreenRegisters();
 	
   unitLastX = 255;
   unitLastX = 255;
@@ -487,7 +483,7 @@ void game_start() {
 
 #define UNIT_CHR_FILELEN 4096
 #define TILE_CHR_FILELEN 1410
-#define SPRITE_CHR_FILELEN 2112
+#define SPRITE_CHR_FILELEN 3138
 #define LETTER_CHR_FILELEN 4738
 #define EXPL_CHR_FILELEN 4608
 
@@ -586,7 +582,7 @@ void setup() {
   cbm_k_setnam("expl.chr");
   load_file(0);
   POKE(0x9F20, 0x00);
-  POKE(0x9F21, 0x08);
+  POKE(0x9F21, 0x10);
   //POKE(0x9F22, 0x11);
   POKEW(0x6, EXPL_CHR_FILELEN);
   __asm__("jsr $FEE7");
@@ -594,7 +590,7 @@ void setup() {
 	cbm_k_setnam("arrow.chr");
 	load_file(2);
 	POKE(0x9F20, 0x00);
-  POKE(0x9F21, 0x10);
+  POKE(0x9F21, 0x28);
   //POKE(0x9F22, 0x11);
 	POKEW(0x6, ARROW_CHR_FILELEN);
 	__asm__("jsr $FEE7");
@@ -759,12 +755,14 @@ unsigned char optionStrings[][8] = {
 
 unsigned char healthText[] = {0xa7, 0xa4, 0xa0, 0xab, 0xb3, 0xa7, 0x1c};
 
-unsigned char baseTypes[][9] = {
-  {0xa1, 0xa0, 0xb2, 0xa4, 0x00},
-  {0xa7, 0xb0, 0x00},
-  {0xa5, 0xa0, 0xa2, 0xb3, 0xae, 0xb1, 0xb8, 0x00},
+unsigned char baseTypes[][8] = {
+  {0xa1, 0xa0, 0xb2, 0xa4}, // CITY
+  {0xa7, 0xb0}, // HQ 
+  {0xa1, 0xa0, 0xb2, 0xa4}, // BASE 
+	{0xa0, 0xa8, 0xb1, 0xaf, 0xae, 0xb1, 0xb3}, // AIRPORT
+	{0xaf, 0xae, 0xb1, 0xb3}, // PORT
 };
-unsigned char baseTypeStringLengths[] = {4, 2, 7};
+unsigned char baseTypeStringLengths[] = {4, 2, 4, 7, 4};
 
 unsigned char damageString[] = {0xa3, 0xac, 0xa6};
 
@@ -802,7 +800,7 @@ void drawUI() {
   void *test = NULL;
   unsigned char dummy;
 
-  POKE(0x9F20, (game_width + 1) * 2);
+  POKE(0x9F20, (screen_width - 6) * 2);
   POKE(0x9F21, 0x41);
   POKE(0x9F22, 0x10);
 
@@ -813,12 +811,12 @@ void drawUI() {
 	if (moneyMatters) {
 		__asm__ ("inc $9F21");
 		__asm__ ("inc $9F21");
-		POKE(0x9F20, (game_width + 1) * 2);
+		POKE(0x9F20, (screen_width - 6) * 2);
 		POKE(0x9F23, 0xA0 + 'g' - 'a');
 	
 		__asm__ ("inc $9F21");
-		POKE(0x9F20, game_width * 2);
-		POKE(0x9F22, 0x20);
+		POKE(0x9F20, (screen_width - 7) * 2);
+		POKE(0x9F22, 0x10);
 		if (playerFunds[m.whoseTurn] != old_player_funds) {
 			funds_tens_digit = 186 + playerFunds[m.whoseTurn] / 10;
 			funds_ones_digit = 186 + playerFunds[m.whoseTurn] % 10;
@@ -827,11 +825,16 @@ void drawUI() {
 		}
 		if (funds_tens_digit != 186) {
 			POKE(0x9F23, funds_tens_digit);
+			POKE(0x9F23, 0x80);
 		}
 		POKE(0x9F23, funds_ones_digit);
+		POKE(0x9F23, 0x80);
 		POKE(0x9F23, 186);
+		POKE(0x9F23, 0x80);
 		POKE(0x9F23, 186);
+		POKE(0x9F23, 0x80);
 		POKE(0x9F23, 186);
+		POKE(0x9F23, 0x80);
 		POKE(0x9F23, 28);
 	}
 	
