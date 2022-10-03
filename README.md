@@ -23,7 +23,7 @@ It should look like this when you're done:
 - If it looks correct you can exit the dialogue by pressing OK, then running the emulator by double clicking the shortcut.
 
 ### Controls:
-Two options: Keyboard or keyboard joystick or SNES controller
+Three options: Keyboard,keyboard joystick, or SNES controller
 
 Keyboard:
 WASD to move cursor  
