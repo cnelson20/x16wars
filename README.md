@@ -17,9 +17,9 @@ Alternatively on Windows, you can do this instead of steps 4 & 5:
 - Navigate to the emulator directory using File Explorer.
 - Right click x16emu.exe, and click "Create Shortcut".
 - Right click on the newly created shortcut (it should be called "x16emu.exe - Shortcut") and click Properties
-- Make sure you are in the "Shortcut" tab of the properties dialogue, and in the text box labeled "Target" add `-sdcard warsX_Y_sd.img` to the end of the file path, replacing warsX_Y with the version of the SD card image you downloaded.
-It should look like this when you're done:
-[correct image](docs/properties.png)
+- Make sure you are in the "Shortcut" tab of the properties dialogue, and in the text box labeled "Target" add `-sdcard warsX_Y_sd.img` to the end of the file path, replacing warsX_Y with the version of the SD card image you downloaded.  
+It should look like this when you're done:  
+![correct image](docs/properties.png)  
 
 missing:
 - \>2 player support
