@@ -360,7 +360,7 @@ void menu() {
 				POKE(0x9F23, 28);
 				__asm__ ("dec $9F21");
 				POKE(0x9F23, 196);
-      } else if (keyCode == 0x53 /* S */ && c.x < CO_NAMES_ARRAY_LEN) {
+      } else if (keyCode == 0x53 /* S */ && c.x < CO_NAMES_ARRAY_LEN - 1) {
         ++c.x;
 				POKE(0x9F23, 28);
 				__asm__ ("inc $9F21");
