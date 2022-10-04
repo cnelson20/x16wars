@@ -353,7 +353,12 @@ void nextTurn() {
 #define TILE_SHOAL 9
 #define TILE_RIVER 10
 
-#define MAX_TILE_INDEX 10
+#define TILE_ROAD_SE 11
+#define TILE_ROAD_SW 12
+#define TILE_ROAD_NE 13
+#define TILE_ROAD_NW 14
+
+#define MAX_TILE_INDEX 14
 
 //Tile methods
 void initTile(struct Tile * t, unsigned char index) {
