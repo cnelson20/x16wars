@@ -11,3 +11,4 @@
 # release binary files
 release/
 
+.idea/
