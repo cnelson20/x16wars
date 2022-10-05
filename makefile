@@ -8,6 +8,8 @@ wars.prg: main.c main.h map.c map.h structs.h waitforjiffy.s waitforjiffy.h fast
 
 copy:
 	cp WARS.PRG $(EMU_LOCATION)WARS.PRG;
+	cp PALETTE.BIN $(EMU_LOCATION)PALETTE.BIN
+
 	cp char_data/TILEGRAPHICS.CHR $(EMU_LOCATION)TILE.CHR;
 	cp char_data/LETTERGRAPHICS.CHR $(EMU_LOCATION)LETTER.CHR;
 	cp char_data/SPRITEGRAPHICS.CHR $(EMU_LOCATION)SPRITES.CHR; 
