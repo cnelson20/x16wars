@@ -379,26 +379,14 @@ void initTile(struct Tile * t, unsigned char index) {
 unsigned char terrainDefenseArray[] = {
 	0x00, 0x00, 0x00, 0x00, 
 	0x03, 0x01, 0x02, 0x04, 
-	0xFF, 0x00, 0x00,
+	0xFF, 0x01, 0x00, 0x00,
+	0x00, 0x00, 0x00,
 };
 unsigned char terrainPaletteOffsetArray[] = {
 	0x40, 0x40, 0x50, 0x50, 
 	0x50, 0x60, 0x60, 0x70,
-	0xFF, 0x40, 0x40,
-};
-
-unsigned char terrainMvmtCostsArray[][6] = {
-	{0, 0, 0, 2, 0, 2}, // Reef 
-	{0, 0, 0, 1, 0, 1}, // Water
-	{1, 1, 1, 0, 1, 0}, // Horizontal Road
-	{1, 1, 1, 0, 1, 0}, // Vertical Road
-	{1, 1, 1, 0, 1, 0}, // Cities
-	{1, 1, 2, 0, 1, 0}, // Plains
-	{1, 2, 3, 0, 1, 0}, // Forest
-	{2, 0, 0, 0, 1, 0}, // Mountain
-	{0, 0, 0, 0, 0, 0}, // Filled tile for menu
-	{1, 1, 1, 0, 1, 1}, // Shoal
-	{2, 0, 0, 0, 1, 0}, // River
+	0xFF, 0x40, 0x40, 0x50, 
+	0x50, 0x50, 0x50,
 };
 
 //Terrain Method
@@ -408,6 +396,20 @@ unsigned char terrainMvmtCostsArray[][6] = {
 // mvmtCosts[3] = boat
 // mvmtCosts[4] = mech
 // mvmtCosts[5] = lander
+
+unsigned char terrainMvmtCostsArray[][6] = {
+	{0, 0, 0, 2, 0, 2}, // Reef 
+	{0, 0, 0, 1, 0, 1}, // Water
+	{1, 1, 1, 0, 1, 0}, // Roads / Cities
+	{1, 1, 2, 0, 1, 0}, // Plains
+	{1, 2, 3, 0, 1, 0}, // Forest
+	{2, 0, 0, 0, 1, 0}, // Mountain / River
+	{1, 1, 1, 0, 1, 1}, // Shoal
+};
+
+unsigned char mvmtCostArrayIndex[] = {
+	0, 1, 2, 2, 2, 3, 4, 5, 0xFF, 6, 5, 2, 2, 2, 2,
+};
 
 unsigned char terrainIsSet[LEN_TERRAIN_ARRAY];
 struct Terrain terrainArray[LEN_TERRAIN_ARRAY];
@@ -422,7 +424,7 @@ void initTerrain(struct Terrain **t_pointer, unsigned char index) {
     t->tileIndex = index + 0x80;
     t->paletteOffset = terrainPaletteOffsetArray[index];
     t->defense = terrainDefenseArray[index];
-    t->mvmtCosts = terrainMvmtCostsArray[index];
+    t->mvmtCosts = terrainMvmtCostsArray[mvmtCostArrayIndex[index]];
 		
 		terrainIsSet[index] = 1;
   }
