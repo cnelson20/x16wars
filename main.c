@@ -28,6 +28,8 @@ unsigned char gui_vera_offset = 0x4A;
 
 unsigned char build_mode;
 
+unsigned char vera_display_mode;
+
 unsigned char joystick_num;
 unsigned char joystickInput[2];
 unsigned char keyCode;
@@ -438,7 +440,7 @@ void setup_menu() {
 	clear_sprite_table(0);
 	
   POKE(0x9F25, 0);
-  POKE(0x9F29, 0x31);
+  POKE(0x9F29, 0x30 | vera_display_mode);
 	POKE(0x9F2A, 64); // hscale
 	POKE(0x9F2B, 64); // vscale 
 	
@@ -483,7 +485,7 @@ void game_start() {
 	build_mode = 0;
 	
   POKE(0x9F25, 0);
-  POKE(0x9F29, 0x71);
+  POKE(0x9F29, 0x70 | vera_display_mode);
   clearScreen();
   // initMapData(testMap);
   clearUI();
@@ -505,8 +507,11 @@ void game_start() {
 #define LOAD_ADDRESS 0xA000
 
 void setup() {
-
-  POKE(0x9F29, 0x71);
+	
+	__asm__ ("lda $9F29");
+	__asm__ ("and #$0F");
+	__asm__ ("sta %v", vera_display_mode);
+  POKE(0x9F29, 0x70 | vera_display_mode);
   
 	POKE(0x9F2A, 64); // hscale
 	POKE(0x9F2B, 64); // vscale 
@@ -1207,9 +1212,7 @@ void keyPressed() {
         actionNo = 1;
         selIndex = 1;
         while (pA->attacks[selIndex] == NULL) {
-          ++selIndex;
-          POKE(0x9fb6, 0);
-          if (selIndex >= pA->length) {
+          if (++selIndex >= 4) {
             selIndex = 0;
           }
         }
@@ -1264,7 +1267,7 @@ void keyPressed() {
       // Switch between attack targets.
       if (keyCode == 0x41) /* A */ {
         do {
-          selIndex = (selIndex == 0) ? pA->length - 1 : selIndex - 1;
+          selIndex = (selIndex == 0) ? 3 : selIndex - 1;
         } while (pA->attacks[selIndex] == NULL);
         if (actionNo == 0) {
           attackCursor.selected = pA->attacks[selIndex]->occupying;
@@ -1277,7 +1280,7 @@ void keyPressed() {
       } else if (keyCode == 0x44) /* D */ {
         do {
           ++selIndex;
-          if (selIndex >= pA->length) {
+          if (selIndex >= 4) {
             selIndex = 0;
           }
         } while (pA->attacks[selIndex] == NULL);

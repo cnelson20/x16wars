@@ -23,6 +23,7 @@ extern struct Cursor attackCursor;
 extern struct possibleAttacks useaspossibleAttacks;
 extern struct possibleAttacks *pA;
 extern struct Menu menuOptions;
+extern unsigned char vera_display_mode;
 
 unsigned char returnToMenu;
 unsigned char player1team = 0;
@@ -306,7 +307,7 @@ void __fastcall__ win(unsigned char team) {
     waitforjiffy();
     --i;
   }
-	POKE(0x9F29, 0x31);
+	POKE(0x9F29, 0x30 | vera_display_mode);
 	POKE(0x00, MAP_HIRAM_BANK);
   returnToMenu = 1;
 }
@@ -1346,39 +1347,45 @@ void getPossibleAttacks(struct possibleAttacks * pA, unsigned char cx, unsigned 
 }
 
 void getPossibleDrops(struct possibleAttacks * pA, struct Unit * u) {
-  struct Unit * carry = u->carrying;
-  struct Tile * tile;
+  static struct Unit * carry; 
+  static struct Tile * tile;
+	static unsigned char ux, uy;
+
+	carry = u->carrying;
+	
+	ux = u->x;
+	uy = u->y;
 
   pA->attacks[0] = NULL;
   pA->attacks[1] = NULL;
   pA->attacks[2] = NULL;
   pA->attacks[3] = NULL;
   pA->length = 0;
-  if (u->x != 0) {
-    tile = & (m.board[u->x - 1 + m.boardWidth * u->y]);
+  if (ux != 0) {
+    tile = & (m.board[ux - 1 + m.boardWidth * uy]);
     if (tile->t->mvmtCosts[carry->mvmtType] != 0 && tile->occupying == NULL) {
-      pA->attacks[0] = tile;
+      pA->attacks[DROP_WEST] = tile;
       ++pA->length;
     }
   }
-  if (u->y != 0) {
-    tile = & (m.board[u->x + m.boardWidth * (u->y - 1)]);
+  if (uy != 0) {
+    tile = & (m.board[u->x + m.boardWidth * (uy - 1)]);
     if (tile->t->mvmtCosts[carry->mvmtType] != 0 && tile->occupying == NULL) {
-      pA->attacks[1] = tile;
+      pA->attacks[DROP_NORTH] = tile;
       ++pA->length;
     }
   }
-  if (u->x < m.boardWidth - 1) {
-    tile = & (m.board[u->x + 1 + m.boardWidth * u->y]);
+  if (ux < m.boardWidth - 1) {
+    tile = & (m.board[u->x + 1 + m.boardWidth * uy]);
     if (tile->t->mvmtCosts[carry->mvmtType] != 0 && tile->occupying == NULL) {
-      pA->attacks[2] = tile;
+      pA->attacks[DROP_EAST] = tile;
       ++pA->length;
     }
   }
   if (u->y < m.boardHeight - 1) {
-    tile = & (m.board[u->x + m.boardWidth * (u->y + 1)]);
+    tile = & (m.board[ux + m.boardWidth * (uy + 1)]);
     if (tile->t->mvmtCosts[carry->mvmtType] != 0 && tile->occupying == NULL) {
-      pA->attacks[3] = tile;
+      pA->attacks[DROP_SOUTH] = tile;
       ++pA->length;
     }
   }

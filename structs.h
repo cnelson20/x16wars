@@ -70,6 +70,10 @@ typedef struct possibleAttacks {
   unsigned char length;
   struct Tile *attacks[8];
 };
+#define DROP_WEST 0
+#define DROP_NORTH 1
+#define DROP_EAST 2
+#define DROP_SOUTH 3
 
 typedef struct Menu {
   unsigned char length;
