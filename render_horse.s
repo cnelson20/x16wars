@@ -962,22 +962,21 @@ _handle_joystick:
 
 	lda _joystick_num
 	jsr $FF56
-	stx tmp4 
-	sta tmp3
 	
-	ora @last
 	sta tmp1
-	txa 
-	ora @last + 1
-	sta tmp2
+	stx tmp2
+	;sta $04
+	;stx $05
 	
-	lda tmp3 
-	eor #$FF
-	and #$80
-	sta @last 
-	lda tmp4 
-	eor #$FF
-	sta @last + 1
+	and #%10000000
+	beq :+
+	stz @b_was_pressed
+	:
+	txa
+	and #%10000000
+	beq :+
+	stz @a_was_pressed
+	:
 	
 	lda tmp1
 	and #1
@@ -1011,16 +1010,22 @@ _handle_joystick:
 	lda tmp1
 	and #128
 	bne :+
+	lda @b_was_pressed
+	bne :+
 	lda #'u'
 	sta _keyCode
+	sta @b_was_pressed
 	rts
 	:
 	
 	lda tmp2 
 	and #128
 	bne :+
+	lda @a_was_pressed
+	bne :+
 	lda #'i'
 	sta _keyCode
+	sta @a_was_pressed
 	rts 
 	:
 	
@@ -1028,8 +1033,10 @@ _handle_joystick:
 @holder:
 	.byte 0
 @amnt = 4
-@last:
-	.res 2, 0
+@a_was_pressed:
+	.byte 0
+@b_was_pressed:
+	.byte 0
 
 ;
 ; reset_quit()
