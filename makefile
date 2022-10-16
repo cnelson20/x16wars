@@ -1,5 +1,4 @@
 CC ?= cl65.exe
-EMU_LOCATION ?= /mnt/d/x16emu-r41/
 
 MOUNT_LOCATION = mnt/
 
