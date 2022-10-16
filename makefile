@@ -1,4 +1,4 @@
-CC = cl65.exe
+CC ?= cl65.exe
 EMU_LOCATION = /mnt/d/x16emu-r41/
 
 all: wars.prg
