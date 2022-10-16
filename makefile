@@ -1,26 +1,33 @@
 CC = cl65.exe
 EMU_LOCATION = /mnt/d/x16emu-r41/
 
+MOUNT_LOCATION = mnt/
+
 all: wars.prg
 
 wars.prg: main.c main.h map.c map.h structs.h waitforjiffy.s waitforjiffy.h fastroutines.s fastroutines.h render_horse.s
 	$(CC) -o wars.prg -t cx16 -Ois --codesize 200 map.c main.c waitforjiffy.s fastroutines.s render_horse.s zsound/zsound.lib
 
 copy:
-	cp WARS.PRG $(EMU_LOCATION)WARS.PRG;
-	cp char_data/PALETTE.BIN $(EMU_LOCATION)PALETTE.BIN
+	./scripts/mount_sd.sh wars_sd.img
+	sudo cp WARS.PRG $(MOUNT_LOCATION)WARS.PRG;
+	sudo cp char_data/PALETTE.BIN $(MOUNT_LOCATION)PALETTE.BIN
 
-	cp char_data/TILEGRAPHICS.CHR $(EMU_LOCATION)TILE.CHR;
-	cp char_data/LETTERGRAPHICS.CHR $(EMU_LOCATION)LETTER.CHR;
-	cp char_data/SPRITEGRAPHICS.CHR $(EMU_LOCATION)SPRITES.CHR; 
+	sudo cp char_data/TILEGRAPHICS.CHR $(MOUNT_LOCATION)TILE.CHR;
+	sudo cp char_data/LETTERGRAPHICS.CHR $(MOUNT_LOCATION)LETTER.CHR;
+	sudo cp char_data/SPRITEGRAPHICS.CHR $(MOUNT_LOCATION)SPRITES.CHR; 
 
-	cp char_data/REDGRAPHICS.CHR $(EMU_LOCATION)RED.CHR;
-	cp char_data/GREENGRAPHICS.CHR $(EMU_LOCATION)GREEN.CHR;
-	cp char_data/BLUEGRAPHICS.CHR $(EMU_LOCATION)BLUE.CHR;
-	cp char_data/YELLOWGRAPHICS.CHR $(EMU_LOCATION)YELLOW.CHR;
-	cp char_data/EXPLOSION.CHR $(EMU_LOCATION)EXPL.CHR;
+	sudo cp char_data/REDGRAPHICS.CHR $(MOUNT_LOCATION)RED.CHR;
+	sudo cp char_data/GREENGRAPHICS.CHR $(MOUNT_LOCATION)GREEN.CHR;
+	sudo cp char_data/BLUEGRAPHICS.CHR $(MOUNT_LOCATION)BLUE.CHR;
+	sudo cp char_data/YELLOWGRAPHICS.CHR $(MOUNT_LOCATION)YELLOW.CHR;
+	sudo cp char_data/EXPLOSION.CHR $(MOUNT_LOCATION)EXPL.CHR;
+	sudo cp char_data/ARROW.CHR $(MOUNT_LOCATION)ARROW.CHR;
 
-	cp char_data/ARROW.CHR $(EMU_LOCATION)ARROW.CHR;
+	sudo cp MAPS/ $(MOUNT_LOCATION)
+	sudo cp SOUND/ $(MOUNT_LOCATION)
+
+	./scripts/close_sd.sh
 
 
 clean:
