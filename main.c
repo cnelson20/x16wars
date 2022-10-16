@@ -625,7 +625,7 @@ void setup() {
 	/* Load sound effects */
 	cbm_k_setnam("expling.zcm");
 	POKE(0x00, UNIT_EXPLODING_BANK);
-	load_file(0); // Header-less loading 
+	load_file(2); // Header-less loading 
 	
 	cbm_k_setnam("mvcursor1.zcm");
 	POKE(0x00, MAP_CURSOR_MOVE_BANK);

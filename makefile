@@ -1,5 +1,5 @@
 CC ?= cl65.exe
-EMU_LOCATION = /mnt/d/x16emu-r41/
+EMU_LOCATION ?= /mnt/d/x16emu-r41/
 
 MOUNT_LOCATION = mnt/
 
@@ -24,8 +24,8 @@ copy:
 	sudo cp char_data/EXPLOSION.CHR $(MOUNT_LOCATION)EXPL.CHR;
 	sudo cp char_data/ARROW.CHR $(MOUNT_LOCATION)ARROW.CHR;
 
-	sudo cp MAPS/ $(MOUNT_LOCATION)
-	sudo cp SOUND/ $(MOUNT_LOCATION)
+	sudo cp MAPS/ $(MOUNT_LOCATION) -r
+	sudo cp SOUND/ $(MOUNT_LOCATION) -r
 
 	./scripts/close_sd.sh
 
