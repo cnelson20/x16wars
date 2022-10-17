@@ -7,6 +7,11 @@ all: wars.prg
 wars.prg: main.c main.h map.c map.h structs.h waitforjiffy.s waitforjiffy.h fastroutines.s fastroutines.h render_horse.s
 	$(CC) -o wars.prg -t cx16 -Ois --codesize 200 map.c main.c waitforjiffy.s fastroutines.s render_horse.s zsound/zsound.lib
 
+build: blank copy
+	
+blank:
+	cp blank_sd.img wars_sd.img
+
 copy:
 	./scripts/mount_sd.sh wars_sd.img
 	sudo cp WARS.PRG $(MOUNT_LOCATION)WARS.PRG;
