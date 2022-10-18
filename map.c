@@ -3,7 +3,6 @@
 #include <peekpoke.h>
 #include <string.h>
 
-#define SABS(a, b)((a >= b) ? (a - b) : (b - a))
 #define SHRTCIRCUIT_AND(a, b)((a) ? (b) : 0)
 #define SHRTCIRCUIT_OR(a, b)((a) ? 1 : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -1058,7 +1057,7 @@ unsigned char move(struct Unit * u, unsigned char x, unsigned char y) {
       }
     }
     /* If not enough fuel, can't move */
-    if (u->fuel < SABS(u->x, x) + SABS(u->y, y)) {
+    if (u->fuel < sabs(u->x, x) + sabs(u->y, y)) {
       return 0;
     }
 		maxSteps = u->mvmtRange;
@@ -1067,7 +1066,7 @@ unsigned char move(struct Unit * u, unsigned char x, unsigned char y) {
 		}
 		checkU = u;
 		recurs_depth = 0;
-    if ((u->airborne) ? (SABS(u->x, x) + SABS(u->y, y) <= maxSteps) : checkSpaceInMvmtRange(x, y, 0)) {
+    if ((u->airborne) ? (sabs(u->x, x) + sabs(u->y, y) <= maxSteps) : checkSpaceInMvmtRange(x, y, 0)) {
 			if (actually_move) {
 				checkU = NULL;
 				maxSteps = 0;
@@ -1085,7 +1084,7 @@ unsigned char move(struct Unit * u, unsigned char x, unsigned char y) {
 					POKE(0x9F23, 28);
 				}
 				m.board[unitLastY * m.boardWidth + unitLastX].occupying = NULL;
-				u->fuel -= SABS(u->x, x) + SABS(u->y, y);
+				u->fuel -= sabs(u->x, x) + sabs(u->y, y);
 
 				unitChangedPosition = (u->x != x || u->y != y);
 				u->x = x;
@@ -1174,7 +1173,7 @@ unsigned char damageChart[] = {
 /*17 | 27 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x01, 0x00, 0x37, 0x28, 0x00, 0x19, 0x4b, 0x00, 0x00, 0x37, 0x00, 0x32};
 
 unsigned char canAttack(struct Unit * a, struct Unit * b) {
-  if (a->team != b->team && !a->takenAction && a->ammo > 0 && SABS(b->x, a->x) + SABS(b->y, a->y) >= a->attackRangeMin && SABS(b->x, a->x) + SABS(b->y, a->y) <= a->attackRangeMax) {
+  if (a->team != b->team && !a->takenAction && a->ammo > 0 && sabs(b->x, a->x) + sabs(b->y, a->y) >= a->attackRangeMin && sabs(b->x, a->x) + sabs(b->y, a->y) <= a->attackRangeMax) {
     return damageChart[unitIndexes[b->index] * 18 + unitIndexes[a->index]];
   } else {
     return 0;

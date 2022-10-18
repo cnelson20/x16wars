@@ -1,39 +1,10 @@
-.importzp ptr1, ptr2
+.importzp ptr1, ptr2, ptr3, ptr4
+.importzp tmp1, tmp2, tmp3, tmp4
 .importzp sreg
 .importzp sp
 
-.export _load_data_vera_from
-_load_data_vera_from:
-	.word 0
-	
-; void __fastcall__ load_data_vera(unsigned short bytes);
-.export _load_data_vera
-_load_data_vera:
-
-tay
-iny 
-inx
-
-lda _load_data_vera_from
-sta ptr1 
-lda _load_data_vera_from + 1
-sta ptr1 + 1
-
-@loop:
-lda (ptr1)
-sta $9F23
-
-inc ptr1
-bne :+
-inc ptr1 + 1
-:
-
-dey
-bne @loop
-dex
-bne @loop
-
-rts
+.import popa
+.import popax
 
 ;
 ; void __fastcall__ clear_sprite_table(unsigned char from_index);
@@ -55,4 +26,152 @@ _clear_sprite_table:
 	
 	rts 
 	
+;
+; unsigned char __fastcall__ sabs(unsigned char a, unsigned char b);
+;
+.export _sabs
+_sabs:
+	sta _sabs_temp
+	jsr popa
+_sabs_entry:
+	cmp _sabs_temp
+	bcc :+
+	sec 
+	sbc _sabs_temp
+	rts
+	:
+	ldx _sabs_temp
+	sta _sabs_temp
+	txa
+	sec 
+	sbc _sabs_temp
+	rts
+	
+_sabs_temp:
+	.byte 0
+
+.import _joystick_num
+;
+; void setup_joystick();
+;
+.export _setup_joystick
+_setup_joystick:
+	lda #4
+	sta tmp1
+	:
+	lda tmp1 
+	jsr $FF56 ; joystick_get
+	cpy #0
+	beq :+
+	ldy tmp1
+	dey 
+	sty tmp1
+	bne :-
+	:
+	sty _joystick_num
+	rts 
+
+.import _keyCode
+
+;
+; void handle_joystick();
+;	
+.export _handle_joystick
+_handle_joystick:
+	lda @holder 
+	beq :+
+	dec @holder 
+	rts 
+	:
+	lda #@amnt
+	sta @holder
+
+	lda _joystick_num
+	jsr $FF56
+	
+	sta tmp1
+	stx tmp2
+	;sta $04
+	;stx $05
+	
+	and #%10000000
+	beq :+
+	stz @b_was_pressed
+	:
+	txa
+	and #%10000000
+	beq :+
+	stz @a_was_pressed
+	:
+	
+	lda tmp1
+	and #1
+	bne :+
+	lda #'d'
+	sta _keyCode
+	rts 
+	:
+	lda tmp1 
+	and #2
+	bne :+
+	lda #'a'
+	sta _keyCode
+	rts 
+	:
+	lda tmp1 
+	and #4
+	bne :+
+	lda #'s'
+	sta _keyCode
+	rts 
+	:
+	lda tmp1 
+	and #8
+	bne :+
+	lda #'w'
+	sta _keyCode
+	rts 
+	:
+	
+	lda tmp1
+	and #128
+	bne :+
+	lda @b_was_pressed
+	bne :+
+	lda #'u'
+	sta _keyCode
+	sta @b_was_pressed
+	rts
+	:
+	
+	lda tmp2 
+	and #128
+	bne :+
+	lda @a_was_pressed
+	bne :+
+	lda #'i'
+	sta _keyCode
+	sta @a_was_pressed
+	rts 
+	:
+	
+	rts
+@holder:
+	.byte 0
+@amnt = 4
+@a_was_pressed:
+	.byte 0
+@b_was_pressed:
+	.byte 0
+
+;
+; void reset_quit();
+;
+.export _reset_quit
+_reset_quit:
+	lda #$80
+	sta $9F25
+	jmp ($FFFC)
+	
+
 	

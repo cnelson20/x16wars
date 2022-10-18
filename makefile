@@ -1,11 +1,16 @@
-CC ?= cl65.exe
+CC = cl65
 
 MOUNT_LOCATION = mnt/
 
+SOURCES = main.c map.c waitforjiffy.s fastroutines.s render_horse.s
+HEADERS = main.h map.h structs.h fastroutines.h
+
+FLAGS = -o wars.prg -tcx16 -Ois --codesize 200
+
 all: wars.prg
 
-wars.prg: main.c main.h map.c map.h structs.h waitforjiffy.s waitforjiffy.h fastroutines.s fastroutines.h render_horse.s
-	$(CC) -o wars.prg -t cx16 -Ois --codesize 200 map.c main.c waitforjiffy.s fastroutines.s render_horse.s zsound/zsound.lib
+wars.prg: $(SOURCES) $(HEADERS)
+	$(CC) $(FLAGS) zsound/zsound.lib $(SOURCES) $(HEADERS)
 
 build: blank copy
 	

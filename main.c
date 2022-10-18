@@ -43,8 +43,6 @@ struct possibleAttacks *pA = NULL;
 struct Menu menuOptions;
 
 extern unsigned char cbm_k_chrin();
-extern void setup_joystick();
-extern void handle_joystick();
 
 void main() {
   setup();
@@ -196,8 +194,6 @@ void print_converted_str(unsigned char *string) {
 char choose_co_string[] = "choose a co";
 
 extern char change_filename[];
-
-extern void reset_quit();
 
 #define DEVICE_NUM 8
 
