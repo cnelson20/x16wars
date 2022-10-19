@@ -6,6 +6,9 @@
 .import popa
 .import popax
 
+_cbm_k_chrin = $FFCF
+.export _cbm_k_chrin
+
 ;
 ; void __fastcall__ clear_sprite_table(unsigned char from_index);
 ;
@@ -25,7 +28,15 @@ _clear_sprite_table:
 	bne :-
 	
 	rts 
-	
+
+;
+; _sabs_use_ax - to be called by other asm routines
+;
+.export _sabs_use_ax
+_sabs_use_ax:
+	stx _sabs_temp
+	jmp _sabs_entry
+
 ;
 ; unsigned char __fastcall__ sabs(unsigned char a, unsigned char b);
 ;

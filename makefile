@@ -5,12 +5,12 @@ MOUNT_LOCATION = mnt/
 SOURCES = main.c map.c waitforjiffy.s fastroutines.s render_horse.s
 HEADERS = main.h map.h structs.h fastroutines.h
 
-FLAGS = -o wars.prg -tcx16 -Ois --codesize 200
+FLAGS = -m x16wars.map -o wars.prg -tcx16 -Ois --codesize 200
 
 all: wars.prg
 
 wars.prg: $(SOURCES) $(HEADERS)
-	$(CC) $(FLAGS) zsound/zsound.lib $(SOURCES) $(HEADERS)
+	$(CC) $(FLAGS) $(SOURCES) zsound/zsound.lib
 
 build: blank copy
 	

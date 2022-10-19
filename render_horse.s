@@ -781,9 +781,7 @@ rts
 .import _asm_ty
 .import _asm_steps
 
-_sabs_use_ax:
-	stx _sabs_temp
-	jmp _sabs_entry
+.import _sabs_use_ax
 
 .export _test_check_space
 _test_check_space:
