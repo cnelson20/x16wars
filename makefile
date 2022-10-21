@@ -12,12 +12,12 @@ all: wars.prg
 wars.prg: $(SOURCES) $(HEADERS)
 	$(CC) $(FLAGS) $(SOURCES) zsound/zsound.lib
 
-build: blank copy
+build: wars.prg blank copy
 	
 blank:
 	cp blank_sd.img wars_sd.img
 
-copy:
+copy: wars.prg
 	./scripts/mount_sd.sh wars_sd.img
 	sudo cp WARS.PRG $(MOUNT_LOCATION)WARS.PRG;
 	sudo cp char_data/PALETTE.BIN $(MOUNT_LOCATION)PALETTE.BIN
