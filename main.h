@@ -52,4 +52,7 @@ void clearScreen();
 
 #define CO2_MUSIC_BANK 41
 
+
+#define MENU_MUSIC_BANK 64
+
 #define HIRAM_START 0xA000
