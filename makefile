@@ -38,6 +38,9 @@ copy: wars.prg
 
 	./scripts/close_sd.sh
 
+run: copy
+	box16.exe -sdcard wars_sd.img
+
 
 clean:
 	-rm *.d

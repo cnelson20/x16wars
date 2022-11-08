@@ -6,14 +6,14 @@ struct Cursor;
 struct Captureable;
 
 /* 
-	Reminder to change definitions in render_horse.s 
+	Reminder to change definitions in render_horse.s
 */
 typedef struct Unit {
   unsigned char index;
   unsigned char health;
   unsigned char ammo;
-	unsigned char fuel;
-	unsigned char x,y;
+  unsigned char fuel;
+  unsigned char x,y;
 
   unsigned char mvmtRange;
   unsigned char mvmtType;
@@ -58,7 +58,7 @@ typedef struct Cursor {
 
 typedef struct Map {
   unsigned char top_view, left_view, oldtop_view, oldleft_view;
-	unsigned char store_top_view, store_left_view;
+  unsigned char store_top_view, store_left_view;
 	
   unsigned char whoseTurn;
   unsigned char boardWidth, boardHeight;
@@ -77,7 +77,7 @@ typedef struct possibleAttacks {
 
 typedef struct Menu {
   unsigned char length;
-	unsigned char store_length;
+  unsigned char store_length;
 	
   unsigned char selected;
   unsigned char options[4];
