@@ -257,12 +257,14 @@ void menu() {
     while (1) {
         waitforjiffy();
 
-        if (turncounter == 0) {
-            pcm_trigger_digi(MENU_MUSIC_BANK, HIRAM_START);
-            // Main theme is 1:02 -> 62 seconds * 60 = 3,720 = $E88
-            turncounter = 0xE88;
-        } else {
-            --turncounter;
+        if (num_ram_banks > 64) {
+            if (turncounter == 0) {
+                pcm_trigger_digi(MENU_MUSIC_BANK, HIRAM_START);
+                // Main theme is 1:02 -> 62 seconds * 60 = 3,720 = $E88
+                turncounter = 0xE88;
+            } else {
+                --turncounter;
+            }
         }
 
         pcm_play();
