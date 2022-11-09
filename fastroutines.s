@@ -182,6 +182,7 @@ _handle_joystick:
 _reset_quit:
 	lda #$80
 	sta $9F25
+	stp
 	jmp ($FFFC)
 	
 

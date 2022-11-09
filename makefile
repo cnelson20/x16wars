@@ -2,8 +2,8 @@ CC = cl65
 
 MOUNT_LOCATION = mnt/
 
-SOURCES = main.c map.c waitforjiffy.s fastroutines.s render_horse.s
-HEADERS = main.h map.h structs.h fastroutines.h
+SOURCES = main.c map.c waitforjiffy.s fastroutines.s render_horse.s map_functions.s
+HEADERS = main.h map.h structs.h fastroutines.h map_functions.h
 
 FLAGS = -m x16wars.map -o wars.prg -tcx16 -Ois --codesize 200
 
@@ -41,6 +41,8 @@ copy: wars.prg
 run: copy
 	box16.exe -sdcard wars_sd.img
 
+run2m: copy
+	box16.exe -sdcard wars_sd.img -ram 2048
 
 clean:
 	-rm *.d

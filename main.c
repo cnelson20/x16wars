@@ -214,7 +214,7 @@ void menu() {
         POKE(0x00, FILENAMES_BANK);
     }
 
-    pcm_trigger_digi(MENU_MUSIC_BANK, HIRAM_START);
+    turncounter = 0;
 
     player1team = 0;
     player2team = 2;
@@ -256,6 +256,15 @@ void menu() {
 
     while (1) {
         waitforjiffy();
+
+        if (turncounter == 0) {
+            pcm_trigger_digi(MENU_MUSIC_BANK, HIRAM_START);
+            // Main theme is 1:02 -> 62 seconds * 60 = 3,720 = $E88
+            turncounter = 0xE88;
+        } else {
+            --turncounter;
+        }
+
         pcm_play();
         __asm__("jsr $FFE4");
         __asm__("sta %v", keyCode);

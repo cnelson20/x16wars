@@ -68,7 +68,6 @@ struct Unit *malloc_unit() {
             return &(unitArray[i]);
         }
     }
-    return NULL;
 }
 
 void free_unit(struct Unit *u) {
@@ -154,14 +153,7 @@ void initMapData(char data[]) {
     }
     ++i;
 }
-
-unsigned char vera_scroll_array[][] = {
-        {0,  64},
-        {14, 85},
-        {25, 128},
-};
-#define VERA_SCROLL_ARRAY_LEN 3
-
+/*
 void mapData_setScreenRegisters() {
     unsigned char tx, ty;
     unsigned char i;
@@ -185,7 +177,7 @@ void mapData_setScreenRegisters() {
     game_width = MIN(tx, m.boardWidth);
     game_height = MIN(ty, m.boardHeight);
     gui_vera_offset = 0x40 + game_height;
-}
+}*/
 
 extern struct Menu menuOptions;
 unsigned char captureablePaletteOffsets[] = {0xd, 0xd, 0xe, 0xe, 0x8};
@@ -203,13 +195,9 @@ extern void render_unit_sprites();
 
 extern void checkOldUnits();
 
-extern void __fastcall__
+extern void __fastcall__ renderUnit(struct Unit *u);
 
-renderUnit(struct Unit *u);
-
-extern void __fastcall__
-
-removeRenderUnit(struct Unit *u);
+extern void __fastcall__ removeRenderUnit(struct Unit *u);
 
 void renderMap() {
 
@@ -266,13 +254,9 @@ unsigned char colorstrings[4][7] =
          {0xb8, 0xa4, 0xab, 0xab, 0xae, 0xb6, 0}}; /* yellow */
 unsigned char colorstringlengths[4] = {3, 5, 4, 6};
 
-extern void __fastcall__
+extern void __fastcall__ clear_sprite_table(unsigned char from);
 
-clear_sprite_table(unsigned char from);
-
-void __fastcall__
-
-win(unsigned char team) {
+void __fastcall__ win(unsigned char team) {
     unsigned short i;
 
     POKE(0x9F20, ((game_width >> 1) - (colorstringlengths[team] >> 1)) << 1);

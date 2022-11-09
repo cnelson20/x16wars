@@ -92,6 +92,8 @@ void supplyUnits(struct Unit *u);
 extern unsigned char player1co;
 extern unsigned char player2co;
 
+extern unsigned short turncounter;
+
 extern char co_names_array[][8];
 #define CO_NAMES_ARRAY_LEN 6
 

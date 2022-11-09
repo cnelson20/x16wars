@@ -327,9 +327,6 @@ sta $9F23
 rts 
 	
 	
-
-
-	
 .import _oldunitsprites
 .import _currentunitsprites
 
