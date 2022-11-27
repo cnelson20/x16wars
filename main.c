@@ -29,7 +29,6 @@ unsigned char gui_vera_offset = 0x4A;
 unsigned char build_mode;
 
 unsigned char vera_display_mode;
-unsigned char num_ram_banks;
 
 unsigned char joystick_num;
 unsigned char joystickInput[2];
@@ -45,9 +44,14 @@ struct Menu menuOptions;
 
 extern unsigned char cbm_k_chrin();
 
+extern void setup_joystick();
+
+extern void handle_joystick();
+
 void main() {
     setup();
     POKE(0x00, MAP_HIRAM_BANK);
+    __asm__ ("stz %b", 1); // Set ROM bank to 0 (kernal);
     pcm_init();
     zsm_init();
 
@@ -196,6 +200,8 @@ char choose_co_string[] = "choose a co";
 
 extern char change_filename[];
 
+extern void reset_quit();
+
 #define DEVICE_NUM 8
 
 char *map_space = (char *) 0xB800;
@@ -213,8 +219,6 @@ void menu() {
     } else {
         POKE(0x00, FILENAMES_BANK);
     }
-
-    turncounter = 0;
 
     player1team = 0;
     player2team = 2;
@@ -256,18 +260,6 @@ void menu() {
 
     while (1) {
         waitforjiffy();
-
-        if (num_ram_banks > 64) {
-            if (turncounter == 0) {
-                pcm_trigger_digi(MENU_MUSIC_BANK, HIRAM_START);
-                // Main theme is 1:02 -> 62 seconds * 60 = 3,720 = $E88
-                turncounter = 0xE88;
-            } else {
-                --turncounter;
-            }
-        }
-
-        pcm_play();
         __asm__("jsr $FFE4");
         __asm__("sta %v", keyCode);
         handle_joystick();
@@ -362,7 +354,6 @@ void menu() {
     POKE(0x9F21, 0x45);
     while (1) {
         waitforjiffy();
-        pcm_play();
         __asm__("jsr $FFE4");
         __asm__("sta %v", keyCode);
         handle_joystick();
@@ -391,8 +382,6 @@ void menu() {
     } else {
         player2co = c.x;
     }
-
-    pcm_stop();
     load_co_music();
     return;
 }
@@ -452,7 +441,7 @@ void clear_layer1() {
 
 void setup_menu() {
     initCursor();
-    clear_sprite_table(0);
+    clear_sprite_table();
 
     POKE(0x9F25, 0);
     POKE(0x9F29, 0x30 | vera_display_mode);
@@ -474,7 +463,6 @@ void setup_menu() {
     clear_layer1();
 }
 
-extern unsigned short turncounter;
 extern unsigned char unitsdeadthisturn;
 extern unsigned char currentbases;
 extern unsigned char oldbases;
@@ -575,7 +563,8 @@ void setup() {
     __asm__("jsr $FEE7");
 
     cbm_k_setnam("blue.chr");
-    load_file(0);
+    cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
+    cbm_k_load(0, LOAD_ADDRESS);
     POKE(0x9F20, 0x00);
     POKE(0x9F21, 0xA0);
     __asm__("jsr $FEE7");
@@ -668,16 +657,6 @@ void setup() {
     cbm_k_setnam("missuccess.zcm");
     POKE(0x00, MISSION_SUCCESS_MUSIC_BANK);
     load_file(2);
-
-    __asm__ ("sec");
-    __asm__ ("jsr $FF99"); // MEMTOP routine
-    __asm__ ("dec A");
-    __asm__ ("sta %v", num_ram_banks);
-    if (num_ram_banks > 64) {
-        cbm_k_setnam("maintheme.zcm");
-        POKE(0x00, MENU_MUSIC_BANK);
-        load_file(2);
-    }
 
     /*
     Leaving this here for now:
