@@ -383,8 +383,7 @@ unsigned char mvmtCostArrayIndex[] = {
 unsigned char terrainIsSet[LEN_TERRAIN_ARRAY];
 struct Terrain terrainArray[LEN_TERRAIN_ARRAY];
 
-extern void setupTerrain(struct Terrain *t, unsigned char index);
-
+/*
 void initTerrain(struct Terrain **t_pointer, unsigned char index) {
     if (terrainIsSet[index]) {
         *t_pointer = &(terrainArray[index]);
@@ -392,16 +391,14 @@ void initTerrain(struct Terrain **t_pointer, unsigned char index) {
         struct Terrain *t = &(terrainArray[index]);
         *t_pointer = t;
 
-        setupTerrain(t, index);
+        t->tileIndex = index + 0x80;
+        t->paletteOffset = terrainPaletteOffsetArray[index];
+        t->defense = terrainDefenseArray[index];
+        t->mvmtCosts = terrainMvmtCostsArray[mvmtCostArrayIndex[index]];
 
-        //t->tileIndex = index + 0x80;
-        //t->paletteOffset = terrainPaletteOffsetArray[index];
-        //t->defense = terrainDefenseArray[index];
-        //t->mvmtCosts = terrainMvmtCostsArray[mvmtCostArrayIndex[index]];
-
-        //terrainIsSet[index] = 1;
+        terrainIsSet[index] = 1;
     }
-}
+}*/
 
 // Cursor methods
 void initCursor() {
@@ -573,7 +570,7 @@ unsigned char unitsCost[] = {
         28
 };
 
-void capture(struct Unit * u, struct Captureable * c) {
+/*void capture(struct Unit * u, struct Captureable * c) {
     unsigned char i;
 
     if (u->team != c->team) {
@@ -592,7 +589,7 @@ void capture(struct Unit * u, struct Captureable * c) {
             c->health -= i;
         }
     }
-}
+}*/
 
 unsigned char explosionSpriteOffsets[] = {
         25, 28,

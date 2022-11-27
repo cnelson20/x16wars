@@ -13,33 +13,7 @@ _vera_scroll_array:
 
 VERA_SCROLL_ARRAY_LEN = 3
 
-.struct Map
-	top_view .byte
-	left_view .byte
-	oldtop_view .byte
-	oldleft_view .byte
-	store_top_view .byte
-	store_left_view .byte
-
-	whoseTurn .byte
-	boardWidth .byte
-	boardHeight .byte
-	boardArea .word
-	board .word
-.endstruct
-
-.struct Tile
-	occupying .word
-	t .word
-	base .word
-.endstruct
-
-.struct Terrain
-	tileIndex .byte
-	paletteOffset .byte
-	defense .byte
-	mvmtCosts .word
-.endstruct
+.include "structs.inc"
 
 .import _m
 
@@ -134,16 +108,40 @@ _mapData_setScreenRegisters:
 ;
 ; void initTerrain(struct Terrain **t_pointer, unsigned char index);
 ;
-.export _setupTerrain
-_setupTerrain:
-    pha
+.export _initTerrain
+_initTerrain:
+    tax
+    sta tmp1
+    lda _terrainIsSet, X
+    sta tmp2
 
     jsr popax
 
-    sta ptr2
-    stx ptr2 + 1
+    sta ptr1
+    stx ptr1 + 1
 
-    pla
+    lda tmp1
+    asl
+    asl
+    clc
+    adc tmp1
+    clc
+    adc #<_terrainArray
+    ldy #0
+    sta (ptr1), Y
+    sta ptr2
+    lda #>_terrainArray
+    adc #0
+    iny
+    sta (ptr1), Y
+    sta ptr2 + 1
+
+    ldx tmp2
+    beq @terrain_not_set
+    rts
+
+@terrain_not_set:
+    lda tmp1
     tax
 
     ora #$80
@@ -175,5 +173,81 @@ _setupTerrain:
     adc #0
     iny
     sta (ptr2), Y
+
+    rts
+
+.import _playerFactoryCounts
+.import _win
+;
+; void capture(struct Unit *u, struct Captureable *c);
+;
+.export _capture
+_capture:
+    sta ptr1
+    stx ptr1 + 1 ; captureable is in ptr1
+
+    jsr popax
+    sta ptr2
+    stx ptr2 + 1 ; unit is in ptr2
+
+    ldy #Unit::team
+    lda (ptr2), Y
+    ldy #Captureable::team
+    cmp (ptr1), Y
+    bne @different_teams
+    rts ; if teams are same, can't capture
+
+@different_teams:
+    ldy #Unit::health
+    lda (ptr2), Y
+    ; this calculates (unit health + 9) / 10
+    clc
+    adc #9
+    sec
+    ldx #0
+    :
+    inx
+    sbc #10
+    bcs :-
+    dex
+    txa ; move result into a
+    ldy #Captureable::health
+    cmp (ptr1), Y ; compare unit capture power to building health
+    bcs @capture_building ; if enough to capture, branch
+    sta tmp1 ; stash
+    lda (ptr1), Y ; load building health
+    sec
+    sbc tmp1 ; subtract unit capture power
+    sta (ptr1), Y ; store new health
+    rts ; return
+@capture_building:
+    ldy #Captureable::type
+    lda (ptr1), Y
+    cmp #CAPTUREABLE_FACTORY ; can building produce units ?
+    bcc @not_factory ; if not, branch
+
+    ldx _m + Map::whoseTurn
+    inc _playerFactoryCounts, X ; capturer's factory count increases by 1
+    ldy #Captureable::team
+    lda (ptr1), Y
+    tax
+    dec _playerFactoryCounts, X ; former owner's factory count decreases by 1
+
+@not_factory:
+    ldy #Captureable::critical
+    lda (ptr1), Y ; is base the hq ?
+    beq @not_hq ; if not, branch
+
+    lda _m + Map::whoseTurn ; load winning player
+    jmp _win ; jump to win routine, let it return to our caller
+@not_hq:
+
+    lda _m + Map::whoseTurn ; player whose turn it is always is controlling these units
+    ldy #Captureable::team
+    sta (ptr1), Y ; update team
+
+    ldy #Captureable::health
+    lda #20
+    sta (ptr1), Y ; set health to 20
 
     rts
