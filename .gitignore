@@ -2,6 +2,12 @@
 *.o
 *.obj
 
+#cl65 map files
+*.map
+
+#wars_sd.img
+wars_sd.img
+
 #X16 program files
 *.prg
 
@@ -12,3 +18,5 @@
 release/
 
 .idea/
+
+
