@@ -1,4 +1,5 @@
 CC = cl65
+EMU = box16.exe
 
 MOUNT_LOCATION = mnt/
 
@@ -39,10 +40,10 @@ copy: wars.prg
 	./scripts/close_sd.sh
 
 run: copy
-	box16.exe -sdcard wars_sd.img
+	$(EMU) -sdcard wars_sd.img
 
 run2m: copy
-	box16.exe -sdcard wars_sd.img -ram 2048
+	$(EMU) -sdcard wars_sd.img -ram 2048
 
 clean:
 	-rm *.d
