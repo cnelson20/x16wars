@@ -383,6 +383,8 @@ unsigned char mvmtCostArrayIndex[] = {
 unsigned char terrainIsSet[LEN_TERRAIN_ARRAY];
 struct Terrain terrainArray[LEN_TERRAIN_ARRAY];
 
+extern void setupTerrain(struct Terrain *t, unsigned char index);
+
 void initTerrain(struct Terrain **t_pointer, unsigned char index) {
     if (terrainIsSet[index]) {
         *t_pointer = &(terrainArray[index]);
@@ -390,12 +392,14 @@ void initTerrain(struct Terrain **t_pointer, unsigned char index) {
         struct Terrain *t = &(terrainArray[index]);
         *t_pointer = t;
 
-        t->tileIndex = index + 0x80;
-        t->paletteOffset = terrainPaletteOffsetArray[index];
-        t->defense = terrainDefenseArray[index];
-        t->mvmtCosts = terrainMvmtCostsArray[mvmtCostArrayIndex[index]];
+        setupTerrain(t, index);
 
-        terrainIsSet[index] = 1;
+        //t->tileIndex = index + 0x80;
+        //t->paletteOffset = terrainPaletteOffsetArray[index];
+        //t->defense = terrainDefenseArray[index];
+        //t->mvmtCosts = terrainMvmtCostsArray[mvmtCostArrayIndex[index]];
+
+        //terrainIsSet[index] = 1;
     }
 }
 
@@ -951,6 +955,7 @@ unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned
     }
     tempT = &(m.board[ty * m.boardWidth + tx]);
     asm_tempt_occupying = tempT->occupying;
+    POKEW(0x02, tempT->t->mvmtCosts);
     asm_temp_t_mvmtcosts = tempT->t->mvmtCosts;
 
     if (test_check_unit() == 0) { return 0; }

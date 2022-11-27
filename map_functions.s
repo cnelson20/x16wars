@@ -1,6 +1,7 @@
 .setcpu "65c02"
 
-.importzp tmp1, tmp2
+.importzp tmp1, tmp2, tmp3, tmp4
+.importzp ptr1, ptr2, ptr3, ptr4
 
 ;
 ; unsigned char vera_scroll_array[][2];
@@ -25,6 +26,19 @@ VERA_SCROLL_ARRAY_LEN = 3
 	boardHeight .byte
 	boardArea .word
 	board .word
+.endstruct
+
+.struct Tile
+	occupying .word
+	t .word
+	base .word
+.endstruct
+
+.struct Terrain
+	tileIndex .byte
+	paletteOffset .byte
+	defense .byte
+	mvmtCosts .word
 .endstruct
 
 .import _m
@@ -101,5 +115,65 @@ _mapData_setScreenRegisters:
     sta _game_height
     ora #$40
     sta _gui_vera_offset
+
+    rts
+
+.import popax
+.import mulax6
+
+;
+; void initTile(struct Tile *t, unsigned char index);
+;
+
+.import _terrainIsSet
+.import _terrainArray
+.import _terrainPaletteOffsetArray
+.import _terrainDefenseArray
+.import _terrainMvmtCostsArray
+.import _mvmtCostArrayIndex
+;
+; void initTerrain(struct Terrain **t_pointer, unsigned char index);
+;
+.export _setupTerrain
+_setupTerrain:
+    pha
+
+    jsr popax
+
+    sta ptr2
+    stx ptr2 + 1
+
+    pla
+    tax
+
+    ora #$80
+    ldy #Terrain::tileIndex
+    sta (ptr2), Y ; t->tileIndex = index + 0x80;
+
+    lda #1
+    sta _terrainIsSet, X ; terrainIsSet[index] = 1;
+
+    lda _terrainPaletteOffsetArray, X
+    ldy #Terrain::paletteOffset
+    sta (ptr2), Y ; t->paletteOffset = terrainPaletteOffsetArray[index];
+
+    lda _terrainDefenseArray, X
+    ldy #Terrain::defense
+    sta (ptr2), Y ; t->defense = terrainDefenseArray[index];
+
+    lda _mvmtCostArrayIndex, X
+    asl
+    sta tmp1
+    asl
+    clc
+    adc tmp1
+    clc
+    adc #<_terrainMvmtCostsArray
+    ldy #Terrain::mvmtCosts
+    sta (ptr2), Y
+    lda #>_terrainMvmtCostsArray
+    adc #0
+    iny
+    sta (ptr2), Y
 
     rts

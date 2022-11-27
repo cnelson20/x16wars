@@ -1051,6 +1051,5 @@ _reset_quit:
 ; void cbm_k_chrin();
 ;
 .export _cbm_k_chrin
-_cbm_k_chrin:
-    jmp $FFE4
+_cbm_k_chrin := $FFE4
 
