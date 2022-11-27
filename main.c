@@ -30,6 +30,8 @@ unsigned char build_mode;
 
 unsigned char vera_display_mode;
 
+unsigned char num_ram_banks;
+
 unsigned char joystick_num;
 unsigned char joystickInput[2];
 unsigned char keyCode;
@@ -260,6 +262,14 @@ void menu() {
 
     while (1) {
         waitforjiffy();
+
+        if (num_ram_banks > 64) {
+            if (PEEK(0x9F3B) & 0x40) {
+                pcm_trigger_digi(MENU_MUSIC_BANK, HIRAM_START);
+            }
+            pcm_play();
+        }
+
         __asm__("jsr $FFE4");
         __asm__("sta %v", keyCode);
         handle_joystick();
@@ -310,6 +320,7 @@ void menu() {
     }
     POKE(0x00, MAP_HIRAM_BANK);
     memset((char *) HIRAM_START, 0, 0x2000);
+    pcm_stop();
 
     i = 0;
     j = 1;
@@ -658,8 +669,18 @@ void setup() {
     POKE(0x00, MISSION_SUCCESS_MUSIC_BANK);
     load_file(2);
 
+    __asm__ ("sec");
+    __asm__ ("jsr $FF99"); // MEMTOP routine
+    __asm__ ("dec A");
+    __asm__ ("sta %v", num_ram_banks);
+    if (num_ram_banks > 64) {
+        cbm_k_setnam("maintheme.zcm");
+        POKE(0x00, MENU_MUSIC_BANK);
+        load_file(2);
+    }
+
     /*
-    Leaving this here for now:
+    Leaving this here:
     https://devster.proboards.com/thread/1218/tip-convert-midi-music-xgc
     */
 
