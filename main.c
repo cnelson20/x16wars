@@ -35,14 +35,14 @@ unsigned char num_ram_banks;
 unsigned char joystick_num;
 unsigned char joystickInput[2];
 unsigned char keyCode;
-struct Map m;
-struct Cursor c;
-struct Cursor attackCursor;
+extern struct Map m;
+extern struct Cursor c;
+extern struct Cursor attackCursor;
 unsigned char actionNo;
 unsigned char selIndex;
-struct possibleAttacks useaspossibleAttacks;
-struct possibleAttacks *pA = NULL;
-struct Menu menuOptions;
+extern struct possibleAttacks useaspossibleAttacks;
+extern struct possibleAttacks *pA;
+extern struct Menu menuOptions;
 
 extern unsigned char cbm_k_chrin();
 

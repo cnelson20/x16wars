@@ -1,5 +1,5 @@
 CC = cl65
-EMU = box16.exe
+EMU = /mnt/d/box16-r41-2/box16.exe
 
 MOUNT_LOCATION = mnt/
 

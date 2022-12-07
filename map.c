@@ -47,10 +47,10 @@ unsigned char moneyMatters;
 
 // Malloc but not broken
 struct Unit unitArray[GAME_MAX_UNITS];
-unsigned char unitArrayUses[GAME_MAX_UNITS];
+extern unsigned char unitArrayUses[GAME_MAX_UNITS]; // Space is reserved in golden ram by map_functions.s
 
-struct Captureable captureableArray[GAME_MAX_BASES];
-unsigned char captureableArrayUses[GAME_MAX_BASES];
+extern struct Captureable captureableArray[GAME_MAX_BASES];
+extern unsigned char captureableArrayUses[GAME_MAX_BASES];
 
 void setup_mem() {
     memset(unitArrayUses, 0, GAME_MAX_UNITS);
@@ -380,8 +380,8 @@ unsigned char mvmtCostArrayIndex[] = {
         0, 1, 2, 2, 2, 3, 4, 5, 0xFF, 6, 5, 2, 2, 2, 2,
 };
 
-unsigned char terrainIsSet[LEN_TERRAIN_ARRAY];
-struct Terrain terrainArray[LEN_TERRAIN_ARRAY];
+extern unsigned char terrainIsSet[LEN_TERRAIN_ARRAY];
+extern struct Terrain terrainArray[LEN_TERRAIN_ARRAY];
 
 /*
 void initTerrain(struct Terrain **t_pointer, unsigned char index) {
@@ -931,8 +931,8 @@ unsigned char asm_steps;
 struct Unit *asm_tempt_occupying;
 unsigned char *asm_temp_t_mvmtcosts;
 
-unsigned char path_array_x[16];
-unsigned char path_array_y[16];
+extern unsigned char path_array_x[16];
+extern unsigned char path_array_y[16];
 
 extern unsigned char __fastcall__ sabs(unsigned char a, unsigned char b);
 extern unsigned char __fastcall__ test_check_space();
@@ -952,7 +952,6 @@ unsigned char checkSpaceInMvmtRange(unsigned char tx, unsigned char ty, unsigned
     }
     tempT = &(m.board[ty * m.boardWidth + tx]);
     asm_tempt_occupying = tempT->occupying;
-    POKEW(0x02, tempT->t->mvmtCosts);
     asm_temp_t_mvmtcosts = tempT->t->mvmtCosts;
 
     if (test_check_unit() == 0) { return 0; }

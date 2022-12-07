@@ -3,6 +3,69 @@
 .importzp tmp1, tmp2, tmp3, tmp4
 .importzp ptr1, ptr2, ptr3, ptr4
 
+.include "structs.inc"
+
+;
+; Struct SIZEOF defines
+;
+SIZEOF_UNIT = .sizeof (Unit)
+SIZEOF_CAPTUREABLE = .sizeof (Captureable)
+SIZEOF_TERRAIN = .sizeof (Terrain)
+SIZEOF_TILE = .sizeof (Tile)
+SIZEOF_MAP = .sizeof (Map)
+SIZEOF_CURSOR = .sizeof (Cursor)
+SIZEOF_POSSIBLEATTACKS = .sizeof (possibleAttacks)
+SIZEOF_MENU = .sizeof (Menu)
+
+GAME_MAX_UNITS = 100
+GAME_MAX_BASES = 64
+LEN_TERRAIN_ARRAY = 16
+
+;
+; Global variable declaration in golden RAM
+;
+.export _unitArrayUses
+_unitArrayUses := $400
+
+.export _useaspossibleAttacks
+_useaspossibleAttacks := _unitArrayUses + GAME_MAX_UNITS
+
+.export _pA
+_pA := _useaspossibleAttacks + SIZEOF_POSSIBLEATTACKS
+
+.export _menuOptions
+_menuOptions := _pA + 2
+
+.export _m
+_m := _menuOptions + SIZEOF_MENU
+
+.export _c
+_c := _m + SIZEOF_MAP
+
+.export _attackCursor
+_attackCursor := _c + SIZEOF_CURSOR
+
+.export _path_array_x
+_path_array_x := _attackCursor + SIZEOF_CURSOR
+
+.export _path_array_y
+_path_array_y := _path_array_x + 12
+
+.export _terrainIsSet
+_terrainIsSet := _path_array_y + 12
+
+.export _terrainArray
+_terrainArray := _terrainIsSet + LEN_TERRAIN_ARRAY
+
+.export _captureableArray
+_captureableArray := _terrainArray + (SIZEOF_TERRAIN * LEN_TERRAIN_ARRAY)
+
+.export _captureableArrayUses
+_captureableArrayUses := _captureableArray + (SIZEOF_CAPTUREABLE * GAME_MAX_BASES)
+
+
+.assert (_captureableArrayUses + GAME_MAX_BASES) <= $07ff, error, "Overflow of golden RAM"
+
 ;
 ; unsigned char vera_scroll_array[][2];
 ;
@@ -13,9 +76,7 @@ _vera_scroll_array:
 
 VERA_SCROLL_ARRAY_LEN = 3
 
-.include "structs.inc"
-
-.import _m
+;.import _m
 
 .import _screen_width
 .import _screen_height
@@ -99,8 +160,6 @@ _mapData_setScreenRegisters:
 ; void initTile(struct Tile *t, unsigned char index);
 ;
 
-.import _terrainIsSet
-.import _terrainArray
 .import _terrainPaletteOffsetArray
 .import _terrainDefenseArray
 .import _terrainMvmtCostsArray
