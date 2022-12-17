@@ -19,7 +19,7 @@ Alternatively on Windows, you can do this instead of steps 4 & 5:
 - Right click on the newly created shortcut (it should be called "x16emu.exe - Shortcut") and click Properties
 - Make sure you are in the "Shortcut" tab of the properties dialogue, and in the text box labeled "Target" add `-sdcard warsX_Y_sd.img -prg WARS.PRG -run` to the end of the file path, replacing warsX_Y with the version of the SD card image you downloaded.  
 It should look like this when you're done:  
-![correct image](docs/properties.png)  
+![correct image](properties.png)  
 - If it looks correct you can exit the dialogue by pressing OK, then running the emulator by double clicking the shortcut.
 
 ### Controls:
