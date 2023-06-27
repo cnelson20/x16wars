@@ -25,7 +25,7 @@ extern struct possibleAttacks *pA;
 extern struct Menu menuOptions;
 extern unsigned char vera_display_mode;
 
-unsigned char returnToMenu;
+unsigned char returnToMenu = 0;
 unsigned char player1team = 0;
 unsigned char player1co = 0;
 unsigned char player2team = 2;
@@ -33,9 +33,9 @@ unsigned char player2co = 0;
 unsigned char turncounter;
 unsigned char unitsdeadthisturn = 0;
 unsigned char currentbases = 0;
-unsigned char oldbases;
+unsigned char oldbases = 0;
 unsigned char currentunitsprites = 0;
-unsigned char oldunitsprites;
+unsigned char oldunitsprites = 0;
 
 unsigned char playerFunds[4];
 unsigned char playerUnitCounts[4];
@@ -55,7 +55,12 @@ extern unsigned char captureableArrayUses[GAME_MAX_BASES];
 void setup_mem() {
     memset(unitArrayUses, 0, GAME_MAX_UNITS);
     memset(captureableArrayUses, 0, sizeof(captureableArrayUses));
-
+	
+	memset(playerFunds, 0, 4);
+	memset(playerUnitCounts, 0, 4);
+	memset(playerFactoryCounts, 0 , 4);
+	moneyMatters = 0;
+	
     memset( &c, 0, sizeof(c));
     memset( &attackCursor, 0, sizeof(attackCursor));
     memset( &menuOptions, 0, sizeof(menuOptions));
@@ -121,7 +126,7 @@ void initMap() {
 }
 void initMapData(char data[]) {
     unsigned short i, mapI, temp;
-
+	
     initMap();
     m.boardWidth = data[0];
     m.boardHeight = data[1];
@@ -152,6 +157,7 @@ void initMapData(char data[]) {
         ++playerUnitCounts[player2team];
     }
     ++i;
+	
 }
 
 extern struct Menu menuOptions;
@@ -916,17 +922,17 @@ unsigned char canCarryUnit(unsigned char carrier_index, unsigned char carried_in
     }
     return 0;
 }
-unsigned char maxSteps;
-struct Unit * checkU;
-struct Tile * tempT;
+unsigned char maxSteps = 0;
+struct Unit * checkU = NULL;
+struct Tile * tempT = NULL;
 
 unsigned char actually_move = 1;
-unsigned char mvmtNegFactor;
-unsigned char recurs_depth;
+unsigned char mvmtNegFactor = 0;
+unsigned char recurs_depth = 0;
 
-unsigned char asm_tx;
-unsigned char asm_ty;
-unsigned char asm_steps;
+unsigned char asm_tx = 0;
+unsigned char asm_ty = 0;
+unsigned char asm_steps = 0;
 
 struct Unit *asm_tempt_occupying;
 unsigned char *asm_temp_t_mvmtcosts;

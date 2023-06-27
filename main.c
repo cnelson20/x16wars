@@ -26,20 +26,22 @@ unsigned char game_height = 10;
 
 unsigned char gui_vera_offset = 0x4A;
 
-unsigned char build_mode;
+unsigned char build_mode = 0;
 
-unsigned char vera_display_mode;
+unsigned char vera_display_mode = 0;
 
 unsigned char num_ram_banks;
 
-unsigned char joystick_num;
-unsigned char joystickInput[2];
-unsigned char keyCode;
+unsigned char joystick_num = 0;
+unsigned char joystickInput[2] = {0};
+unsigned char keyCode = 0;
+
 extern struct Map m;
 extern struct Cursor c;
 extern struct Cursor attackCursor;
-unsigned char actionNo;
-unsigned char selIndex;
+
+unsigned char actionNo = 0;
+unsigned char selIndex = 0;
 extern struct possibleAttacks useaspossibleAttacks;
 extern struct possibleAttacks *pA;
 extern struct Menu menuOptions;
@@ -331,9 +333,10 @@ void menu() {
         map_space[i] = j;
         ++i;
     }
+	
+	POKE(0x00, MAP_HIRAM_BANK);
     cbm_k_setnam(map_space);
     cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
-    POKE(0x00, MAP_HIRAM_BANK);
     i = cbm_k_load(0, (unsigned short) map_space);
     initMapData(map_space);
     change_directory("..");
@@ -520,8 +523,10 @@ void game_start() {
 /* load_address = 0xA000, start of hiram */
 #define LOAD_ADDRESS 0xA000
 
-void setup() {
+#define GOLDENRAM_START 0x0400
+#define GOLDENRAM_SIZE 0x0300
 
+void setup() {
     __asm__ ("lda $9F29");
     __asm__ ("and #$0F");
     __asm__ ("sta %v", vera_display_mode);
@@ -529,6 +534,8 @@ void setup() {
 
     POKE(0x9F2A, 64); // hscale
     POKE(0x9F2B, 64); // vscale
+	
+	memset((void *)GOLDENRAM_START, 0, GOLDENRAM_SIZE);
 
     __asm__("stz $9F25");
 
@@ -556,83 +563,45 @@ void setup() {
     POKE(0x9F33, 0);
     POKE(0x9F3A, 0);
 
-    POKE(0x00, MAP_HIRAM_BANK);
     cbm_k_setnam("red.chr");
-    load_file(0);
-    POKE(0x9F20, 0x00);
-    POKE(0x9F21, 0x80);
-    POKE(0x9F22, 0x10);
-    POKEW(0x2, LOAD_ADDRESS);
-    POKEW(0x4, 0x9F23);
-    POKEW(0x6, UNIT_CHR_FILELEN);
-    __asm__("jsr $FEE7");
+    cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
+    cbm_k_load(2, 0x8000);
 
     cbm_k_setnam("green.chr");
-    load_file(0);
-    POKE(0x9F20, 0x00);
-    POKE(0x9F21, 0x90);
-    __asm__("jsr $FEE7");
+    cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
+    cbm_k_load(2, 0x9000);
 
     cbm_k_setnam("blue.chr");
-    cbm_k_setlfs(0xFF, DEVICE_NUM, 0x00);
-    cbm_k_load(0, LOAD_ADDRESS);
-    POKE(0x9F20, 0x00);
-    POKE(0x9F21, 0xA0);
-    __asm__("jsr $FEE7");
+    cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
+    cbm_k_load(2, 0xA000);
 
     cbm_k_setnam("yellow.chr");
-    load_file(0);
-    POKE(0x9F20, 0x00);
-    POKE(0x9F21, 0xB0);
-    __asm__("jsr $FEE7");
+    cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
+    cbm_k_load(2, 0xB000);
 
     cbm_k_setnam("tile.chr");
-    load_file(0);
-    POKE(0x9F20, 0x00);
-    POKE(0x9F21, 0xC0);
-    //POKEW(0x2, (unsigned short)load_address);
-    //POKEW(0x4, 0x9F23);
-    POKEW(0x6, TILE_CHR_FILELEN);
-    __asm__("jsr $FEE7");
+    cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
+    cbm_k_load(2, 0xC000);
 
     cbm_k_setnam("letter.chr");
-    load_file(0);
-    POKE(0x9F20, 0x00);
-    POKE(0x9F21, 0xD0);
-    POKEW(0x6, LETTER_CHR_FILELEN);
-    __asm__("jsr $FEE7");
+    cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
+    cbm_k_load(2, 0xD000);
 
     cbm_k_setnam("sprites.chr");
-    load_file(0);
-    POKE(0x9F20, 0x00);
-    POKE(0x9F21, 0x00);
-    POKE(0x9F22, 0x11);
-    POKEW(0x6, SPRITE_CHR_FILELEN);
-    __asm__("jsr $FEE7");
+    cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
+    cbm_k_load(3, 0x0000);
 
     cbm_k_setnam("expl.chr");
-    load_file(0);
-    POKE(0x9F20, 0x00);
-    POKE(0x9F21, 0x10);
-    //POKE(0x9F22, 0x11);
-    POKEW(0x6, EXPL_CHR_FILELEN);
-    __asm__("jsr $FEE7");
+    cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
+    cbm_k_load(3, 0x1000);
 
     cbm_k_setnam("arrow.chr");
-    load_file(2);
-    POKE(0x9F20, 0x00);
-    POKE(0x9F21, 0x28);
-    //POKE(0x9F22, 0x11);
-    POKEW(0x6, ARROW_CHR_FILELEN);
-    __asm__("jsr $FEE7");
+    cbm_k_setlfs(0xFF, DEVICE_NUM, 2);
+    cbm_k_load(3, 0x2800);
 
     cbm_k_setnam("palette.bin");
-    load_file(2);
-    POKE(0x9F20, 0x00);
-    POKE(0x9F21, 0xFA);
-    POKE(0x9F22, 0x11);
-    POKEW(0x6, 512);
-    __asm__("jsr $FEE7");
+    cbm_k_setlfs(0xFF, DEVICE_NUM, 2);
+    cbm_k_load(3, 0xFA00);
 
     change_directory("sound");
 
@@ -688,13 +657,10 @@ void setup() {
     setup_joystick();
 }
 
-void __fastcall__
-
-load_file(unsigned char sa) {
+void __fastcall__ load_file(unsigned char sa) {
     cbm_k_setlfs(0, DEVICE_NUM, sa);
     cbm_k_load(0, LOAD_ADDRESS);
 }
-
 
 void draw() {
     renderMap();
