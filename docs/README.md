@@ -4,7 +4,11 @@
 
 ### How to Play
 
-Step 1: Download version R41 of the Commander X16 emulator at https://github.com/commanderx16/x16-emulator/releases
+#### Option 1: Web Emulator
+
+#### Option 2: Local Download
+
+Step 1: Download version R41 of the Commander X16 emulator at https://github.com/X16Community/x16-emulator/releases
 
 Step 2: Download the SD card image for the latest release [here](https://github.com/cnelson20/x16wars/releases). The file name should be in the format warsX_Y_sd.img
 
