@@ -47,3 +47,4 @@ bugs:
 
 - entering into the drop prompt can crash the game
 - first move of cursor will cause some unexpected behavior.
+- cannot select factories to build units.
