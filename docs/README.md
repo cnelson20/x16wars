@@ -12,7 +12,7 @@ You can play online by clicking the Try It Now link at the bottom of the forum p
 
 #### Option 2: Local Download
 
-Step 1: Download ve)rsion R41 of the Commander X16 emulator at https://github.com/X16Community/x16-emulator/releases
+Step 1: Download the latest version of the Commander X16 emulator at https://github.com/X16Community/x16-emulator/releases
 
 Step 2: Download the SD card image for the latest release [here](https://github.com/cnelson20/x16wars/releases). The file name should be in the format warsX_Y_sd.img
 
