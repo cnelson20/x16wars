@@ -1,5 +1,7 @@
 # x16wars
 
+![screenshot of main menu](screen1.PNG)
+
 ## port of advance wars for gba to the commander x16 
 
 ### How to Play
