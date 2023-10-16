@@ -2,7 +2,7 @@
 
 <img src='screen1.PNG' width='480' height='360'>
 
-## port of advance wars for gba to the commander x16 
+## A port of advance wars for gba to the commander x16 
 
 ### How to Play
 
