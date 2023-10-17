@@ -562,12 +562,8 @@ void setup() {
     POKE(0x9F38, 0);
     POKE(0x9F33, 0);
     POKE(0x9F3A, 0);
-<<<<<<< HEAD
 
-=======
-	
     POKE(0x00, MAP_HIRAM_BANK);
->>>>>>> fefad7b06af80823751182bcf2139a344a0d1264
     cbm_k_setnam("red.chr");
     cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
     cbm_k_load(2, 0x8000);
