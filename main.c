@@ -534,8 +534,8 @@ void setup() {
 
     POKE(0x9F2A, 64); // hscale
     POKE(0x9F2B, 64); // vscale
-	
-	memset((void *)GOLDENRAM_START, 0, GOLDENRAM_SIZE);
+
+    memset((void *)GOLDENRAM_START, 0, GOLDENRAM_SIZE);
 
     __asm__("stz $9F25");
 
