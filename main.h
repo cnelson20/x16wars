@@ -55,3 +55,5 @@ void clearScreen();
 #define MENU_MUSIC_BANK 64
 
 #define HIRAM_START 0xA000
+#define GOLDEN_RAM 0x0400
+#define GOLDEN_RAM_SIZE 0x0300

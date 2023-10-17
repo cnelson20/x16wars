@@ -58,7 +58,7 @@ void main() {
     __asm__ ("stz %b", 1); // Set ROM bank to 0 (kernal);
     pcm_init();
     zsm_init();
-
+	
     while (1) {
         menu();
         game_start();
@@ -495,7 +495,8 @@ extern void mapData_setScreenRegisters();
 void game_start() {
     /* Reset some game variables */
     mapData_setScreenRegisters();
-
+	
+	pA = NULL;
     unitLastX = 255;
     unitLastX = 255;
     unitLastFuel = 255;
@@ -525,9 +526,12 @@ void game_start() {
 /* load_address = 0xA000, start of hiram */
 #define LOAD_ADDRESS 0xA000
 
+<<<<<<< HEAD
 #define GOLDENRAM_START 0x0400
 #define GOLDENRAM_SIZE 0x0300
 
+=======
+>>>>>>> fefad7b06af80823751182bcf2139a344a0d1264
 void setup() {
     __asm__ ("lda $9F29");
     __asm__ ("and #$0F");
@@ -564,7 +568,12 @@ void setup() {
     POKE(0x9F38, 0);
     POKE(0x9F33, 0);
     POKE(0x9F3A, 0);
+<<<<<<< HEAD
 
+=======
+	
+    POKE(0x00, MAP_HIRAM_BANK);
+>>>>>>> fefad7b06af80823751182bcf2139a344a0d1264
     cbm_k_setnam("red.chr");
     cbm_k_setlfs(0xFF, DEVICE_NUM, 0);
     cbm_k_load(2, 0x8000);
@@ -1109,7 +1118,6 @@ unsigned char dropOffsetsY[] = {
 
 
 void keyPressed() {
-
     if (build_mode != 0) {
         if (keyCode == 0x57 /* W */) {
             if (attackCursor.x != 0) {
