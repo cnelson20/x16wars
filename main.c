@@ -526,12 +526,6 @@ void game_start() {
 /* load_address = 0xA000, start of hiram */
 #define LOAD_ADDRESS 0xA000
 
-<<<<<<< HEAD
-#define GOLDENRAM_START 0x0400
-#define GOLDENRAM_SIZE 0x0300
-
-=======
->>>>>>> fefad7b06af80823751182bcf2139a344a0d1264
 void setup() {
     __asm__ ("lda $9F29");
     __asm__ ("and #$0F");
