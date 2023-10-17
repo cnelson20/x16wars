@@ -262,6 +262,7 @@ void menu() {
         __asm__("sta %v", keyCode);
     } while (keyCode != 0);
 
+    POKE(0x9F3B, PEEK(0x9F3B) | 0x80);
     while (1) {
         waitforjiffy();
 
@@ -322,7 +323,6 @@ void menu() {
     }
     POKE(0x00, MAP_HIRAM_BANK);
     memset((char *) HIRAM_START, 0, 0x2000);
-    pcm_stop();
 
     i = 0;
     j = 1;
@@ -371,6 +371,7 @@ void menu() {
         __asm__("jsr $FFE4");
         __asm__("sta %v", keyCode);
         handle_joystick();
+        pcm_play();
 
         if (keyCode != 0) {
             if (keyCode == 0x57 /* W */ && c.x > 0) {
@@ -396,6 +397,7 @@ void menu() {
     } else {
         player2co = c.x;
     }
+    pcm_stop();
     load_co_music();
     return;
 }
