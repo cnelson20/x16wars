@@ -15,6 +15,7 @@
 #include "map.h"
 #include "waitforjiffy.h"
 #include "main.h"
+#include "fastroutines.h"
 
 // Variables
 extern struct Map m;
@@ -125,7 +126,7 @@ void initMap() {
     playerFunds[player2team] = 5;
 }
 void initMapData(char data[]) {
-    unsigned short i, mapI, temp;
+    static unsigned short i, mapI, temp;
 	
     initMap();
     m.boardWidth = data[0];
@@ -234,7 +235,7 @@ unsigned char colorstringlengths[4] = {3,5,4,6};
 extern void __fastcall__ clear_sprite_table(unsigned char from);
 
 void __fastcall__ win(unsigned char team) {
-    unsigned short i;
+    static unsigned short i;
 
     POKE(0x9F20, ((game_width >> 1) - (colorstringlengths[team] >> 1)) << 1);
     POKE(0x9F21, 0x40 + (game_height >> 1));
@@ -287,7 +288,7 @@ void __fastcall__ win(unsigned char team) {
 }
 
 void nextTurn() {
-    unsigned short i = 0;
+    static unsigned short i = 0;
 
     zsm_stopmusic();
     if (m.whoseTurn == player2team) {
@@ -655,7 +656,8 @@ void renderUnitExplosion(unsigned char x, unsigned char y, unsigned char move_ca
 
     POKE(0x9F22, 0x11);
     for (i = 0; i <= 8; ++i) {
-        unsigned short addr = 16 * i + 128;
+        static unsigned short addr;
+		addr = 16 * i + 128;
 
         POKEW(0x9F20, 0xFC00); // halfway through sprite table
 
@@ -712,9 +714,9 @@ extern unsigned char path_array_x[];
 extern unsigned char path_array_y[];
 
 void drawMvmtArrow(unsigned char arr_len) {
-    unsigned char i;
-    unsigned char v_hflip = 0;
-    unsigned short temp;
+    static unsigned char i;
+    static unsigned char v_hflip = 0;
+    static unsigned short temp;
 
     if (arr_len == 0) { return; }
 
@@ -1156,19 +1158,10 @@ unsigned char canAttack(struct Unit * a, struct Unit * b) {
     }
 }
 
-unsigned char randByte() {
-    static unsigned char val;
-    __asm__("jsr $FECF"); /* Call entropy_get kernal routine */
-    __asm__("stx %v", val);
-    __asm__("eor %v", val);
-    __asm__("sty %v", val);
-    __asm__("eor %v", val);
-    __asm__("sta %v", val);
-    return val;
-}
-
 unsigned char damagePreview(struct Unit * a, struct Unit * b) {
-    unsigned char temp = canAttack(a, b) * a->health / 100;
+    static unsigned char temp;
+
+	temp = canAttack(a, b) * a->health / 100;
     POKE(0xF, m.board[b->y * m.boardWidth + b->x].t->defense);
     if (!b->airborne) {
         temp -= temp * (b->health * m.board[b->y * m.boardWidth + b->x].t->defense) / 1000;
@@ -1178,7 +1171,9 @@ unsigned char damagePreview(struct Unit * a, struct Unit * b) {
 }
 
 unsigned char calcPower(struct Unit * a, struct Unit * b) {
-    unsigned char temp = canAttack(a, b) * a->health / 100 + randByte() % ((a->health + 9) / 10);
+    static unsigned char temp;
+
+	temp = canAttack(a, b) * a->health / 100 + randByte() % ((a->health + 9) / 10);
     if (!b->airborne) {
         temp -= temp * (b->health * m.board[b->y * m.boardWidth + b->x].t->defense) / 1000;
     }
@@ -1255,11 +1250,15 @@ void getPossibleAttacks(struct possibleAttacks * pA, unsigned char cx, unsigned 
 
     if (attackRangeMax == 1) {
         /* Handle direct attack units */
-        unsigned char i = 0;
-        struct Tile * north = NULL;
-        struct Tile * east = NULL;
-        struct Tile * south = NULL;
-        struct Tile * west = NULL;
+        static unsigned char i;
+        static struct Tile *north, *east,*south, *west;
+        
+		north = NULL;
+		east = NULL;
+		south = NULL;
+		west = NULL;
+		i = 0;
+		
         if (cy != 0) {
             north = & (m.board[(cy - 1) * m.boardWidth + cx]);
         }
@@ -1292,10 +1291,10 @@ void getPossibleAttacks(struct possibleAttacks * pA, unsigned char cx, unsigned 
         pA->length = i;
     } else {
         /* Handle units with ranged attacks */
-        unsigned char xmin, ymin, xmax, ymax;
-        unsigned char x, y;
-        struct Tile * temp;
-        unsigned char i;
+        static unsigned char xmin, ymin, xmax, ymax;
+        static unsigned char x, y;
+        static struct Tile *temp;
+        static unsigned char i;
 
         xmin = (c.x >= attackRangeMax) ? c.x - attackRangeMax : 0;
         ymin = (c.y >= attackRangeMax) ? c.y - attackRangeMax : 0;
@@ -1367,17 +1366,18 @@ void getPossibleDrops(struct possibleAttacks * pA, struct Unit * u) {
 }
 
 unsigned char sizeofGetPossibleDrops(struct Unit * u) {
-    unsigned char size;
     struct possibleAttacks *pA = &useaspossibleAttacks;
 
     getPossibleDrops(pA, u);
-    size = pA->length;
-    return size;
+    //size = pA->length;
+    //return size;
+	return pA->length;
 }
 
 void getPossibleJoins(struct possibleAttacks * pA, struct Unit * u) {
-    unsigned char i = 0;
-    struct Tile * tile;
+    static unsigned char i;
+    static struct Tile *tile;
+	i = 0;
 
     if (u->x != 0) {
         tile = & (m.board[u->x - 1 + m.boardWidth * u->y]);
@@ -1413,16 +1413,17 @@ void getPossibleJoins(struct possibleAttacks * pA, struct Unit * u) {
 }
 
 unsigned char sizeofGetPossibleJoins(struct Unit * u) {
-    unsigned char size;
+    //unsigned char size;
     struct possibleAttacks *pA = &useaspossibleAttacks;
 
     getPossibleJoins(pA, u);
-    size = pA->length;
-    return size;
+    //size = pA->length;
+    //return size;
+	return pA->length;
 }
 
 unsigned char canSupply(struct Unit * u) {
-    struct Unit * supp;
+    static struct Unit * supp;
     if (u->index != UNIT_APC) {
         return 0;
     }
@@ -1455,7 +1456,7 @@ unsigned char canSupply(struct Unit * u) {
 }
 
 void supplyUnits(struct Unit * u) {
-    struct Unit * supp;
+    static struct Unit * supp;
 
     if (u->x > 0) {
         supp = m.board[u->y * m.boardWidth + u->x - 1].occupying;

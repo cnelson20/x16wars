@@ -91,7 +91,7 @@ char **map_files_array;
 char map_files_length;
 
 void load_dir_menu() {
-    unsigned short i;
+    static unsigned short i;
 
     menu_files_array = NULL;
     menu_files_length = 0;
@@ -162,12 +162,15 @@ void load_dir_menu() {
     menu_files_length = map_files_length;
 }
 
+/*
 void print_hex_number(unsigned char x) {
-    unsigned char j = x >> 4;
-    POKE(0x9F23, (j >= 0xA) ? j - 0xA + 0xA0 : j + 186);
+    static unsigned char j;
+	j = x >> 4;
+    POKE(0x9F23, (j >= 0xA) ? (j - 0xA + 0xA0) : j + 186);
     j = x & 0xF;
-    POKE(0x9F23, (j >= 0xA) ? j - 0xA + 0xA0 : j + 186);
+    POKE(0x9F23, (j >= 0xA) ? (j - 0xA + 0xA0) : j + 186);
 }
+*/
 
 void print_ascii_str(char *string, unsigned char break_on_period) {
     while (*string) {

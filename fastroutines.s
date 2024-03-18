@@ -2,6 +2,7 @@
 .importzp sreg
 .importzp sp
 
+entropy_get := $FECF
 ;
 ; void __fastcall__ clear_sprite_table();
 ;
@@ -22,4 +23,14 @@ _clear_sprite_table:
 	
 	rts 
 	
-	
+.export _randByte
+;
+; unsigned char __fastcall__ randByte();
+;
+_randByte:
+	jsr entropy_get; /* Call entropy_get kernal routine */
+    stx sreg
+    eor sreg
+	sty sreg
+	eor sreg
+	rts
